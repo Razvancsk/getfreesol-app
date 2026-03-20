@@ -127,7 +127,6 @@ export default function SolRefund() {
   const [stakeQuote, setStakeQuote] = useState<{ outputAmount: number; priceImpactPct: number } | null>(null);
   const [stakeQuoteLoading, setStakeQuoteLoading] = useState(false);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
-  const [gsolRawLamports, setGsolRawLamports] = useState<number>(0);
   const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
   const [burnMode, setBurnMode] = useState<'burn' | 'swap'>('burn'); // Toggle between burn and swap
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -916,10 +915,7 @@ export default function SolRefund() {
         const gsolMintPk = new PublicKey(GSOL_MINT);
         const ata = await getAssociatedTokenAddress(gsolMintPk, publicKey);
         const info = await connection.getTokenAccountBalance(ata).catch(() => null);
-        if (info?.value?.uiAmount !== undefined) {
-          setGsolBalance(info.value.uiAmount ?? 0);
-          setGsolRawLamports(Number(info.value.amount ?? 0));
-        }
+        if (info?.value?.uiAmount !== undefined) setGsolBalance(info.value.uiAmount ?? 0);
       } catch { /* no GSOL account yet */ }
     })();
   }, [publicKey, connection, activeTab]);
@@ -1011,10 +1007,7 @@ export default function SolRefund() {
       const { getAssociatedTokenAddress } = await import('@solana/spl-token');
       const ata = await getAssociatedTokenAddress(new PublicKey(GSOL_MINT), publicKey);
       const info = await connection.getTokenAccountBalance(ata).catch(() => null);
-      if (info?.value?.uiAmount !== undefined) {
-        setGsolBalance(info.value.uiAmount ?? 0);
-        setGsolRawLamports(Number(info.value.amount ?? 0));
-      }
+      if (info?.value?.uiAmount !== undefined) setGsolBalance(info.value.uiAmount ?? 0);
     } catch (e: any) {
       toast({ title: 'Staking failed', description: e.message, variant: 'destructive' });
     } finally {
@@ -1027,10 +1020,10 @@ export default function SolRefund() {
     if (!publicKey || !signTransaction || !connection) return;
     const amt = parseFloat(stakeAmount);
     if (!amt || amt <= 0) { toast({ title: 'Enter an amount', variant: 'destructive' }); return; }
-    const lamports = Math.floor(amt * 1e9);
-    if (lamports > gsolRawLamports) { toast({ title: 'Insufficient GSOL balance', variant: 'destructive' }); return; }
+    if (amt > gsolBalance) { toast({ title: 'Insufficient GSOL balance', variant: 'destructive' }); return; }
     setStakeLoading(true);
     try {
+      const lamports = Math.floor(amt * 1e9);
       const resp = await fetch('/api/staking/unstake-tx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1078,10 +1071,7 @@ export default function SolRefund() {
       const { getAssociatedTokenAddress } = await import('@solana/spl-token');
       const ata = await getAssociatedTokenAddress(new PublicKey(GSOL_MINT), publicKey);
       const info = await connection.getTokenAccountBalance(ata).catch(() => null);
-      if (info?.value?.uiAmount !== undefined) {
-        setGsolBalance(info.value.uiAmount ?? 0);
-        setGsolRawLamports(Number(info.value.amount ?? 0));
-      }
+      if (info?.value?.uiAmount !== undefined) setGsolBalance(info.value.uiAmount ?? 0);
     } catch (e: any) {
       toast({ title: 'Unstaking failed', description: e.message, variant: 'destructive' });
     } finally {
@@ -4937,10 +4927,10 @@ export default function SolRefund() {
                         <span className="text-white text-sm">
                           {stakeMode === 'stake'
                             ? `≈ ${walletTokenBalance.toFixed(4)} SOL`
-                            : `≈ ${parseFloat((gsolRawLamports / 1e9).toFixed(9))} GSOL`}
+                            : `≈ ${gsolBalance.toFixed(4)} GSOL`}
                         </span>
-                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (Math.floor(gsolRawLamports / 2) / 1e9).toFixed(9))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
-                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.01).toFixed(4) : (gsolRawLamports / 1e9).toFixed(9))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (gsolBalance * 0.5).toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.01).toFixed(4) : gsolBalance.toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
                       </div>
                     </div>
                     {/* Bottom row: token badge left, amount right */}
@@ -5010,79 +5000,76 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  {/* Stake Method selector — only shown when staking */}
-                  {stakeMode === 'stake' && (
+                  {/* Stake Method selector */}
                   <div className="mb-5">
-                    <>
-                        <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="text-white font-semibold text-sm whitespace-nowrap">
-                            Stake Method
-                            <button
-                              onClick={() => setShowHowToChoose(true)}
-                              className="text-white hover:text-white/80 font-normal ml-1.5 underline underline-offset-2 cursor-pointer transition-colors"
-                            >(How to choose?)</button>
-                          </span>
-                          {/* Pill toggle */}
-                          <div className="flex rounded-full p-1 bg-white/10 border border-white/15 gap-0.5 w-full sm:w-auto">
-                            <button
-                              onClick={() => setStakingMethod('direct')}
-                              className={`flex-1 sm:flex-none px-6 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
-                                stakingMethod === 'direct'
-                                  ? 'bg-white text-gray-900 shadow-sm'
-                                  : 'text-white hover:text-white/80'
-                              }`}
-                            >
-                              Direct deposit
-                            </button>
-                            <button
-                              onClick={() => setStakingMethod('jupiter')}
-                              className={`flex-1 sm:flex-none px-6 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
-                                stakingMethod === 'jupiter'
-                                  ? 'bg-white text-gray-900 shadow-sm'
-                                  : 'text-white hover:text-white/80'
-                              }`}
-                            >
-                              Via Jupiter
-                            </button>
-                          </div>
-                        </div>
+                    {/* Header row */}
+                    <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="text-white font-semibold text-sm whitespace-nowrap">
+                        {stakeMode === 'stake' ? 'Stake Method' : 'Unstake Method'}
+                        <button
+                          onClick={() => setShowHowToChoose(true)}
+                          className="text-white hover:text-white/80 font-normal ml-1.5 underline underline-offset-2 cursor-pointer transition-colors"
+                        >(How to choose?)</button>
+                      </span>
+                      {/* Pill toggle */}
+                      <div className="flex rounded-full p-1 bg-white/10 border border-white/15 gap-0.5 w-full sm:w-auto">
+                        <button
+                          onClick={() => setStakingMethod('direct')}
+                          className={`flex-1 sm:flex-none px-6 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                            stakingMethod === 'direct'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-white hover:text-white/80'
+                          }`}
+                        >
+                          Direct deposit
+                        </button>
+                        <button
+                          onClick={() => setStakingMethod('jupiter')}
+                          className={`flex-1 sm:flex-none px-6 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                            stakingMethod === 'jupiter'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-white hover:text-white/80'
+                          }`}
+                        >
+                          Via Jupiter
+                        </button>
+                      </div>
+                    </div>
 
-                        {/* Method detail card */}
-                        <div className={`rounded-xl px-4 py-3.5 border border-white/10 flex items-center gap-3 ${'bg-white/8'}`}>
-                          {stakingMethod === 'direct' ? (
-                            <>
-                              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
-                                  <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-white font-bold text-sm leading-tight">Direct deposit</p>
-                                <p className="text-white text-xs mt-0.5">Mint the LST via its stake pool</p>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <p className="text-green-400 text-xs font-bold leading-tight">0% Deposit Fee</p>
-                                <p className="text-green-400 text-xs font-bold leading-tight">0% Price Impact</p>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
-                                <img src="https://jup.ag/favicon.ico" alt="Jupiter" className="w-8 h-8 object-cover" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-white font-bold text-sm leading-tight">Via Jupiter</p>
-                                <p className="text-white text-xs mt-0.5">Swap SOL for LST via Jupiter</p>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <p className="text-yellow-400 text-xs font-bold">&lt;0.1% price impact</p>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                    </>
+                    {/* Method detail card */}
+                    <div className={`rounded-xl px-4 py-3.5 border border-white/10 flex items-center gap-3 ${'bg-white/8'}`}>
+                      {stakingMethod === 'direct' ? (
+                        <>
+                          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                              <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-bold text-sm leading-tight">Direct deposit</p>
+                            <p className="text-white text-xs mt-0.5">{stakeMode === 'stake' ? 'Mint the LST via its stake pool' : 'Redeem via the stake pool directly'}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-green-400 text-xs font-bold leading-tight">0% Deposit Fee</p>
+                            <p className="text-green-400 text-xs font-bold leading-tight">0% Price Impact</p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
+                            <img src="https://jup.ag/favicon.ico" alt="Jupiter" className="w-8 h-8 object-cover" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-bold text-sm leading-tight">Via Jupiter</p>
+                            <p className="text-white text-xs mt-0.5">{stakeMode === 'stake' ? 'Swap SOL for LST via Jupiter' : 'Swap LST for SOL via Jupiter'}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-yellow-400 text-xs font-bold">&lt;0.1% price impact</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  )}
 
                   {/* Stake button */}
                   <button
