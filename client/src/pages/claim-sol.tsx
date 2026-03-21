@@ -16,7 +16,6 @@ import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, BookOpen, HelpCircle } from "lucide-react";
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
-import { FaSackDollar } from 'react-icons/fa6';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -3775,7 +3774,7 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <FaSackDollar className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 shrink-0 text-white" /> Staking
+                  <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 shrink-0 rounded-full" /> Staking
                 </Button>
               </div>
             </div>
