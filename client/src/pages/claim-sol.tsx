@@ -3774,7 +3774,10 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-base md:text-xl">💰</span> Staking
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 shrink-0" fill="currentColor">
+                    <path d="M10.5 5.5h3C13.5 4.67 12.83 4 12 4s-1.5.67-1.5 1.5z"/>
+                    <path d="M12 6.5C8.41 6.5 5.5 9.41 5.5 13S8.41 19.5 12 19.5 18.5 16.59 18.5 13 15.59 6.5 12 6.5zm.75 9.66V17h-1.5v-.85c-.97-.22-1.75-.97-1.75-2.15h1.5c0 .57.46.88 1 .88.58 0 1-.34 1-1 0-.58-.3-.9-1.1-1.13-1.3-.37-2.3-1.06-2.3-2.37 0-1.04.79-1.9 1.9-2.12v-.86h1.5v.88c1.05.26 1.75 1.1 1.75 2.1H13.25c0-.57-.42-.88-1-.88-.52 0-.88.28-.88.75 0 .45.26.76 1.15 1.01 1.4.41 2.23 1.1 2.23 2.5 0 1.16-.84 2.02-2 2.24z"/>
+                  </svg> Staking
                 </Button>
               </div>
             </div>
