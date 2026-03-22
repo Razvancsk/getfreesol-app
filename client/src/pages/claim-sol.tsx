@@ -6994,19 +6994,19 @@ export default function SolRefund() {
               <div className="grid grid-cols-2 md:flex md:flex-row md:items-center md:justify-center gap-6 md:gap-0 md:divide-x md:divide-white/10">
                 <a href="https://sanctum.so" target="_blank" rel="noopener noreferrer"
                    className="flex items-center justify-center md:px-10 group">
-                  <img src="/sanctum-logo.png" alt="Sanctum" className="h-8 object-contain hover:opacity-80 transition-opacity" style={{ mixBlendMode: 'lighten' }} />
+                  <img src="/sanctum-logo.png" alt="Sanctum" className="h-12 object-contain hover:opacity-80 transition-opacity" style={{ mixBlendMode: 'lighten' }} />
                 </a>
                 <a href="https://phantom.com/apps/get-free-sol" target="_blank" rel="noopener noreferrer"
                    className="flex items-center justify-center md:px-10 group">
-                  <img src="/phantom-real-logo.png" alt="Phantom" className="h-8 object-contain hover:opacity-80 transition-opacity" />
+                  <img src="/phantom-real-logo.png" alt="Phantom" className="h-12 object-contain hover:opacity-80 transition-opacity" />
                 </a>
                 <a href="https://www.okx.com/web3" target="_blank" rel="noopener noreferrer"
                    className="flex items-center justify-center md:px-10 group">
-                  <img src="/okx-wallet-logo.png" alt="OKX Wallet" className="h-8 object-contain hover:opacity-80 transition-opacity" />
+                  <img src="/okx-wallet-logo.png" alt="OKX Wallet" className="h-12 object-contain hover:opacity-80 transition-opacity" />
                 </a>
                 <a href="https://web3.bitget.com" target="_blank" rel="noopener noreferrer"
                    className="flex items-center justify-center md:px-10 group">
-                  <img src="/bitget-wallet-logo.png" alt="Bitget Wallet" className="h-8 object-contain hover:opacity-80 transition-opacity" />
+                  <img src="/bitget-wallet-logo.png" alt="Bitget Wallet" className="h-12 object-contain hover:opacity-80 transition-opacity" />
                 </a>
               </div>
             </div>
