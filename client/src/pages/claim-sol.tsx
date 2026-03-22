@@ -6996,7 +6996,7 @@ export default function SolRefund() {
                 Partners
               </p>
               <div className="grid grid-cols-2 md:flex md:flex-row md:items-center md:justify-center gap-6 md:gap-0 md:divide-x md:divide-white/10">
-                <a href="https://sanctum.so" target="_blank" rel="noopener noreferrer"
+                <a href="https://app.sanctum.so/explore/GSOL" target="_blank" rel="noopener noreferrer"
                    className="flex items-center justify-center md:px-10 group">
                   <img src="/sanctum-logo.png" alt="Sanctum" className="h-12 object-contain hover:opacity-80 transition-opacity" style={{ mixBlendMode: 'lighten' }} />
                 </a>
