@@ -3697,9 +3697,10 @@ export default function SolRefund() {
           {(activeTab === 'reclaim' || activeTab === 'burnTokens') && (
             <div className="flex items-center justify-center">
               <img
-                src="/fee-shield-banner.png"
+                src="/fee-shield-banner.png?v=2"
                 alt="Stake 1+ GSOL — Pay 0% Fees"
-                className="w-full rounded-xl"
+                className="w-full rounded-xl cursor-pointer"
+                onClick={() => setActiveTab('staking')}
               />
             </div>
           )}
