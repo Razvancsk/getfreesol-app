@@ -4891,7 +4891,7 @@ export default function SolRefund() {
                 </div>
               )}
 
-              <div className={`rounded-2xl p-6 md:p-10 border ${'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
+              <div className={`rounded-2xl p-6 md:p-10 border ${'bg-gradient-to-br from-blue-900/60 to-purple-900/70 border-blue-500/40'}`}>
                 {/* Powered by Sanctum */}
                 <div className="flex items-center justify-center mb-6">
                   <a href="https://app.sanctum.so/explore/GSOL" target="_blank" rel="noopener noreferrer"
@@ -5127,7 +5127,7 @@ export default function SolRefund() {
               </div>
 
               {/* GSOL Info Section — separate card */}
-              <div className="rounded-2xl p-6 md:p-10 border bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20">
+              <div className="rounded-2xl p-6 md:p-10 border bg-gradient-to-br from-blue-900/60 to-purple-900/70 border-blue-500/40">
                 <div className="space-y-4">
                   <h3 className="text-white font-black text-xl">What is GSOL?</h3>
                   <p className="text-white text-sm leading-relaxed">
