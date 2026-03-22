@@ -4892,7 +4892,7 @@ export default function SolRefund() {
               )}
 
               <div className={`rounded-2xl p-6 md:p-10 border ${'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center justify-center gap-3 mb-4">
                   <div>
                     <a href="https://app.sanctum.so/explore/GSOL" target="_blank" rel="noopener noreferrer"
                        className="inline-flex items-center gap-0 mt-1 hover:opacity-80 transition-opacity">
@@ -4906,9 +4906,9 @@ export default function SolRefund() {
                 {/* GSOL Staking Module */}
                 <div className="mb-6 max-w-2xl mx-auto">
                   {/* Header */}
-                  <div className="flex items-center gap-4 mb-6">
+                  <div className="flex items-center justify-center gap-4 mb-6">
                     <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-14 h-14 rounded-full object-cover" />
-                    <div>
+                    <div className="text-center">
                       <h3 className="text-white font-black text-2xl">GSOL</h3>
                       <p className="text-white text-sm">GetFreeSol Liquid Staking Token</p>
                     </div>
