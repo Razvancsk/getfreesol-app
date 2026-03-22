@@ -3786,7 +3786,7 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 shrink-0 rounded-full" /> Staking
+                  <Wallet className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 shrink-0" /> Staking
                 </Button>
               </div>
             </div>
