@@ -4892,16 +4892,16 @@ export default function SolRefund() {
               )}
 
               <div className={`rounded-2xl p-6 md:p-10 border ${'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
-                <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-4">
                   <div>
                     <h2 className="text-2xl md:text-3xl font-black text-white">SOL Staking</h2>
-                    <p className="text-white text-sm">Earn yield on your SOL</p>
+                    <p className="text-white/70 text-sm">Earn yield on your SOL</p>
+                    <a href="https://sanctum.so" target="_blank" rel="noopener noreferrer"
+                       className="inline-flex items-center gap-1.5 mt-1 hover:opacity-80 transition-opacity">
+                      <span className="text-white/40 text-xs">Powered by</span>
+                      <img src="/sanctum-logo.png" alt="Sanctum" className="h-5 object-contain" style={{ mixBlendMode: 'lighten' }} />
+                    </a>
                   </div>
-                  <a href="https://sanctum.so" target="_blank" rel="noopener noreferrer"
-                     className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 hover:bg-white/10 transition-all shrink-0 mt-1">
-                    <span className="text-white/50 text-[10px] uppercase tracking-wider whitespace-nowrap">Powered by</span>
-                    <img src="/sanctum-logo.png" alt="Sanctum" className="h-4 object-contain" style={{ mixBlendMode: 'lighten' }} />
-                  </a>
                 </div>
 
 
