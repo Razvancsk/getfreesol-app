@@ -3699,7 +3699,7 @@ export default function SolRefund() {
               <img
                 src="/fee-shield-banner.png?v=2"
                 alt="Stake 1+ GSOL — Pay 0% Fees"
-                className="w-full rounded-xl cursor-pointer"
+                className="w-full max-w-xs rounded-xl cursor-pointer"
                 onClick={() => setActiveTab('staking')}
               />
             </div>
