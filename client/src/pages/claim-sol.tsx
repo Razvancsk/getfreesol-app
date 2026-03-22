@@ -3866,6 +3866,21 @@ export default function SolRefund() {
                 <>
                   {scanResult.emptyAccounts > 0 ? (
                 <div className="space-y-6">
+                  {gsolBalance >= 1 && (
+                    <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-2.5">
+                      <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-6 h-6 rounded-full shrink-0" />
+                      <div>
+                        <p className="text-green-300 font-semibold text-sm">GSOL Holder — 0% Fee!</p>
+                        <p className="text-green-200/70 text-xs">You pay no platform fee — holding 1+ GSOL gives you free claims &amp; burns</p>
+                      </div>
+                    </div>
+                  )}
+                  {!gsolBalance || gsolBalance < 1 ? (
+                    <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 rounded-xl px-4 py-2.5">
+                      <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 rounded-full shrink-0 opacity-60" />
+                      <p className="text-purple-200/70 text-xs">Hold <span className="text-purple-300 font-semibold">1+ GSOL</span> to get <span className="text-green-400 font-semibold">0% fees</span> on all claims &amp; burns</p>
+                    </div>
+                  ) : null}
                   {isGfsHolder && (
                     <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-2.5">
                       <span className="text-yellow-300 text-lg">👑</span>
@@ -7066,7 +7081,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">20% fee supports platform development{isGfsHolder && <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-1.5 py-0.5 rounded-full font-semibold">50% OFF — GFS Holder</span>}</span>
+                  <span className="text-sm">20% fee supports platform development{gsolBalance >= 1 && <span className="ml-2 text-xs bg-green-500/20 text-green-300 border border-green-500/30 px-1.5 py-0.5 rounded-full font-semibold">0% — GSOL Holder</span>}{isGfsHolder && !(gsolBalance >= 1) && <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-1.5 py-0.5 rounded-full font-semibold">50% OFF — GFS Holder</span>}</span>
                 </div>
               </div>
             </div>
