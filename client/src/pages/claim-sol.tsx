@@ -3693,6 +3693,23 @@ export default function SolRefund() {
             </div>
           )}
 
+          {/* GSOL 0% fee banner — always visible on reclaim/burn tabs */}
+          {(activeTab === 'reclaim' || activeTab === 'burnTokens') && (
+            <div className="flex items-center justify-center">
+              {gsolBalance >= 1 ? (
+                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-2">
+                  <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 rounded-full shrink-0" />
+                  <span className="text-green-300 font-semibold text-sm">0% Fee Active — GSOL Holder</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-purple-900/40 border border-purple-500/20 rounded-xl px-4 py-2">
+                  <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 rounded-full shrink-0 opacity-60" />
+                  <span className="text-purple-200/70 text-sm">Hold <span className="text-purple-300 font-semibold">1+ GSOL</span> → <span className="text-green-400 font-semibold">0% fees</span> on claims &amp; burns</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Center Navigation Buttons - only when connected */}
           {isConnected && activeTab !== 'docs' && (
             <div className="py-3 -mx-3 md:mx-0 md:px-2">
