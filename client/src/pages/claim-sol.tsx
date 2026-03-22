@@ -4898,7 +4898,7 @@ export default function SolRefund() {
                     <a href="https://app.sanctum.so/explore/GSOL" target="_blank" rel="noopener noreferrer"
                        className="inline-flex items-center gap-0 mt-1 hover:opacity-80 transition-opacity">
                       <span className="text-white font-bold text-base">Powered by</span>
-                      <img src="/sanctum-logo-cropped.png" alt="Sanctum" className="h-6 object-contain ml-1" style={{ mixBlendMode: 'lighten' }} />
+                      <img src="/sanctum-logo-cropped.png" alt="Sanctum" className="h-8 object-contain ml-1" style={{ mixBlendMode: 'lighten' }} />
                     </a>
                   </div>
                 </div>
