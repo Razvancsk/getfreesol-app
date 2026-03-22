@@ -3699,7 +3699,7 @@ export default function SolRefund() {
               <img
                 src="/fee-shield-banner.png"
                 alt="Stake 1+ GSOL — Pay 0% Fees"
-                className="w-48 rounded-xl"
+                className="w-full max-w-sm h-32 object-cover rounded-xl"
               />
             </div>
           )}
