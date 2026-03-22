@@ -6995,7 +6995,7 @@ export default function SolRefund() {
                 <a href="https://sanctum.so" target="_blank" rel="noopener noreferrer"
                    className="flex flex-col items-center gap-2 md:px-10 group">
                   <p className="text-white text-[10px] uppercase tracking-wider">Listed on</p>
-                  <img src="/sanctum-logo.png" alt="Sanctum" className="h-10 object-contain hover:opacity-80 transition-opacity" style={{ mixBlendMode: 'lighten' }} />
+                  <img src="/sanctum-logo.png" alt="Sanctum" className="h-14 object-contain hover:opacity-80 transition-opacity" style={{ mixBlendMode: 'lighten' }} />
                 </a>
                 <a href="https://phantom.com/apps/get-free-sol" target="_blank" rel="noopener noreferrer"
                    className="flex flex-col items-center gap-2 md:px-10 group">
