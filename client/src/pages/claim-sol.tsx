@@ -4897,9 +4897,9 @@ export default function SolRefund() {
                     <h2 className="text-2xl md:text-3xl font-black text-white">SOL Staking</h2>
                     <p className="text-white/70 text-sm">Earn yield on your SOL</p>
                     <a href="https://sanctum.so" target="_blank" rel="noopener noreferrer"
-                       className="inline-flex items-center gap-1.5 mt-1 hover:opacity-80 transition-opacity">
+                       className="inline-flex items-center gap-0 mt-1 hover:opacity-80 transition-opacity">
                       <span className="text-white font-bold text-base">Powered by</span>
-                      <img src="/sanctum-logo.png" alt="Sanctum" className="w-32 object-contain" style={{ mixBlendMode: 'lighten' }} />
+                      <img src="/sanctum-logo.png" alt="Sanctum" className="w-32 object-contain -ml-4" style={{ mixBlendMode: 'lighten' }} />
                     </a>
                   </div>
                 </div>
