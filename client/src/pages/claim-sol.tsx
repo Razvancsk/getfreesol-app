@@ -4897,7 +4897,7 @@ export default function SolRefund() {
                     <h2 className="text-2xl md:text-3xl font-black text-white">SOL Staking</h2>
                     <a href="https://app.sanctum.so/explore/GSOL" target="_blank" rel="noopener noreferrer"
                        className="inline-flex items-center gap-0 mt-1 hover:opacity-80 transition-opacity">
-                      <span className="text-white font-bold text-base">Powered by</span>
+                      <span className="text-white font-bold text-xl">Powered by</span>
                       <img src="/sanctum-logo-cropped.png" alt="Sanctum" className="h-8 object-contain ml-1" style={{ mixBlendMode: 'lighten' }} />
                     </a>
                   </div>
