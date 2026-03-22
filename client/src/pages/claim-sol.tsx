@@ -3704,7 +3704,7 @@ export default function SolRefund() {
               ) : (
                 <div className="flex items-center gap-2 bg-purple-900/40 border border-purple-500/20 rounded-xl px-4 py-2">
                   <img src="/gsol-banner-logo.png" alt="GSOL" className="w-5 h-5 rounded-full shrink-0 opacity-80" />
-                  <span className="text-white text-sm">Hold <span className="font-semibold">1+ GSOL</span> → <span className="text-green-400 font-semibold">0% fees</span> on claims &amp; burns</span>
+                  <span className="text-white text-sm">Stake <span className="font-semibold">1+ GSOL</span> to unlock <span className="text-green-400 font-semibold">0% fees</span> on CLAIMS &amp; BURNS</span>
                 </div>
               )}
             </div>
