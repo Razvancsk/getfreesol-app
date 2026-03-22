@@ -4891,15 +4891,15 @@ export default function SolRefund() {
                 </div>
               )}
 
-              <div className="rounded-2xl p-6 md:p-8 border bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20 flex items-center justify-center">
-                <a href="https://app.sanctum.so/explore/GSOL" target="_blank" rel="noopener noreferrer"
-                   className="inline-flex items-center gap-0 hover:opacity-80 transition-opacity">
-                  <span className="text-white font-bold text-xl">Powered by</span>
-                  <img src="/sanctum-logo-cropped.png" alt="Sanctum" className="h-8 object-contain ml-1" style={{ mixBlendMode: 'lighten' }} />
-                </a>
-              </div>
-
               <div className={`rounded-2xl p-6 md:p-10 border ${'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
+                {/* Powered by Sanctum */}
+                <div className="flex items-center justify-center mb-6">
+                  <a href="https://app.sanctum.so/explore/GSOL" target="_blank" rel="noopener noreferrer"
+                     className="inline-flex items-center gap-0 hover:opacity-80 transition-opacity">
+                    <span className="text-white font-bold text-xl">Powered by</span>
+                    <img src="/sanctum-logo-cropped.png" alt="Sanctum" className="h-8 object-contain ml-1" style={{ mixBlendMode: 'lighten' }} />
+                  </a>
+                </div>
                 {/* GSOL Staking Module */}
                 <div className="mb-6 max-w-2xl mx-auto">
                   {/* Header */}
