@@ -3698,16 +3698,12 @@ export default function SolRefund() {
             <div className="flex items-center justify-center">
               {gsolBalance >= 1 ? (
                 <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-2">
-                  <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-black">
-                    <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-full h-full object-cover" />
-                  </div>
+                  <span className="w-2 h-2 rounded-full bg-green-400 shrink-0 inline-block" />
                   <span className="text-green-300 font-semibold text-sm">0% Fee Active — GSOL Holder</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 bg-purple-900/40 border border-purple-500/20 rounded-xl px-4 py-2">
-                  <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-black opacity-70">
-                    <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-full h-full object-cover" />
-                  </div>
+                  <span className="w-2 h-2 rounded-full bg-purple-400/60 shrink-0 inline-block" />
                   <span className="text-purple-300 text-sm">Hold <span className="font-semibold">1+ GSOL</span> → <span className="text-green-400 font-semibold">0% fees</span> on claims &amp; burns</span>
                 </div>
               )}
