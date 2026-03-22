@@ -4895,7 +4895,6 @@ export default function SolRefund() {
                 <div className="flex items-center gap-3 mb-4">
                   <div>
                     <h2 className="text-2xl md:text-3xl font-black text-white">SOL Staking</h2>
-                    <p className="text-white/70 text-sm">Earn yield on your SOL</p>
                     <a href="https://sanctum.so" target="_blank" rel="noopener noreferrer"
                        className="inline-flex items-center gap-0 mt-1 hover:opacity-80 transition-opacity">
                       <span className="text-white font-bold text-base">Powered by</span>
