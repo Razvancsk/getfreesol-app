@@ -255,6 +255,24 @@ async function getWalletFeeRates(walletAddress: string): Promise<{ feePercent: n
   return { feePercent: baseFee, referralPercent: 50, isTop10: false, gfsHolder };
 }
 
+// Helper: Check if wallet holds >= 1 GSOL (grants 0% fee on claim & burn)
+const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
+async function isGsolHolder(walletAddress: string, connection: any): Promise<boolean> {
+  try {
+    const { getAssociatedTokenAddress } = await import('@solana/spl-token');
+    const walletPubkey = new PublicKey(walletAddress);
+    const gsolMint = new PublicKey(GSOL_MINT);
+    const gsolAta = await getAssociatedTokenAddress(gsolMint, walletPubkey);
+    const info = await connection.getTokenAccountBalance(gsolAta);
+    const amount = info?.value?.uiAmount ?? 0;
+    const holds = amount >= 1;
+    if (holds) console.log(`[GSOL Holder] ${walletAddress.slice(0,8)}… holds ${amount} GSOL → 0% fee`);
+    return holds;
+  } catch {
+    return false;
+  }
+}
+
 // Helper: Get referrer commission rate based on wallet status
 async function getReferrerCommissionRate(referrerWalletAddress: string): Promise<number> {
   try {
@@ -2174,8 +2192,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Fee: 20% of recovered SOL (matching claim page)
-      const feePercentage = 0.20;
+      // Fee: 20% of recovered SOL (0% for GSOL holders)
+      const bufferConnection = getHeliusConnection();
+      const gsolHolderBuffer = await isGsolHolder(walletAddress, bufferConnection);
+      const feePercentage = gsolHolderBuffer ? 0 : 0.20;
       const totalFeeLamports = Math.floor(totalLamports * feePercentage);
       
       // Split: 50% platform, 50% referral (if exists)
@@ -2521,7 +2541,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate fees in lamports based on ACTUAL recovered amount (not original total)
       // All users: 20% platform fee (Top 10 get 70% referral commission, regular users get 50%)
       const walletFeeRates = await getWalletFeeRates(walletAddress);
-      const PLATFORM_FEE_PERCENTAGE = feePercentage || donationPercentage || walletFeeRates.feePercent; // Partner's fee or flat 20%
+      const gsolHolderClaim = await isGsolHolder(walletAddress, connection);
+      const PLATFORM_FEE_PERCENTAGE = gsolHolderClaim ? 0 : (feePercentage || donationPercentage || walletFeeRates.feePercent); // 0% for GSOL holders
       const REFERRAL_SPLIT_PERCENT = walletFeeRates.referralPercent; // 50% to referrer (70% for top 10)
       
       if (walletFeeRates.isTop10) {
@@ -3726,7 +3747,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Calculate fee rates once (Top 10 get 70% referral commission)
       const tokenBurnFeeRates = await getWalletFeeRates(walletAddress);
-      const donationFactor = tokenBurnFeeRates.feePercent / 100; // 20% fee for token burning
+      const gsolHolderBurn = await isGsolHolder(walletAddress, connection);
+      const donationFactor = gsolHolderBurn ? 0 : tokenBurnFeeRates.feePercent / 100; // 0% for GSOL holders
       const REFERRAL_SPLIT_PERCENT = tokenBurnFeeRates.referralPercent; // 50% (70% for top 10)
       console.log(`TOKEN BURN - Fee rates: ${tokenBurnFeeRates.feePercent}% fee, ${REFERRAL_SPLIT_PERCENT}% referral${tokenBurnFeeRates.isTop10 ? ' (TOP 10)' : ''}`);
 
