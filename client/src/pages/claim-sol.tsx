@@ -5124,8 +5124,11 @@ export default function SolRefund() {
                   </button>
                 </div>
 
-                {/* GSOL Info Section */}
-                <div className="mt-6 space-y-4">
+              </div>
+
+              {/* GSOL Info Section — separate card */}
+              <div className="rounded-2xl p-6 md:p-10 border bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20">
+                <div className="space-y-4">
                   <h3 className="text-white font-black text-xl">What is GSOL?</h3>
                   <p className="text-white text-sm leading-relaxed">
                     GSOL is the native liquid staking token of the GetFreeSol platform. When you stake SOL, you receive GSOL in return — a token that automatically grows in value as staking rewards accumulate. You can hold, trade, or use GSOL across Solana DeFi while your SOL keeps earning.
