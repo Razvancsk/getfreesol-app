@@ -3694,17 +3694,6 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* GSOL 0% fee banner — always visible on reclaim/burn tabs */}
-          {(activeTab === 'reclaim' || activeTab === 'burnTokens') && (
-            <div className="flex items-center justify-center">
-              <img
-                src="/fee-shield-banner.png?v=3"
-                alt="Stake 1+ GSOL — Pay 0% Fees"
-                className="w-full max-w-md rounded-xl cursor-pointer"
-                onClick={() => setActiveTab('staking')}
-              />
-            </div>
-          )}
 
           {/* Center Navigation Buttons - only when connected */}
           {isConnected && activeTab !== 'docs' && (
