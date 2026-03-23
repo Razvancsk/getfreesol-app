@@ -8322,7 +8322,10 @@ Claimer: ${walletAddress}`;
   // Generate share card image for Twitter/X sharing
   app.get("/api/share/card", async (req, res) => {
     try {
-      const solAmount = (req.query.sol as string) || '0.0000';
+      const MAX_SOL = 10;
+      const rawSol = parseFloat((req.query.sol as string) || '0');
+      const clampedSol = Math.min(Math.max(rawSol, 0), MAX_SOL);
+      const solAmount = clampedSol.toFixed(4);
       const itemCount = parseInt(req.query.count as string) || 1;
       const claimType = (req.query.type as 'accounts' | 'tokens' | 'nfts') || 'accounts';
       
@@ -8347,7 +8350,9 @@ Claimer: ${walletAddress}`;
         return res.status(400).json({ error: 'solAmount is required' });
       }
       
-      const formattedSol = parseFloat(solAmount).toFixed(4);
+      const MAX_SOL = 10;
+      const clampedSol = Math.min(Math.max(parseFloat(solAmount), 0), MAX_SOL);
+      const formattedSol = clampedSol.toFixed(4);
       const count = itemCount || 1;
       const type = claimType || 'accounts';
       
