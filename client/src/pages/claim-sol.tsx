@@ -49,7 +49,7 @@ import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import { CoinFlipGame } from '@/components/CoinFlipGame';
 import logoImage from '@assets/image_1757882056840.png';
-import greenCandleBanner from '@assets/image_1774228860811.png';
+import greenCandleBanner from '@assets/resizeplus_5cb60dea-180d-454a-86fd-c1035242cd90_(1)_1774229059979.png';
 import tokenLogo from '@assets/image_1757882056840_1772656509435.png';
 import gfsBanner from '@assets/image_1772667495108.png';
 import ApiDocs from './api-docs';
