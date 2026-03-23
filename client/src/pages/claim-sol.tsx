@@ -49,7 +49,7 @@ import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import { CoinFlipGame } from '@/components/CoinFlipGame';
 import logoImage from '@assets/image_1757882056840.png';
-import solPumpBanner from '@assets/referral_1772323564346.png';
+import greenCandleBanner from '@assets/image_1774228278112.png';
 import tokenLogo from '@assets/image_1757882056840_1772656509435.png';
 import gfsBanner from '@assets/image_1772667495108.png';
 import ApiDocs from './api-docs';
@@ -4004,15 +4004,15 @@ export default function SolRefund() {
 
               {/* SPONSOR CARD */}
               <a
-                href="https://solpump.io/a/GETFREESOL"
+                href="https://greencandle.gg/partner?ref=7B976Y"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group block mt-3 hover:scale-[1.01] transform transition-all duration-200"
               >
                 <div className="rounded-xl overflow-hidden relative">
                   <img
-                    src={solPumpBanner}
-                    alt="SolPump — Open Daily Cases"
+                    src={greenCandleBanner}
+                    alt="GreenCandle.gg — Unlock Free SOL"
                     className="w-full h-auto object-cover"
                   />
                   <div className="absolute top-0 right-0 bg-black/60 text-white text-[9px] md:text-sm font-semibold tracking-wider uppercase px-1.5 md:px-3 py-px md:py-1 rounded-bl">
