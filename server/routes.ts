@@ -8338,8 +8338,9 @@ Claimer: ${walletAddress}`;
     }
   });
   
-  // Post user claim to X with image - posts from platform account
+  // Post user claim to X with image - DISABLED
   app.post("/api/share/tweet", async (req, res) => {
+    return res.status(403).json({ error: 'Posting to X is currently disabled' });
     try {
       const { txSignature, walletAddress, referralCode } = req.body;
       
