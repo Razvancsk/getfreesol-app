@@ -4004,7 +4004,7 @@ export default function SolRefund() {
 
               {/* SPONSOR CARD */}
               <a
-                href="https://greencandle.gg/partner?ref=7B976Y"
+                href="https://greencandle.gg/?ref=7B976Y"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group block mt-3 hover:scale-[1.01] transform transition-all duration-200"
