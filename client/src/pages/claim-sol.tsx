@@ -4013,7 +4013,8 @@ export default function SolRefund() {
                   <img
                     src={greenCandleBanner}
                     alt="GreenCandle.gg — Unlock Free SOL"
-                    className="w-full h-auto object-cover"
+                    className="w-full object-cover"
+                    style={{ maxHeight: '120px' }}
                   />
                   <div className="absolute top-0 right-0 bg-black/60 text-white text-[9px] md:text-sm font-semibold tracking-wider uppercase px-1.5 md:px-3 py-px md:py-1 rounded-bl">
                     SPONSORED
