@@ -5118,33 +5118,33 @@ export default function SolRefund() {
 
               {/* GSOL FAQ Accordion */}
               <div className="space-y-3">
-                {[
+                {([
                   {
-                    icon: '❓',
+                    Icon: HelpCircle,
                     q: 'What is liquid staking?',
                     a: 'On Solana, liquid staking means delegating your SOL to a validator and receiving a liquid staking token (LST) in return. This token represents your staked SOL and accrues staking rewards over time. Unlike regular staking, it stays flexible. You can use it in DeFi, trade it, or redeem it back for SOL whenever you like.',
                   },
                   {
-                    icon: '🔄',
+                    Icon: RefreshCw,
                     q: 'Why does GSOL offer more than other LSTs?',
-                    a: 'With GSOL you earn competitive staking yield automatically — no claiming, no lock-up. The exchange rate of GSOL vs SOL increases every epoch as rewards accumulate, so simply holding GSOL means you\'re earning. You can also use GSOL freely across DeFi while your rewards keep compounding.',
+                    a: "With GSOL you earn competitive staking yield automatically — no claiming, no lock-up. The exchange rate of GSOL vs SOL increases every epoch as rewards accumulate, so simply holding GSOL means you're earning. You can also use GSOL freely across DeFi while your rewards keep compounding.",
                   },
                   {
-                    icon: '❓',
+                    Icon: HelpCircle,
                     q: 'How do I receive staking rewards?',
-                    a: 'Rewards are automatically reflected in the token\'s value. Instead of separate payouts, the LST itself appreciates. For example, 1 GSOL may grow from 1 SOL to 1.05 SOL as rewards accumulate. This means every holder earns yield passively, no matter where the LST is stored. To realize your rewards, you can simply unstake and redeem back into SOL anytime.',
+                    a: "Rewards are automatically reflected in the token's value. Instead of separate payouts, the LST itself appreciates. For example, 1 GSOL may grow from 1 SOL to 1.05 SOL as rewards accumulate. This means every holder earns yield passively, no matter where the LST is stored. To realize your rewards, you can simply unstake and redeem back into SOL anytime.",
                   },
                   {
-                    icon: '🛡️',
+                    Icon: Shield,
                     q: 'Are LSTs secure?',
                     a: 'Yes. LSTs on Solana are built on a standard, battle-tested contract that has been audited multiple times. This same code has safely secured billions of dollars in value for years, making it one of the most trusted pieces of infrastructure in the Solana ecosystem.',
                   },
-                ].map(({ icon, q, a }) => (
-                  <details key={q} className="group rounded-2xl border border-purple-500/30 bg-purple-900/20 overflow-hidden">
+                ] as { Icon: React.ElementType; q: string; a: string }[]).map(({ Icon, q, a }) => (
+                  <details key={q} className="group rounded-2xl border border-purple-500/40 bg-purple-800/30 overflow-hidden">
                     <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none select-none">
                       <div className="flex items-center gap-3">
-                        <span className="text-lg">{icon}</span>
-                        <span className="text-white font-bold text-sm md:text-base">{q}</span>
+                        <Icon className="w-5 h-5 text-purple-300 shrink-0" />
+                        <span className="text-white font-semibold text-sm md:text-base">{q}</span>
                       </div>
                       <ChevronDown className="w-5 h-5 text-purple-300 shrink-0 transition-transform duration-200 group-open:rotate-180" />
                     </summary>
