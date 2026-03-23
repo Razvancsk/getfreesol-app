@@ -287,6 +287,34 @@ async function getReferrerCommissionRate(referrerWalletAddress: string): Promise
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Platform wallet auth middleware — must be defined first so all routes below can use it
+  const requirePlatformWallet = (req: any, res: any, next: any) => {
+    const { walletAddress, signature, message } = req.body;
+    if (!walletAddress || !signature || !message) {
+      return res.status(401).json({ error: 'Missing authentication credentials' });
+    }
+    if (walletAddress !== PLATFORM_WALLET) {
+      return res.status(403).json({ error: 'Access denied: Platform wallet required' });
+    }
+    const isValid = verifySignature(message, signature, walletAddress);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+    try {
+      const messageData = JSON.parse(message);
+      const timestamp = messageData.timestamp;
+      if (!timestamp) return res.status(401).json({ error: 'Message must include timestamp' });
+      const now = Date.now();
+      const messageTime = new Date(timestamp).getTime();
+      const fiveMinutes = 5 * 60 * 1000;
+      if (now - messageTime > fiveMinutes) return res.status(401).json({ error: 'Signature expired (>5 minutes old)' });
+      if (messageTime > now + 60000) return res.status(401).json({ error: 'Invalid timestamp (future)' });
+    } catch {
+      return res.status(401).json({ error: 'Invalid message format (must be JSON with timestamp)' });
+    }
+    next();
+  };
+
   // Token search endpoint - uses Jupiter Ultra Search API
   app.get("/api/tokens/search", async (req, res) => {
     try {
@@ -2832,8 +2860,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Post batch-claim total to X (Twitter) — called after all batches complete
-  app.post("/api/sol-refund/post-batch-to-x", async (req, res) => {
+  // Post batch-claim total to X (Twitter) — platform wallet only
+  app.post("/api/sol-refund/post-batch-to-x", requirePlatformWallet, async (req, res) => {
     try {
       const { walletAddress, totalNetAmount, totalAccountsClosed, signature, transactionType } = req.body;
       if (!walletAddress || !totalNetAmount || !signature) {
@@ -7732,49 +7760,6 @@ Claimer: ${walletAddress}`;
   const PLATFORM_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
   
   // Middleware to verify platform wallet signature (POST requests)
-  const requirePlatformWallet = (req: any, res: any, next: any) => {
-    const { walletAddress, signature, message } = req.body;
-    
-    if (!walletAddress || !signature || !message) {
-      return res.status(401).json({ error: 'Missing authentication credentials' });
-    }
-    
-    if (walletAddress !== PLATFORM_WALLET) {
-      return res.status(403).json({ error: 'Access denied: Platform wallet required' });
-    }
-    
-    // Verify signature
-    const isValid = verifySignature(message, signature, walletAddress);
-    if (!isValid) {
-      return res.status(401).json({ error: 'Invalid signature' });
-    }
-    
-    // Prevent replay attacks: message must include timestamp within last 5 minutes
-    try {
-      const messageData = JSON.parse(message);
-      const timestamp = messageData.timestamp;
-      
-      if (!timestamp) {
-        return res.status(401).json({ error: 'Message must include timestamp' });
-      }
-      
-      const now = Date.now();
-      const messageTime = new Date(timestamp).getTime();
-      const fiveMinutes = 5 * 60 * 1000;
-      
-      if (now - messageTime > fiveMinutes) {
-        return res.status(401).json({ error: 'Signature expired (>5 minutes old)' });
-      }
-      
-      if (messageTime > now + 60000) { // Allow 1 minute clock skew
-        return res.status(401).json({ error: 'Invalid timestamp (future)' });
-      }
-    } catch (error) {
-      return res.status(401).json({ error: 'Invalid message format (must be JSON with timestamp)' });
-    }
-    
-    next();
-  };
   
   // Helper to verify platform wallet for GET requests
   const verifyPlatformWalletQuery = (req: any, res: any): boolean => {
@@ -8234,7 +8219,7 @@ Claimer: ${walletAddress}`;
   });
   
   // Quick post endpoint (simpler auth - for admin dashboard)
-  app.post("/api/x-bot/quick-post", async (req, res) => {
+  app.post("/api/x-bot/quick-post", requirePlatformWallet, async (req, res) => {
     try {
       const { content, includeImage, imageType, dailyReportStyle } = req.body;
       
@@ -8648,7 +8633,7 @@ Claimer: ${walletAddress}`;
   });
   
   // Generate AI meme image for funny posts
-  app.post("/api/x-bot/generate-ai-meme", async (req, res) => {
+  app.post("/api/x-bot/generate-ai-meme", requirePlatformWallet, async (req, res) => {
     try {
       const { generateMemeFunnyImage } = await import('./aiMemeGenerator');
       
@@ -8668,7 +8653,7 @@ Claimer: ${walletAddress}`;
   });
   
   // Post tweet with AI-generated meme image
-  app.post("/api/x-bot/post-ai-meme", async (req, res) => {
+  app.post("/api/x-bot/post-ai-meme", requirePlatformWallet, async (req, res) => {
     try {
       const { content } = req.body;
       
