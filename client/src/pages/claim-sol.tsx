@@ -3795,7 +3795,7 @@ export default function SolRefund() {
               <div className={`flex items-center gap-2`}>
                 <button
                   onClick={() => setBurnSubTab('tokens')}
-                  className={`px-8 py-2 text-sm font-semibold rounded-md transition-all duration-200 border text-center ${
+                  className={`px-8 py-2 text-base font-semibold rounded-md transition-all duration-200 border text-center ${
                     burnSubTab === 'tokens'
                       ? 'bg-purple-600 text-white border-purple-600'
                       : 'text-white border-purple-500/30 bg-purple-900/40'
@@ -3806,7 +3806,7 @@ export default function SolRefund() {
 
                 <button
                   onClick={() => setBurnSubTab('nft')}
-                  className={`px-8 py-2 text-sm font-semibold rounded-md transition-all duration-200 border text-center ${
+                  className={`px-8 py-2 text-base font-semibold rounded-md transition-all duration-200 border text-center ${
                     burnSubTab === 'nft'
                       ? 'bg-purple-600 text-white border-purple-600'
                       : 'text-white border-purple-500/30 bg-purple-900/40'
