@@ -8322,10 +8322,7 @@ Claimer: ${walletAddress}`;
   // Generate share card image for Twitter/X sharing
   app.get("/api/share/card", async (req, res) => {
     try {
-      const MAX_SOL = 10;
-      const rawSol = parseFloat((req.query.sol as string) || '0');
-      const clampedSol = Math.min(Math.max(rawSol, 0), MAX_SOL);
-      const solAmount = clampedSol.toFixed(4);
+      const solAmount = (req.query.sol as string) || '0.0000';
       const itemCount = parseInt(req.query.count as string) || 1;
       const claimType = (req.query.type as 'accounts' | 'tokens' | 'nfts') || 'accounts';
       
@@ -8344,17 +8341,35 @@ Claimer: ${walletAddress}`;
   // Post user claim to X with image - posts from platform account
   app.post("/api/share/tweet", async (req, res) => {
     try {
-      const { solAmount, itemCount, claimType, walletAddress, referralCode } = req.body;
+      const { txSignature, walletAddress, referralCode } = req.body;
       
-      if (!solAmount) {
-        return res.status(400).json({ error: 'solAmount is required' });
+      if (!txSignature || !walletAddress) {
+        return res.status(400).json({ error: 'txSignature and walletAddress are required' });
       }
-      
-      const MAX_SOL = 10;
-      const clampedSol = Math.min(Math.max(parseFloat(solAmount), 0), MAX_SOL);
-      const formattedSol = clampedSol.toFixed(4);
-      const count = itemCount || 1;
-      const type = claimType || 'accounts';
+
+      // Verify the transaction exists in the ledger and belongs to this wallet
+      const [ledgerRecord] = await db
+        .select()
+        .from(transactionLedger)
+        .where(
+          and(
+            eq(transactionLedger.signature, txSignature),
+            eq(transactionLedger.walletAddress, walletAddress)
+          )
+        )
+        .limit(1);
+
+      if (!ledgerRecord) {
+        return res.status(403).json({ error: 'Transaction not found or does not belong to this wallet' });
+      }
+
+      if (ledgerRecord.postedToX) {
+        return res.status(409).json({ error: 'This transaction has already been shared' });
+      }
+
+      const formattedSol = parseFloat(ledgerRecord.netAmount).toFixed(4);
+      const count = ledgerRecord.itemsProcessed || 1;
+      const type = (ledgerRecord.transactionType === 'token_burn' ? 'tokens' : ledgerRecord.transactionType === 'nft_burn' ? 'nfts' : 'accounts') as 'accounts' | 'tokens' | 'nfts';
       
       // Generate claim card image
       const { generateShareCardStyle2 } = await import('./cardBannerGenerator.js');
@@ -8390,6 +8405,12 @@ Claimer: ${walletAddress}`;
       });
       
       if (result.success) {
+        // Mark transaction as posted to X so it can't be re-posted
+        await db
+          .update(transactionLedger)
+          .set({ postedToX: true, xPostId: result.tweetId || null })
+          .where(eq(transactionLedger.signature, txSignature));
+
         res.json({ 
           success: true, 
           tweetId: result.tweetId,
