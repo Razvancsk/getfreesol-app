@@ -5116,39 +5116,43 @@ export default function SolRefund() {
 
               </div>
 
-              {/* GSOL Info Section — separate card */}
-              <div className="rounded-2xl p-6 md:p-10 border bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20">
-                <div className="space-y-4">
-                  <h3 className="text-white font-black text-xl">What is GSOL?</h3>
-                  <p className="text-white text-sm leading-relaxed">
-                    GSOL is the native liquid staking token of the GetFreeSol platform. When you stake SOL, you receive GSOL in return — a token that automatically grows in value as staking rewards accumulate. You can hold, trade, or use GSOL across Solana DeFi while your SOL keeps earning.
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                    <div className={`rounded-xl p-4 border ${'bg-purple-900/20 border-purple-500/20'}`}>
-                      <div className="text-2xl mb-2">💧</div>
-                      <p className="text-white font-bold mb-1">Liquid</p>
-                      <p className="text-white text-xs">Your staked SOL stays liquid. Sell or use GSOL anytime — no lock-up periods.</p>
+              {/* GSOL FAQ Accordion */}
+              <div className="space-y-3">
+                {[
+                  {
+                    icon: '❓',
+                    q: 'What is liquid staking?',
+                    a: 'On Solana, liquid staking means delegating your SOL to a validator and receiving a liquid staking token (LST) in return. This token represents your staked SOL and accrues staking rewards over time. Unlike regular staking, it stays flexible. You can use it in DeFi, trade it, or redeem it back for SOL whenever you like.',
+                  },
+                  {
+                    icon: '🔄',
+                    q: 'Why does GSOL offer more than other LSTs?',
+                    a: 'With GSOL you earn competitive staking yield automatically — no claiming, no lock-up. The exchange rate of GSOL vs SOL increases every epoch as rewards accumulate, so simply holding GSOL means you\'re earning. You can also use GSOL freely across DeFi while your rewards keep compounding.',
+                  },
+                  {
+                    icon: '❓',
+                    q: 'How do I receive staking rewards?',
+                    a: 'Rewards are automatically reflected in the token\'s value. Instead of separate payouts, the LST itself appreciates. For example, 1 GSOL may grow from 1 SOL to 1.05 SOL as rewards accumulate. This means every holder earns yield passively, no matter where the LST is stored. To realize your rewards, you can simply unstake and redeem back into SOL anytime.',
+                  },
+                  {
+                    icon: '🛡️',
+                    q: 'Are LSTs secure?',
+                    a: 'Yes. LSTs on Solana are built on a standard, battle-tested contract that has been audited multiple times. This same code has safely secured billions of dollars in value for years, making it one of the most trusted pieces of infrastructure in the Solana ecosystem.',
+                  },
+                ].map(({ icon, q, a }) => (
+                  <details key={q} className="group rounded-2xl border border-purple-500/30 bg-purple-900/20 overflow-hidden">
+                    <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none select-none">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{icon}</span>
+                        <span className="text-white font-bold text-sm md:text-base">{q}</span>
+                      </div>
+                      <ChevronDown className="w-5 h-5 text-purple-300 shrink-0 transition-transform duration-200 group-open:rotate-180" />
+                    </summary>
+                    <div className="px-5 pb-5 pt-1">
+                      <p className="text-purple-100 text-sm leading-relaxed">{a}</p>
                     </div>
-                    <div className={`rounded-xl p-4 border ${'bg-purple-900/20 border-purple-500/20'}`}>
-                      <div className="text-2xl mb-2">📈</div>
-                      <p className="text-white font-bold mb-1">Auto-compounding</p>
-                      <p className="text-white text-xs">Rewards are automatically compounded. GSOL value increases over time relative to SOL.</p>
-                    </div>
-                    <div className={`rounded-xl p-4 border ${'bg-purple-900/20 border-purple-500/20'}`}>
-                      <div className="text-2xl mb-2">🔓</div>
-                      <p className="text-white font-bold mb-1">No minimum</p>
-                      <p className="text-white text-xs">Stake any amount of SOL. No minimum required to start earning.</p>
-                    </div>
-                    <div className={`rounded-xl p-4 border bg-green-900/20 border-green-500/30 col-span-full`}>
-                      <div className="text-2xl mb-2">🎯</div>
-                      <p className="text-white font-bold mb-1">Earn staking points</p>
-                      <p className="text-white text-xs">Holding GSOL earns you <span className="text-green-400 font-semibold">100 pts per GSOL every 24h</span>. First-time stakers receive a <span className="text-green-400 font-semibold">+100 pt welcome bonus</span>. Hold for 30+ days to unlock a <span className="text-yellow-400 font-semibold">1.5× multiplier</span>. Refer friends and earn <span className="text-purple-400 font-semibold">10% of their daily staking points</span> automatically.</p>
-                    </div>
-                  </div>
-
-                </div>
-
+                  </details>
+                ))}
               </div>
             </div>
           )}
