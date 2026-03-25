@@ -3570,7 +3570,7 @@ export default function SolRefund() {
                 {isConnected && publicKey ? (
                   <>
                     {/* XP Badge — mobile */}
-                    <div className="flex items-center bg-purple-700/50 border border-purple-400/40 rounded-md px-2 py-1 text-white text-xs font-bold gap-1">
+                    <div className="flex items-center bg-purple-700/50 border border-purple-400/40 rounded-md px-2 py-2 text-white text-xs font-bold gap-1">
                       <span className="text-purple-200">XP</span>
                       <span className="text-white/50">|</span>
                       <span className="text-green-400">{formatXP(userXP)}</span>
@@ -3644,7 +3644,7 @@ export default function SolRefund() {
               {isConnected && publicKey ? (
                 <>
                   {/* XP Badge — desktop */}
-                  <div className="flex items-center bg-purple-700/50 border border-purple-400/40 rounded-md px-3 py-1.5 text-white text-sm font-bold gap-1.5">
+                  <div className="flex items-center bg-purple-700/50 border border-purple-400/40 rounded-md px-3 py-2 text-white text-xs font-bold gap-1.5">
                     <span className="text-purple-200">XP</span>
                     <span className="text-white/50">|</span>
                     <span className="text-green-400">{formatXP(userXP)}</span>
