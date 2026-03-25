@@ -315,7 +315,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
-  // Shared helper: fetch live SOL price in USD (no hardcoded fallback)
+  // In-memory cache of last known real SOL price
+  let cachedSolPriceUsd: number = 0;
+
+  // Shared helper: fetch live SOL price in USD, always returns a real value
   async function fetchSolPriceUsd(): Promise<number> {
     const WSOL = 'So11111111111111111111111111111111111111112';
 
@@ -324,7 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const res = await fetch(`https://api.jup.ag/price/v3?ids=${WSOL}`);
       const data = await res.json();
       const price = data?.data?.[WSOL]?.price;
-      if (price > 0) return price;
+      if (price > 0) { cachedSolPriceUsd = price; return price; }
     } catch { /* try next */ }
 
     // 2nd source: CoinGecko
@@ -332,11 +335,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
       const data = await res.json();
       const price = data?.solana?.usd;
-      if (price > 0) return price;
-    } catch { /* give up */ }
+      if (price > 0) { cachedSolPriceUsd = price; return price; }
+    } catch { /* fall through */ }
 
-    console.warn('⚠️ Could not fetch SOL price from any source — XP will not be awarded');
-    return 0; // 0 means skip XP, no fake fallback
+    // Use last successfully cached real price if APIs are temporarily down
+    if (cachedSolPriceUsd > 0) {
+      console.warn(`⚠️ SOL price APIs down — using last cached price: $${cachedSolPriceUsd}`);
+      return cachedSolPriceUsd;
+    }
+
+    console.warn('⚠️ No SOL price available yet — XP will not be awarded this time');
+    return 0;
   }
 
   // Token search endpoint - uses Jupiter Ultra Search API
