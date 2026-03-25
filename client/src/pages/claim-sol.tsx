@@ -5169,6 +5169,11 @@ export default function SolRefund() {
                     q: 'Are LSTs secure?',
                     a: 'Yes. LSTs on Solana are built on a standard, battle-tested contract that has been audited multiple times. This same code has safely secured billions of dollars in value for years, making it one of the most trusted pieces of infrastructure in the Solana ecosystem.',
                   },
+                  {
+                    Icon: Star,
+                    q: 'Do I earn XP by staking GSOL?',
+                    a: 'Yes! Every day you hold GSOL you automatically earn XP — 1 XP for every dollar of GSOL you hold. The more GSOL you hold and the longer you hold it, the more XP you accumulate. XP tracks your loyalty on the platform and will unlock future rewards and perks.',
+                  },
                 ] as { Icon: React.ElementType; q: string; a: string }[]).map(({ Icon, q, a }) => (
                   <details key={q} className="group rounded-2xl border border-purple-500/40 bg-purple-800/30 overflow-hidden">
                     <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none select-none">
