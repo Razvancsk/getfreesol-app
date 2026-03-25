@@ -5172,7 +5172,7 @@ export default function SolRefund() {
                   {
                     Icon: Star,
                     q: 'Do I earn XP by staking GSOL?',
-                    a: 'Yes! Every day you hold GSOL you automatically earn XP — 1 XP for every dollar of GSOL you hold. The more GSOL you hold and the longer you hold it, the more XP you accumulate. XP tracks your loyalty on the platform and will unlock future rewards and perks.',
+                    a: "With GSOL you don't just earn competitive yield, you also gain XP in our point system. For GSOL specifically, you earn 1x XP per dollar per day, boosting your rewards beyond standard staking.",
                   },
                 ] as { Icon: React.ElementType; q: string; a: string }[]).map(({ Icon, q, a }) => (
                   <details key={q} className="group rounded-2xl border border-purple-500/40 bg-purple-800/30 overflow-hidden">
