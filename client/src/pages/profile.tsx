@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
-import { ArrowLeft, Copy, Wallet, Trophy, Flame, Zap } from 'lucide-react';
+import { ArrowLeft, Copy, Wallet, Trophy, Flame, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import logoImage from '@assets/image_1757882056840.png';
 
@@ -146,7 +146,7 @@ export default function ProfilePage() {
                     {isLoading ? '...' : formatXP(stats?.totalPoints || 0)}
                   </p>
                 </div>
-                <Zap className="h-8 w-8 text-yellow-400" />
+                <Star className="h-8 w-8 text-yellow-400" />
               </div>
             </div>
 
