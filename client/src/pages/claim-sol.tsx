@@ -299,6 +299,18 @@ export default function SolRefund() {
     enabled: !!pointsWalletAddress,
     staleTime: 60000,
   });
+
+  const { data: userStatsData } = useQuery({
+    queryKey: ['/api/user/stats', pointsWalletAddress],
+    queryFn: async () => {
+      if (!pointsWalletAddress) throw new Error('No wallet');
+      const res = await fetch(`/api/user/stats/${pointsWalletAddress}`);
+      return res.json();
+    },
+    enabled: !!pointsWalletAddress,
+    staleTime: 30000,
+  });
+  const userXP = userStatsData?.totalPoints ?? 0;
   const isGfsHolder = gfsDiscountData?.isGfsHolder ?? false;
   const effectiveFeePercent = isGfsHolder ? 10 : 20;
   const donationPercentage = effectiveFeePercent;
@@ -3551,6 +3563,13 @@ export default function SolRefund() {
                   <div className="lg:hidden flex items-center space-x-2">
                 {isConnected && publicKey ? (
                   <>
+                    {/* XP Badge — mobile */}
+                    <div className="flex items-center bg-yellow-900/60 border border-yellow-600/40 rounded-md px-2 py-1 text-yellow-300 text-xs font-bold gap-1">
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <span>XP</span>
+                      <span className="text-white/70">|</span>
+                      <span>{userXP.toLocaleString()}</span>
+                    </div>
                     <Link href="/profile">
                       <Button
                         className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
@@ -3619,6 +3638,13 @@ export default function SolRefund() {
             <div className="hidden lg:flex items-center space-x-3">
               {isConnected && publicKey ? (
                 <>
+                  {/* XP Badge — desktop */}
+                  <div className="flex items-center bg-yellow-900/60 border border-yellow-600/40 rounded-md px-3 py-1.5 text-yellow-300 text-sm font-bold gap-1.5">
+                    <Star className="h-4 w-4 text-yellow-400" />
+                    <span>XP</span>
+                    <span className="text-white/70">|</span>
+                    <span>{userXP.toLocaleString()}</span>
+                  </div>
                   <Link href="/profile">
                     <Button
                       className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
