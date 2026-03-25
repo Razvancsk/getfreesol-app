@@ -994,14 +994,14 @@ export default function SolRefund() {
             const bonusText = d.pointsAwarded > 0 ? ` +${d.pointsAwarded} pts!` : '';
             toast({
               title: `🎉 Staked ${amt} GSOL — Welcome bonus!${bonusText}`,
-              description: 'You now earn points every 24h for holding GSOL.',
+              description: 'You now earn 1 XP per dollar of GSOL held every 24h.',
               variant: 'success',
               action: stakeToastAction
             });
           } else {
             toast({
               title: `✅ Staked ${amt} GSOL`,
-              description: 'Earning points every 24h for holding.',
+              description: 'Earning 1 XP per dollar of GSOL held every 24h.',
               variant: 'success',
               action: stakeToastAction
             });

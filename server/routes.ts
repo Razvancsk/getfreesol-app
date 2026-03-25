@@ -11607,6 +11607,33 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Helper: fetch SOL price (USD) and GSOL/SOL rate for daily points calculation
+  async function fetchStakingPrices(): Promise<{ solPriceUsd: number; gsolSolRate: number }> {
+    let solPriceUsd = 150; // fallback
+    let gsolSolRate = 1.07; // fallback
+
+    // Fetch SOL price from Jupiter
+    try {
+      const WSOL = 'So11111111111111111111111111111111111111112';
+      const res = await fetch(`https://api.jup.ag/price/v3?ids=${WSOL}`);
+      const data = await res.json();
+      const price = data?.data?.[WSOL]?.price;
+      if (price > 0) solPriceUsd = price;
+    } catch { /* use fallback */ }
+
+    // Fetch GSOL/SOL rate from Sanctum
+    try {
+      const GSOL_MINT_ADDR = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
+      const sanctumRes = await fetch(`https://extra-api.sanctum.so/v1/sol-value/current?lst=${GSOL_MINT_ADDR}`);
+      const sanctumData = await sanctumRes.json();
+      const priceEntry = sanctumData?.solValues?.[GSOL_MINT_ADDR];
+      if (priceEntry?.price) gsolSolRate = Number(priceEntry.price);
+    } catch { /* use fallback */ }
+
+    console.log(`💰 Staking prices: SOL=$${solPriceUsd}, GSOL/SOL=${gsolSolRate}`);
+    return { solPriceUsd, gsolSolRate };
+  }
+
   // Manual trigger for daily staking points (admin only)
   app.post('/api/staking/run-daily-points', async (req, res) => {
     try {
@@ -11614,7 +11641,8 @@ Claimer: ${walletAddress}`;
       if (secret !== process.env.VAULT_ADMIN_SECRET) {
         return res.status(403).json({ error: 'Forbidden' });
       }
-      const result = await storage.runDailyStakingPoints();
+      const { solPriceUsd, gsolSolRate } = await fetchStakingPrices();
+      const result = await storage.runDailyStakingPoints(solPriceUsd, gsolSolRate);
       console.log(`⚡ Daily staking points run: ${JSON.stringify(result)}`);
       res.json({ success: true, ...result });
     } catch (e: any) {
@@ -11627,7 +11655,8 @@ Claimer: ${walletAddress}`;
   cron.schedule('0 0 * * *', async () => {
     try {
       console.log('⏰ Daily staking points cron starting...');
-      const result = await storage.runDailyStakingPoints();
+      const { solPriceUsd, gsolSolRate } = await fetchStakingPrices();
+      const result = await storage.runDailyStakingPoints(solPriceUsd, gsolSolRate);
       console.log(`✅ Daily staking points done: ${result.walletsAwarded} wallets, ${result.totalPoints} pts, ${result.referralBonus} referral pts`);
     } catch (e: any) {
       console.error('❌ Daily staking points cron failed:', e.message);

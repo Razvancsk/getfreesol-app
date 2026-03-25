@@ -257,7 +257,7 @@ export interface IStorage {
   reduceStakingPosition(walletAddress: string, gsolAmount: number): Promise<void>;
   getAllActiveStakingPositions(): Promise<GsolStakingPosition[]>;
   getReferrerWalletForPoints(walletAddress: string): Promise<string | null>;
-  runDailyStakingPoints(): Promise<{ walletsAwarded: number; totalPoints: number; referralBonus: number }>;
+  runDailyStakingPoints(solPriceUsd: number, gsolSolRate: number): Promise<{ walletsAwarded: number; totalPoints: number; referralBonus: number }>;
   
   // Social Tasks System (Community Grow)
   createSocialTask(task: InsertSocialTask): Promise<SocialTask>;
@@ -1484,7 +1484,7 @@ export class DatabaseStorage implements IStorage {
     return code.length > 0 ? code[0].ownerWallet : null;
   }
 
-  async runDailyStakingPoints(): Promise<{ walletsAwarded: number; totalPoints: number; referralBonus: number }> {
+  async runDailyStakingPoints(solPriceUsd: number, gsolSolRate: number): Promise<{ walletsAwarded: number; totalPoints: number; referralBonus: number }> {
     const EARLY_USER_DEADLINE = new Date('2026-06-01'); // 2x bonus for early stakers
     const now = new Date();
     const positions = await this.getAllActiveStakingPositions();
@@ -1505,8 +1505,9 @@ export class DatabaseStorage implements IStorage {
       // 2x early user bonus (staked before June 2026)
       const earlyBonus = pos.stakedAt < EARLY_USER_DEADLINE ? 2.0 : 1.0;
 
-      // 100 pts per GSOL per day (consistent with 100 pts per SOL claimed/staked)
-      const basePoints = Math.floor(gsolAmt * 100 * holdMultiplier * earlyBonus);
+      // 1 XP per dollar per day: dollarValue = gsolAmount * gsolSolRate * solPriceUsd
+      const dollarValue = gsolAmt * gsolSolRate * solPriceUsd;
+      const basePoints = Math.floor(dollarValue * holdMultiplier * earlyBonus);
       if (basePoints <= 0) continue;
 
       // Upsert the staker's points row, then add daily points
