@@ -1485,7 +1485,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async runDailyStakingPoints(solPriceUsd: number, gsolSolRate: number): Promise<{ walletsAwarded: number; totalPoints: number; referralBonus: number }> {
-    const EARLY_USER_DEADLINE = new Date('2026-06-01'); // 2x bonus for early stakers
     const now = new Date();
     const positions = await this.getAllActiveStakingPositions();
     let walletsAwarded = 0;
@@ -1496,12 +1495,9 @@ export class DatabaseStorage implements IStorage {
       const gsolAmt = Number(pos.gsolAmount);
       if (gsolAmt <= 0) continue;
 
-      // 2x early user bonus (staked before June 2026)
-      const earlyBonus = pos.stakedAt < EARLY_USER_DEADLINE ? 2.0 : 1.0;
-
       // 1 XP per dollar per day: dollarValue = gsolAmount * gsolSolRate * solPriceUsd
       const dollarValue = gsolAmt * gsolSolRate * solPriceUsd;
-      const basePoints = Math.floor(dollarValue * earlyBonus);
+      const basePoints = Math.floor(dollarValue);
       if (basePoints <= 0) continue;
 
       // Upsert the staker's points row, then add daily points
