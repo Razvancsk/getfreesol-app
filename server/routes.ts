@@ -315,6 +315,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
+  // Shared helper: fetch live SOL price in USD from Jupiter
+  async function fetchSolPriceUsd(): Promise<number> {
+    try {
+      const WSOL = 'So11111111111111111111111111111111111111112';
+      const res = await fetch(`https://api.jup.ag/price/v3?ids=${WSOL}`);
+      const data = await res.json();
+      const price = data?.data?.[WSOL]?.price;
+      if (price > 0) return price;
+    } catch { /* fall through */ }
+    return 150; // fallback
+  }
+
   // Token search endpoint - uses Jupiter Ultra Search API
   app.get("/api/tokens/search", async (req, res) => {
     try {
@@ -2783,11 +2795,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
-      // Award points: 100 pts per SOL claimed (1 pt per 0.01 SOL) - skip platform wallet
+      // Award points: 1 XP per dollar claimed - skip platform wallet
       const PLATFORM_WALLET_POINTS = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       if (walletAddress !== PLATFORM_WALLET_POINTS) {
         const claimedSol = Number(netAmount) > 0 ? Number(netAmount) : Number(solRecovered);
-        await storage.awardRentClaimPoints(walletAddress, claimedSol, accountsClosed);
+        const solPriceUsd = await fetchSolPriceUsd();
+        await storage.awardRentClaimPoints(walletAddress, claimedSol, accountsClosed, solPriceUsd);
       }
 
       // GFS Cashback: send 30% of fee back as $GFS tokens (fire and forget)
@@ -11609,17 +11622,7 @@ Claimer: ${walletAddress}`;
 
   // Helper: fetch SOL price (USD) and GSOL/SOL rate for daily points calculation
   async function fetchStakingPrices(): Promise<{ solPriceUsd: number; gsolSolRate: number }> {
-    let solPriceUsd = 150; // fallback
     let gsolSolRate = 1.07; // fallback
-
-    // Fetch SOL price from Jupiter
-    try {
-      const WSOL = 'So11111111111111111111111111111111111111112';
-      const res = await fetch(`https://api.jup.ag/price/v3?ids=${WSOL}`);
-      const data = await res.json();
-      const price = data?.data?.[WSOL]?.price;
-      if (price > 0) solPriceUsd = price;
-    } catch { /* use fallback */ }
 
     // Fetch GSOL/SOL rate from Sanctum
     try {
@@ -11630,6 +11633,7 @@ Claimer: ${walletAddress}`;
       if (priceEntry?.price) gsolSolRate = Number(priceEntry.price);
     } catch { /* use fallback */ }
 
+    const solPriceUsd = await fetchSolPriceUsd();
     console.log(`💰 Staking prices: SOL=$${solPriceUsd}, GSOL/SOL=${gsolSolRate}`);
     return { solPriceUsd, gsolSolRate };
   }

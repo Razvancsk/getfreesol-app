@@ -247,7 +247,7 @@ export interface IStorage {
   // User Points System
   getUserPoints(walletAddress: string): Promise<UserPoints | undefined>;
   awardPoints(walletAddress: string, accountsClosed: number): Promise<void>;
-  awardRentClaimPoints(walletAddress: string, solClaimed: number, accountsClosed: number): Promise<{ pointsAwarded: number }>;
+  awardRentClaimPoints(walletAddress: string, solClaimed: number, accountsClosed: number, solPriceUsd: number): Promise<{ pointsAwarded: number }>;
   awardStakingPoints(walletAddress: string, solAmount: number): Promise<{ pointsAwarded: number }>;
   getPointsLeaderboard(limit?: number, sinceTimestamp?: Date | null): Promise<UserPoints[]>;
 
@@ -1342,9 +1342,9 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async awardRentClaimPoints(walletAddress: string, solClaimed: number, accountsClosed: number): Promise<{ pointsAwarded: number }> {
-    // 100 points per SOL claimed (1 pt per 0.01 SOL)
-    const pointsToAward = Math.floor(solClaimed * 100);
+  async awardRentClaimPoints(walletAddress: string, solClaimed: number, accountsClosed: number, solPriceUsd: number): Promise<{ pointsAwarded: number }> {
+    // 1 XP per dollar claimed
+    const pointsToAward = Math.floor(solClaimed * solPriceUsd);
     if (pointsToAward <= 0 && accountsClosed <= 0) return { pointsAwarded: 0 };
 
     await db
