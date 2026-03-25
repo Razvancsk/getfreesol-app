@@ -138,15 +138,15 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="bg-slate-800/80 border border-yellow-500/30 rounded-xl p-6">
+            <div className="bg-purple-900/50 border border-purple-400/40 rounded-xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-yellow-300 text-sm">XP Points</p>
-                  <p className="text-2xl font-bold text-yellow-300" data-testid="text-xp-points">
+                  <p className="text-purple-300 text-sm">XP Points</p>
+                  <p className="text-2xl font-bold text-green-400" data-testid="text-xp-points">
                     {isLoading ? '...' : formatXP(stats?.totalPoints || 0)}
                   </p>
                 </div>
-                <Star className="h-8 w-8 text-yellow-400" />
+                <Star className="h-8 w-8 text-purple-400" />
               </div>
             </div>
 
