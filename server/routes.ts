@@ -315,16 +315,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
-  // Shared helper: fetch live SOL price in USD from Jupiter
+  // Shared helper: fetch live SOL price in USD (no hardcoded fallback)
   async function fetchSolPriceUsd(): Promise<number> {
+    const WSOL = 'So11111111111111111111111111111111111111112';
+
+    // 1st source: Jupiter
     try {
-      const WSOL = 'So11111111111111111111111111111111111111112';
       const res = await fetch(`https://api.jup.ag/price/v3?ids=${WSOL}`);
       const data = await res.json();
       const price = data?.data?.[WSOL]?.price;
       if (price > 0) return price;
-    } catch { /* fall through */ }
-    return 150; // fallback
+    } catch { /* try next */ }
+
+    // 2nd source: CoinGecko
+    try {
+      const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+      const data = await res.json();
+      const price = data?.solana?.usd;
+      if (price > 0) return price;
+    } catch { /* give up */ }
+
+    console.warn('⚠️ Could not fetch SOL price from any source — XP will not be awarded');
+    return 0; // 0 means skip XP, no fake fallback
   }
 
   // Token search endpoint - uses Jupiter Ultra Search API
