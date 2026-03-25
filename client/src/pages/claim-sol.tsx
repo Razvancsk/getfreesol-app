@@ -3571,7 +3571,6 @@ export default function SolRefund() {
                   <>
                     {/* XP Badge — mobile */}
                     <div className="flex items-center bg-yellow-900/60 border border-yellow-600/40 rounded-md px-2 py-1 text-yellow-300 text-xs font-bold gap-1">
-                      <Star className="h-3 w-3 text-yellow-400" />
                       <span>XP</span>
                       <span className="text-white/70">|</span>
                       <span>{formatXP(userXP)}</span>
@@ -3646,7 +3645,6 @@ export default function SolRefund() {
                 <>
                   {/* XP Badge — desktop */}
                   <div className="flex items-center bg-yellow-900/60 border border-yellow-600/40 rounded-md px-3 py-1.5 text-yellow-300 text-sm font-bold gap-1.5">
-                    <Star className="h-4 w-4 text-yellow-400" />
                     <span>XP</span>
                     <span className="text-white/70">|</span>
                     <span>{formatXP(userXP)}</span>
