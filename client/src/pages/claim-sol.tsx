@@ -311,6 +311,12 @@ export default function SolRefund() {
     staleTime: 30000,
   });
   const userXP = userStatsData?.totalPoints ?? 0;
+  const formatXP = (n: number): string => {
+    if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`;
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+    return n.toString();
+  };
   const isGfsHolder = gfsDiscountData?.isGfsHolder ?? false;
   const effectiveFeePercent = isGfsHolder ? 10 : 20;
   const donationPercentage = effectiveFeePercent;
@@ -3568,7 +3574,7 @@ export default function SolRefund() {
                       <Star className="h-3 w-3 text-yellow-400" />
                       <span>XP</span>
                       <span className="text-white/70">|</span>
-                      <span>{userXP.toLocaleString()}</span>
+                      <span>{formatXP(userXP)}</span>
                     </div>
                     <Link href="/profile">
                       <Button
@@ -3643,7 +3649,7 @@ export default function SolRefund() {
                     <Star className="h-4 w-4 text-yellow-400" />
                     <span>XP</span>
                     <span className="text-white/70">|</span>
-                    <span>{userXP.toLocaleString()}</span>
+                    <span>{formatXP(userXP)}</span>
                   </div>
                   <Link href="/profile">
                     <Button
