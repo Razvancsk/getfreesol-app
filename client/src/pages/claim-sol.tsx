@@ -5157,7 +5157,7 @@ export default function SolRefund() {
                   {
                     Icon: RefreshCw,
                     q: 'Why does GSOL offer more than other LSTs?',
-                    a: "With GSOL you don't just earn competitive yield, you also gain XP in our point system. You earn 1x XP per dollar per day, boosting your rewards beyond standard staking. The exchange rate of GSOL vs SOL increases every epoch as rewards accumulate, so simply holding GSOL means you're earning — with no claiming and no lock-up. You can also use GSOL freely across DeFi while your rewards keep compounding.",
+                    a: "With GSOL LSTs you don't just earn competitive yield, you also gain XP in our point system. For GSOL specifically, you earn 1x XP per dollar per day, boosting your rewards beyond standard staking.",
                   },
                   {
                     Icon: HelpCircle,
