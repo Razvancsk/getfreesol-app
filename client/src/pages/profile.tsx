@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
-import { ArrowLeft, Copy, Wallet, Trophy, Flame, Coins } from 'lucide-react';
+import { ArrowLeft, Copy, Wallet, Trophy, Flame, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import logoImage from '@assets/image_1757882056840.png';
 
@@ -13,6 +13,7 @@ interface UserStats {
   totalAccountsClosed: number;
   totalTokensBurned: number;
   totalNftsBurned: number;
+  totalPoints: number;
   referralCode: string;
   referralEarnings: number;
 }
@@ -50,6 +51,13 @@ export default function ProfilePage() {
 
   const truncateWallet = (address: string) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
+
+  const formatXP = (n: number): string => {
+    if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`;
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+    return n.toString();
   };
 
   if (!publicKey) {
@@ -127,6 +135,18 @@ export default function ProfilePage() {
                   </p>
                 </div>
                 <Flame className="h-8 w-8 text-orange-400" />
+              </div>
+            </div>
+
+            <div className="bg-slate-800/80 border border-yellow-500/30 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-yellow-300 text-sm">XP Points</p>
+                  <p className="text-2xl font-bold text-yellow-300" data-testid="text-xp-points">
+                    {isLoading ? '...' : formatXP(stats?.totalPoints || 0)}
+                  </p>
+                </div>
+                <Zap className="h-8 w-8 text-yellow-400" />
               </div>
             </div>
 
