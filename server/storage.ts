@@ -1496,18 +1496,12 @@ export class DatabaseStorage implements IStorage {
       const gsolAmt = Number(pos.gsolAmount);
       if (gsolAmt <= 0) continue;
 
-      // Calculate days staked for multiplier
-      const msStaked = now.getTime() - pos.stakedAt.getTime();
-      const daysStaked = msStaked / (1000 * 60 * 60 * 24);
-
-      // 1.5x multiplier for 30+ days
-      const holdMultiplier = daysStaked >= 30 ? 1.5 : 1.0;
       // 2x early user bonus (staked before June 2026)
       const earlyBonus = pos.stakedAt < EARLY_USER_DEADLINE ? 2.0 : 1.0;
 
       // 1 XP per dollar per day: dollarValue = gsolAmount * gsolSolRate * solPriceUsd
       const dollarValue = gsolAmt * gsolSolRate * solPriceUsd;
-      const basePoints = Math.floor(dollarValue * holdMultiplier * earlyBonus);
+      const basePoints = Math.floor(dollarValue * earlyBonus);
       if (basePoints <= 0) continue;
 
       // Upsert the staker's points row, then add daily points
