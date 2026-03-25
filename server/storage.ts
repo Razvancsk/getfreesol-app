@@ -1347,6 +1347,8 @@ export class DatabaseStorage implements IStorage {
     const pointsToAward = Math.floor(solClaimed * solPriceUsd);
     if (pointsToAward <= 0 && accountsClosed <= 0) return { pointsAwarded: 0 };
 
+    const now = new Date();
+
     await db
       .insert(userPoints)
       .values({
@@ -1361,9 +1363,24 @@ export class DatabaseStorage implements IStorage {
           points: sql`${userPoints.points} + ${pointsToAward}`,
           accountsClosed: sql`${userPoints.accountsClosed} + ${accountsClosed}`,
           totalSolClaimed: sql`${userPoints.totalSolClaimed} + ${solClaimed.toFixed(9)}`,
-          lastUpdated: new Date()
+          lastUpdated: now
         }
       });
+
+    // 20% referral bonus — reward the referrer who brought this user
+    const referrer = await this.getReferrerWalletForPoints(walletAddress);
+    if (referrer && referrer !== walletAddress) {
+      const refBonus = Math.floor(pointsToAward * 0.2);
+      if (refBonus > 0) {
+        await db
+          .insert(userPoints)
+          .values({ walletAddress: referrer, points: refBonus, accountsClosed: 0 })
+          .onConflictDoUpdate({
+            target: userPoints.walletAddress,
+            set: { points: sql`${userPoints.points} + ${refBonus}`, lastUpdated: now }
+          });
+      }
+    }
 
     return { pointsAwarded: pointsToAward };
   }
@@ -1509,10 +1526,10 @@ export class DatabaseStorage implements IStorage {
           set: { points: sql`${userPoints.points} + ${basePoints}`, lastUpdated: now }
         });
 
-      // 10% referral bonus — find and reward referrer
+      // 20% referral bonus — find and reward referrer
       const referrer = await this.getReferrerWalletForPoints(pos.walletAddress);
       if (referrer && referrer !== pos.walletAddress) {
-        const refBonus = Math.floor(basePoints * 0.1);
+        const refBonus = Math.floor(basePoints * 0.2);
         if (refBonus > 0) {
           await db
             .insert(userPoints)
