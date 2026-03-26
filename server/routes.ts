@@ -11087,12 +11087,21 @@ Claimer: ${walletAddress}`;
   // Jupiter Ultra routes through all pool types; no need to call SPL Stake Pool directly.
   const GSOL_MINT_ADDR  = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
 
+  // Cache staking info for 5 minutes to reduce RPC calls
+  let _stakingInfoCache: { apy: string; solValue: string; source: string; cachedAt: number } | null = null;
+  const STAKING_INFO_CACHE_MS = 5 * 60 * 1000;
+
   app.get('/api/staking/info', async (_req, res) => {
     try {
+      // Serve from cache if fresh
+      if (_stakingInfoCache && Date.now() - _stakingInfoCache.cachedAt < STAKING_INFO_CACHE_MS) {
+        return res.json(_stakingInfoCache);
+      }
+
       const heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
       const jupKey = process.env.JUPITER_API_KEY;
 
-      // Fetch GSOL price from Jupiter (in SOL terms)
+      // ── 1. Fetch GSOL/SOL exchange rate ──────────────────────────────────
       let solValue: number | undefined;
       if (jupKey) {
         try {
@@ -11106,14 +11115,18 @@ Claimer: ${walletAddress}`;
         } catch (_) {}
       }
 
-      // Compute live APY from Solana on-chain data (same source Sanctum uses):
-      // APY = inflation_validator_rate * total_supply / total_staked + MEV_bonus
+      // ── 2. Real APY from Solana on-chain epoch rewards ───────────────────
+      // Primary: use getEpochInflationRewards on a top-stake account for actual
+      // rewards earned last epoch, then annualise.
       let apy: number | undefined;
+      let apySource = 'solana-onchain';
+
       try {
-        const [inflResp, voteResp, supplyResp] = await Promise.all([
+        // Get current epoch + top validators
+        const [epochResp, voteResp, inflResp, supplyResp] = await Promise.all([
           fetch(heliusUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getInflationRate', params: [] })
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getEpochInfo', params: [] })
           }),
           fetch(heliusUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -11122,32 +11135,120 @@ Claimer: ${walletAddress}`;
           }),
           fetch(heliusUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'getSupply',
+            body: JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'getInflationRate', params: [] })
+          }),
+          fetch(heliusUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 4, method: 'getSupply',
               params: [{ excludeNonCirculatingAccountsList: true }] })
           }),
         ]);
-        const [inflJ, voteJ, supplyJ] = await Promise.all([inflResp.json(), voteResp.json(), supplyResp.json()]);
 
-        const inflationValidator: number = inflJ.result?.validator ?? 0;
-        const totalSupplyLamports: number = supplyJ.result?.value?.total ?? 0;
+        const [epochJ, voteJ, inflJ, supplyJ] = await Promise.all([
+          epochResp.json(), voteResp.json(), inflResp.json(), supplyResp.json()
+        ]);
+
+        const slotsPerEpoch: number = epochJ.result?.slotsInEpoch ?? 432000;
+        const currentEpoch: number = epochJ.result?.epoch ?? 0;
+        // Solana target: ~400ms per slot → ~2 days per epoch
+        const SECONDS_PER_SLOT = 0.4;
+        const epochDurationSeconds = slotsPerEpoch * SECONDS_PER_SLOT;
+        const epochsPerYear = (365.25 * 24 * 3600) / epochDurationSeconds;
+
         const current: any[] = voteJ.result?.current ?? [];
         const totalStakeLamports: number = current.reduce((s: number, v: any) => s + (v.activatedStake ?? 0), 0);
+        const inflationValidator: number = inflJ.result?.validator ?? 0;
+        const totalSupplyLamports: number = supplyJ.result?.value?.total ?? 0;
 
         if (inflationValidator > 0 && totalSupplyLamports > 0 && totalStakeLamports > 0) {
-          const inflationApy = (inflationValidator * totalSupplyLamports) / totalStakeLamports;
-          // MEV + priority fee bonus ≈ 1.4% based on historical Solana data
-          const mevBonus = 0.014;
-          apy = (inflationApy + mevBonus) * 100;
+          // Network staking ratio = totalStaked / totalSupply
+          const stakingRatio = totalStakeLamports / totalSupplyLamports;
+          // True epoch yield = validator_inflation_rate / epochs_per_year / staking_ratio
+          // APY = (1 + epoch_yield)^epochs_per_year - 1
+          const epochYield = inflationValidator / epochsPerYear / stakingRatio;
+          const compoundedApy = (Math.pow(1 + epochYield, epochsPerYear) - 1) * 100;
+
+          // Try to get the actual epoch rewards from a large staked account (top by stake)
+          const topValidators = current.sort((a, b) => (b.activatedStake ?? 0) - (a.activatedStake ?? 0)).slice(0, 5);
+          let epochRewardsApy: number | undefined;
+          try {
+            // Get stake accounts delegating to the top validator
+            const topVote = topValidators[0]?.votePubkey;
+            if (topVote) {
+              const stakeAcctResp = await fetch(heliusUrl, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  jsonrpc: '2.0', id: 5, method: 'getProgramAccounts',
+                  params: ['Stake11111111111111111111111111111111111111', {
+                    filters: [{ memcmp: { offset: 124, bytes: topVote } }],
+                    encoding: 'jsonParsed',
+                    commitment: 'finalized',
+                    dataSlice: { offset: 0, length: 0 }
+                  }]
+                })
+              });
+              const stakeAcctJ = await stakeAcctResp.json();
+              const stakeAccts: string[] = (stakeAcctJ.result ?? []).slice(0, 3).map((a: any) => a.pubkey);
+
+              if (stakeAccts.length > 0) {
+                const rewardsResp = await fetch(heliusUrl, {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    jsonrpc: '2.0', id: 6, method: 'getInflationReward',
+                    params: [stakeAccts, { epoch: currentEpoch - 1 }]
+                  })
+                });
+                const rewardsJ = await rewardsResp.json();
+                const rewards: any[] = rewardsJ.result ?? [];
+                const validRewards = rewards.filter((r: any) => r && r.amount > 0 && r.effectiveSlot > 0);
+                if (validRewards.length > 0) {
+                  // avg epoch yield = rewards / (postBalance - rewards)
+                  const avgEpochYield = validRewards.reduce((sum: number, r: any) => {
+                    const preBalance = r.postBalance - r.amount;
+                    return sum + (preBalance > 0 ? r.amount / preBalance : 0);
+                  }, 0) / validRewards.length;
+                  epochRewardsApy = (Math.pow(1 + avgEpochYield, epochsPerYear) - 1) * 100;
+                  apySource = 'epoch-rewards';
+                }
+              }
+            }
+          } catch (_) {}
+
+          // Prefer actual epoch rewards APY; fall back to compounded inflation formula
+          apy = epochRewardsApy ?? compoundedApy;
           apy = Math.max(4, Math.min(15, apy)); // safety clamp 4–15%
         }
       } catch (_) {}
 
-      if (apy === undefined) apy = 7.3; // fallback
-      if (!solValue) solValue = 1.07;    // fallback
+      // ── 3. Fallback: Marinade 1-year APY (representative Solana LST rate) ─
+      if (apy === undefined) {
+        try {
+          const marinadeResp = await fetch('https://api.marinade.finance/msol/apy/1y', {
+            signal: AbortSignal.timeout(5000)
+          });
+          if (marinadeResp.ok) {
+            const marinadeData = await marinadeResp.json();
+            if (marinadeData?.value > 0) {
+              apy = marinadeData.value * 100;
+              apySource = 'marinade-1y';
+            }
+          }
+        } catch (_) {}
+      }
 
-      res.json({ apy: apy.toFixed(2), solValue: solValue.toFixed(6), source: 'solana-onchain' });
+      if (apy === undefined) apy = 7.3;
+      if (!solValue) solValue = 1.07;
+
+      const result = {
+        apy: apy.toFixed(2),
+        solValue: solValue.toFixed(6),
+        source: apySource,
+        cachedAt: Date.now()
+      };
+      _stakingInfoCache = result;
+      res.json(result);
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: (e as Error).message });
     }
   });
 
