@@ -312,10 +312,12 @@ export default function SolRefund() {
   });
   const userXP = userStatsData?.totalPoints ?? 0;
   const formatXP = (n: number): string => {
-    if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`;
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
-    return n.toString();
+    if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2).replace(/\.?0+$/, '')}B`;
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2).replace(/\.?0+$/, '')}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(2).replace(/\.?0+$/, '')}K`;
+    if (n >= 1) return n.toFixed(2).replace(/\.?0+$/, '');
+    if (n > 0) return n.toFixed(4).replace(/\.?0+$/, '');
+    return '0';
   };
   const isGfsHolder = gfsDiscountData?.isGfsHolder ?? false;
   const effectiveFeePercent = isGfsHolder ? 10 : 20;

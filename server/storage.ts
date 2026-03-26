@@ -1345,8 +1345,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async awardRentClaimPoints(walletAddress: string, solClaimed: number, accountsClosed: number, solPriceUsd: number): Promise<{ pointsAwarded: number }> {
-    // 1 XP per dollar claimed
-    const pointsToAward = Math.floor(solClaimed * solPriceUsd);
+    // XP = exact dollar value (no rounding) — e.g. $0.09 = 0.09 XP
+    const pointsToAward = solClaimed * solPriceUsd;
     if (pointsToAward <= 0 && accountsClosed <= 0) return { pointsAwarded: 0 };
 
     const now = new Date();
@@ -1372,7 +1372,7 @@ export class DatabaseStorage implements IStorage {
     // 20% referral bonus — reward the referrer who brought this user
     const referrer = await this.getReferrerWalletForPoints(walletAddress);
     if (referrer && referrer !== walletAddress) {
-      const refBonus = Math.floor(pointsToAward * 0.2);
+      const refBonus = pointsToAward * 0.2;
       if (refBonus > 0) {
         await db
           .insert(userPoints)
@@ -1514,9 +1514,9 @@ export class DatabaseStorage implements IStorage {
       const gsolAmt = Number(pos.gsolAmount);
       if (gsolAmt <= 0) continue;
 
-      // 1 XP per dollar per day: dollarValue = gsolAmount * gsolSolRate * solPriceUsd
+      // XP = exact dollar value per day (no rounding)
       const dollarValue = gsolAmt * gsolSolRate * solPriceUsd;
-      const basePoints = Math.floor(dollarValue);
+      const basePoints = dollarValue;
       if (basePoints <= 0) continue;
 
       // Upsert the staker's points row, then add daily points
@@ -1531,7 +1531,7 @@ export class DatabaseStorage implements IStorage {
       // 20% referral bonus — find and reward referrer
       const referrer = await this.getReferrerWalletForPoints(pos.walletAddress);
       if (referrer && referrer !== pos.walletAddress) {
-        const refBonus = Math.floor(basePoints * 0.2);
+        const refBonus = basePoints * 0.2;
         if (refBonus > 0) {
           await db
             .insert(userPoints)

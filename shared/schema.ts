@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, integer, timestamp, boolean, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -731,7 +731,7 @@ export const notificationPreferences = pgTable("notification_preferences", {
 export const userPoints = pgTable("user_points", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   walletAddress: text("wallet_address").notNull().unique(),
-  points: integer("points").notNull().default(0),
+  points: doublePrecision("points").notNull().default(0),
   accountsClosed: integer("accounts_closed").notNull().default(0),
   totalSolClaimed: decimal("total_sol_claimed", { precision: 18, scale: 9 }).notNull().default("0"),
   solStaked: decimal("sol_staked", { precision: 18, scale: 9 }).notNull().default("0"),
