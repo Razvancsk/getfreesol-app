@@ -4,7 +4,7 @@ import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activ
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
-import { eq, sql, and, gte, notInArray } from 'drizzle-orm';
+import { eq, sql, and, gte, notInArray, inArray } from 'drizzle-orm';
 import { transactionLedger, userPoints } from '@shared/schema';
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
@@ -6397,7 +6397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user points (includes totalSolClaimed and accountsClosed)
       const points = await storage.getUserPoints(walletAddress);
       
-      // Get SOL recovered from transaction ledger (more accurate than user_points)
+      // Get SOL recovered from transaction ledger — includes rent reclaim, token burns, and NFT burns
       const solReclaimResult = await db
         .select({
           totalSolRecovered: sql<string>`COALESCE(sum(${transactionLedger.netAmount}), 0)`
@@ -6406,7 +6406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(
           and(
             eq(transactionLedger.walletAddress, walletAddress),
-            eq(transactionLedger.transactionType, 'sol_reclaim')
+            inArray(transactionLedger.transactionType, ['sol_reclaim', 'token_burn', 'nft_burn'])
           )
         );
       const totalSolFromLedger = parseFloat(solReclaimResult[0]?.totalSolRecovered || '0');
