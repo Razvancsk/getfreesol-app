@@ -4151,10 +4151,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
-      // Award points (20 points per token account closed) - skip platform wallet
+      // Award points: 1 XP per dollar of SOL recovered - skip platform wallet
       const PLATFORM_WALLET_POINTS_TOKEN = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       if (walletAddress !== PLATFORM_WALLET_POINTS_TOKEN) {
-        await storage.awardPoints(walletAddress, tokensProcessed);
+        const solPriceUsdToken = await fetchSolPriceUsd();
+        await storage.awardRentClaimPoints(walletAddress, Number(netAmount) || Number(solRecovered), tokensProcessed, solPriceUsdToken);
       }
       await storage.markTransactionXpAwarded(signature);
 
@@ -5159,10 +5160,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if transaction already exists (to avoid duplicate key error)
         try {
           await storage.createTransactionLedgerEntry(transactionData);
-          // Award points (20 points per NFT account closed) - skip platform wallet
+          // Award points: 1 XP per dollar of SOL recovered - skip platform wallet
           const PLATFORM_WALLET_POINTS_NFT = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
           if (walletAddress !== PLATFORM_WALLET_POINTS_NFT) {
-            await storage.awardPoints(walletAddress, 1);
+            const solPriceUsdNft = await fetchSolPriceUsd();
+            await storage.awardRentClaimPoints(walletAddress, realNetAmount, 1, solPriceUsdNft);
           }
           await storage.markTransactionXpAwarded(signature);
           // GFS Cashback: send 30% of fee back as $GFS tokens (fire and forget)
@@ -11707,21 +11709,14 @@ Claimer: ${walletAddress}`;
             continue;
           }
 
-          if (tx.transactionType === 'sol_reclaim') {
-            const solAmount = Number(tx.netAmount);
-            if (solAmount > 0 && solPriceUsd > 0) {
-              const xp = Math.floor(solAmount * solPriceUsd);
-              if (xp > 0) {
-                await storage.awardRentClaimPoints(tx.walletAddress, solAmount, tx.itemsProcessed, solPriceUsd);
-                totalXpAwarded += xp;
-                walletsProcessed++;
-              }
+          const solAmount = Number(tx.netAmount);
+          if (solAmount > 0 && solPriceUsd > 0) {
+            const xp = Math.floor(solAmount * solPriceUsd);
+            if (xp > 0) {
+              await storage.awardRentClaimPoints(tx.walletAddress, solAmount, tx.itemsProcessed, solPriceUsd);
+              totalXpAwarded += xp;
+              walletsProcessed++;
             }
-          } else if (tx.transactionType === 'token_burn' || tx.transactionType === 'nft_burn') {
-            const items = tx.itemsProcessed || 1;
-            await storage.awardPoints(tx.walletAddress, items);
-            totalXpAwarded += items * 20;
-            walletsProcessed++;
           }
 
           await storage.markTransactionXpAwarded(tx.signature);
@@ -11737,6 +11732,74 @@ Claimer: ${walletAddress}`;
       res.status(500).json({ error: e.message });
     } finally {
       xpBackfillRunning = false;
+    }
+  });
+
+  // Admin: fully recalculate XP from scratch based on total SOL across all transaction types
+  let xpRecalcRunning = false;
+  app.post('/api/admin/recalculate-xp', async (req, res) => {
+    try {
+      const { secret } = req.body;
+      if (secret !== process.env.VAULT_ADMIN_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      if (xpRecalcRunning) {
+        return res.status(409).json({ error: 'Recalculation already in progress' });
+      }
+      xpRecalcRunning = true;
+
+      const solPriceUsd = await fetchSolPriceUsd();
+      console.log(`🔄 XP Recalculate: starting full recalculation at SOL=$${solPriceUsd}`);
+
+      // Get total SOL per wallet across all claimable transaction types
+      const walletTotals = await db
+        .select({
+          walletAddress: transactionLedger.walletAddress,
+          totalSol: sql<string>`COALESCE(sum(${transactionLedger.netAmount}), 0)`
+        })
+        .from(transactionLedger)
+        .where(inArray(transactionLedger.transactionType, ['sol_reclaim', 'token_burn', 'nft_burn']))
+        .groupBy(transactionLedger.walletAddress);
+
+      const PLATFORM_WALLET_SKIP = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+      let walletsUpdated = 0;
+      let totalXpSet = 0;
+
+      for (const row of walletTotals) {
+        if (row.walletAddress === PLATFORM_WALLET_SKIP) continue;
+        const sol = Number(row.totalSol);
+        const newXp = Math.floor(sol * solPriceUsd);
+
+        // Upsert: set points to newXp, update totalSolClaimed
+        await db
+          .insert(userPoints)
+          .values({ walletAddress: row.walletAddress, points: newXp, accountsClosed: 0, totalSolClaimed: sol.toFixed(9) })
+          .onConflictDoUpdate({
+            target: userPoints.walletAddress,
+            set: {
+              points: newXp,
+              totalSolClaimed: sol.toFixed(9),
+              lastUpdated: new Date()
+            }
+          });
+
+        walletsUpdated++;
+        totalXpSet += newXp;
+      }
+
+      // Mark ALL transactions as xp_awarded so backfill doesn't re-process
+      await db
+        .update(transactionLedger)
+        .set({ xpAwarded: true })
+        .where(inArray(transactionLedger.transactionType, ['sol_reclaim', 'token_burn', 'nft_burn']));
+
+      console.log(`✅ XP Recalculate complete: ${walletsUpdated} wallets updated, ${totalXpSet} total XP at $${solPriceUsd}/SOL`);
+      res.json({ success: true, walletsUpdated, totalXpSet, solPriceUsd });
+    } catch (e: any) {
+      console.error('[admin/recalculate-xp]', e);
+      res.status(500).json({ error: e.message });
+    } finally {
+      xpRecalcRunning = false;
     }
   });
 
