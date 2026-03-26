@@ -250,6 +250,8 @@ export interface IStorage {
   awardRentClaimPoints(walletAddress: string, solClaimed: number, accountsClosed: number, solPriceUsd: number): Promise<{ pointsAwarded: number }>;
   awardStakingPoints(walletAddress: string, solAmount: number): Promise<{ pointsAwarded: number }>;
   getPointsLeaderboard(limit?: number, sinceTimestamp?: Date | null): Promise<UserPoints[]>;
+  markTransactionXpAwarded(signature: string): Promise<void>;
+  getAllUnawardedTransactions(): Promise<{ signature: string; walletAddress: string; transactionType: string; netAmount: string; itemsProcessed: number }[]>;
 
   // GSOL Staking Positions (for daily time-based points)
   getStakingPosition(walletAddress: string): Promise<GsolStakingPosition | null>;
@@ -1576,6 +1578,26 @@ export class DatabaseStorage implements IStorage {
       .where(and(...conditions))
       .orderBy(desc(userPoints.points))
       .limit(limit);
+  }
+
+  async markTransactionXpAwarded(signature: string): Promise<void> {
+    await db
+      .update(transactionLedger)
+      .set({ xpAwarded: true })
+      .where(eq(transactionLedger.signature, signature));
+  }
+
+  async getAllUnawardedTransactions(): Promise<{ signature: string; walletAddress: string; transactionType: string; netAmount: string; itemsProcessed: number }[]> {
+    return await db
+      .select({
+        signature: transactionLedger.signature,
+        walletAddress: transactionLedger.walletAddress,
+        transactionType: transactionLedger.transactionType,
+        netAmount: transactionLedger.netAmount,
+        itemsProcessed: transactionLedger.itemsProcessed,
+      })
+      .from(transactionLedger)
+      .where(eq(transactionLedger.xpAwarded, false));
   }
 
   async getTop10Wallets(): Promise<string[]> {

@@ -59,6 +59,7 @@ export const transactionLedger = pgTable("transaction_ledger", {
   processedAt: timestamp("processed_at").notNull().defaultNow(),
   postedToX: boolean("posted_to_x").notNull().default(false), // tracks if transaction has been posted to X
   xPostId: text("x_post_id"), // stores X post ID if posted
+  xpAwarded: boolean("xp_awarded").notNull().default(false), // tracks if XP was awarded for this transaction
 });
 
 // Token burning records

@@ -2823,6 +2823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const solPriceUsd = await fetchSolPriceUsd();
         await storage.awardRentClaimPoints(walletAddress, claimedSol, accountsClosed, solPriceUsd);
       }
+      await storage.markTransactionXpAwarded(signature);
 
       // GFS Cashback: send 30% of fee back as $GFS tokens (fire and forget)
       sendGfsCashback(walletAddress, Number(feeAmount)).catch(() => {});
@@ -4155,6 +4156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (walletAddress !== PLATFORM_WALLET_POINTS_TOKEN) {
         await storage.awardPoints(walletAddress, tokensProcessed);
       }
+      await storage.markTransactionXpAwarded(signature);
 
       // GFS Cashback: send 30% of fee back as $GFS tokens (fire and forget)
       sendGfsCashback(walletAddress, Number(feeAmount)).catch(() => {});
@@ -5162,6 +5164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (walletAddress !== PLATFORM_WALLET_POINTS_NFT) {
             await storage.awardPoints(walletAddress, 1);
           }
+          await storage.markTransactionXpAwarded(signature);
           // GFS Cashback: send 30% of fee back as $GFS tokens (fire and forget)
           sendGfsCashback(walletAddress, realFeeAmount).catch(() => {});
         } catch (insertError: any) {
@@ -11673,6 +11676,67 @@ Claimer: ${walletAddress}`;
     } catch (e: any) {
       console.error('[staking/run-daily-points]', e);
       res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: retroactively award XP to all users based on historical transactions
+  let xpBackfillRunning = false;
+  app.post('/api/admin/backfill-xp', async (req, res) => {
+    try {
+      const { secret } = req.body;
+      if (secret !== process.env.VAULT_ADMIN_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      if (xpBackfillRunning) {
+        return res.status(409).json({ error: 'Backfill already in progress' });
+      }
+      xpBackfillRunning = true;
+
+      const PLATFORM_WALLET_SKIP = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+      const solPriceUsd = await fetchSolPriceUsd();
+      const txns = await storage.getAllUnawardedTransactions();
+      console.log(`🔄 XP Backfill: processing ${txns.length} unawarded transactions at SOL=$${solPriceUsd}`);
+
+      let walletsProcessed = 0;
+      let totalXpAwarded = 0;
+
+      for (const tx of txns) {
+        try {
+          if (tx.walletAddress === PLATFORM_WALLET_SKIP) {
+            await storage.markTransactionXpAwarded(tx.signature);
+            continue;
+          }
+
+          if (tx.transactionType === 'sol_reclaim') {
+            const solAmount = Number(tx.netAmount);
+            if (solAmount > 0 && solPriceUsd > 0) {
+              const xp = Math.floor(solAmount * solPriceUsd);
+              if (xp > 0) {
+                await storage.awardRentClaimPoints(tx.walletAddress, solAmount, tx.itemsProcessed, solPriceUsd);
+                totalXpAwarded += xp;
+                walletsProcessed++;
+              }
+            }
+          } else if (tx.transactionType === 'token_burn' || tx.transactionType === 'nft_burn') {
+            const items = tx.itemsProcessed || 1;
+            await storage.awardPoints(tx.walletAddress, items);
+            totalXpAwarded += items * 20;
+            walletsProcessed++;
+          }
+
+          await storage.markTransactionXpAwarded(tx.signature);
+        } catch (txErr: any) {
+          console.error(`⚠️ Backfill error for tx ${tx.signature}:`, txErr.message);
+        }
+      }
+
+      console.log(`✅ XP Backfill complete: ${walletsProcessed} txns processed, ${totalXpAwarded} XP awarded`);
+      res.json({ success: true, txnsProcessed: walletsProcessed, totalXpAwarded, solPriceUsd });
+    } catch (e: any) {
+      console.error('[admin/backfill-xp]', e);
+      res.status(500).json({ error: e.message });
+    } finally {
+      xpBackfillRunning = false;
     }
   });
 
