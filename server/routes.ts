@@ -11115,66 +11115,52 @@ Claimer: ${walletAddress}`;
         } catch (_) {}
       }
 
-      // ── 2. Real GSOL APY from the actual validator GSOL delegates to ────
-      // GSOL pool delegates to: LSTmLs1DENX82ihc7jU134mydiV3NDEPXsRrekAY6Ys
-      // (Sanctum LST validator — 0% commission, 2M+ SOL staked)
-      // APY = actual epoch inflation rewards from that validator's stake accounts.
-      const GSOL_VALIDATOR = 'LSTmLs1DENX82ihc7jU134mydiV3NDEPXsRrekAY6Ys';
+      // ── 2. Real GSOL APY — Sanctum methodology (inception-to-now) ──────
+      // GSOL pool's own stake account: HwzMUGq3C7STPuHgD9UGPKDhqpcmXyN4JzKigwNqavej
+      // Creation epoch: 941 (slot 406,824,214 = March 16, 2026)
+      // APY = annualized compound return from pool creation to current epoch,
+      // including warmup epochs with 0 reward — matches Sanctum's displayed APY.
+      const GSOL_STAKE_ACCT = 'HwzMUGq3C7STPuHgD9UGPKDhqpcmXyN4JzKigwNqavej';
+      const GSOL_CREATION_EPOCH = 941;
       let apy: number | undefined;
-      let apySource = 'gsol-validator';
+      let apySource = 'gsol-inception';
 
       try {
-        const [epochJ, stakeAcctsJ] = await Promise.all([
-          fetch(heliusUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getEpochInfo', params: [] })
-          }).then(r => r.json()),
-          fetch(heliusUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0', id: 2, method: 'getProgramAccounts',
-              params: ['Stake11111111111111111111111111111111111111', {
-                filters: [{ memcmp: { offset: 124, bytes: GSOL_VALIDATOR } }],
-                encoding: 'jsonParsed',
-                commitment: 'finalized',
-                dataSlice: { offset: 0, length: 0 }
-              }]
-            })
-          }).then(r => r.json()),
-        ]);
+        const epochJ = await fetch(heliusUrl, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getEpochInfo', params: [] })
+        }).then(r => r.json());
 
         const currentEpoch: number = epochJ.result?.epoch ?? 0;
         const slotsPerEpoch: number = epochJ.result?.slotsInEpoch ?? 432000;
-        const epochsPerYear = (365.25 * 24 * 3600) / (slotsPerEpoch * 0.4);
+        const epochDurationDays = (slotsPerEpoch * 0.4) / (24 * 3600);
 
-        // Pick the 5 largest stake accounts (most reliable reward data)
-        const stakeAccts: string[] = (stakeAcctsJ.result ?? [])
-          .sort((a: any, b: any) => (b.account?.lamports ?? 0) - (a.account?.lamports ?? 0))
-          .slice(0, 5)
-          .map((a: any) => a.pubkey);
-
-        if (stakeAccts.length > 0) {
-          // Try the last few epochs to find one with completed rewards
-          for (let epochOffset = 1; epochOffset <= 3; epochOffset++) {
-            const rewardsJ = await fetch(heliusUrl, {
+        if (currentEpoch > GSOL_CREATION_EPOCH) {
+          // Collect epoch rewards from creation to current (sequential — each epoch builds on last)
+          let compoundReturn = 1.0;
+          for (let epoch = GSOL_CREATION_EPOCH; epoch < currentEpoch; epoch++) {
+            const rewJ = await fetch(heliusUrl, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                jsonrpc: '2.0', id: 3, method: 'getInflationReward',
-                params: [stakeAccts, { epoch: currentEpoch - epochOffset }]
+                jsonrpc: '2.0', id: 2, method: 'getInflationReward',
+                params: [[GSOL_STAKE_ACCT], { epoch }]
               })
             }).then(r => r.json());
 
-            const rewards: any[] = (rewardsJ.result ?? []).filter((r: any) => r && r.amount > 0);
-            if (rewards.length > 0) {
-              const avgEpochYield = rewards.reduce((sum: number, r: any) => {
-                const pre = r.postBalance - r.amount;
-                return sum + (pre > 0 ? r.amount / pre : 0);
-              }, 0) / rewards.length;
-              // GSOL validator has 0% commission — gross yield = net yield for stakers
-              apy = (Math.pow(1 + avgEpochYield, epochsPerYear) - 1) * 100;
-              apy = Math.max(3, Math.min(15, apy));
-              break;
+            const rew = (rewJ.result ?? [])[0];
+            if (rew && rew.amount > 0) {
+              const pre = rew.postBalance - rew.amount;
+              if (pre > 0) compoundReturn *= (1 + rew.amount / pre);
             }
+            // warmup epochs (0 reward) naturally contribute no return
+          }
+
+          // Annualize over total elapsed time from creation epoch (including warmup)
+          const totalEpochs = currentEpoch - GSOL_CREATION_EPOCH;
+          const totalDays = totalEpochs * epochDurationDays;
+          if (totalDays > 0 && compoundReturn > 1) {
+            apy = (Math.pow(compoundReturn, 365.25 / totalDays) - 1) * 100;
+            apy = Math.max(1, Math.min(20, apy));
           }
         }
       } catch (_) {}
