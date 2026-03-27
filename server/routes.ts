@@ -11214,8 +11214,14 @@ Claimer: ${walletAddress}`;
             }
           } catch (_) {}
 
+          // MEV/priority fees are NOT included in getInflationReward; add a conservative estimate
+          // based on observed Jito tip data (~1.2% for large validators in 2025-2026)
+          const MEV_BONUS_PCT = 1.2;
+
           // Prefer actual epoch rewards APY; fall back to compounded inflation formula
-          apy = epochRewardsApy ?? compoundedApy;
+          // Then add MEV bonus so the total matches real staking yields (~6.5-7%)
+          const baseApy = epochRewardsApy ?? compoundedApy;
+          apy = baseApy + MEV_BONUS_PCT;
           apy = Math.max(4, Math.min(15, apy)); // safety clamp 4–15%
         }
       } catch (_) {}
