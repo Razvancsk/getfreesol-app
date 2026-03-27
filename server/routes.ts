@@ -11115,27 +11115,71 @@ Claimer: ${walletAddress}`;
         } catch (_) {}
       }
 
-      // ── 2. Real APY — Marinade 1-year rate (primary) ────────────────────
-      // Marinade's published 1-year APY is the most reliable real Solana staking
-      // rate available from a public API; it reflects actual compounded inflation
-      // rewards + MEV earned by the broader Solana validator set.
+      // ── 2. Real GSOL APY from the actual validator GSOL delegates to ────
+      // GSOL pool delegates to: LSTmLs1DENX82ihc7jU134mydiV3NDEPXsRrekAY6Ys
+      // (Sanctum LST validator — 0% commission, 2M+ SOL staked)
+      // APY = actual epoch inflation rewards from that validator's stake accounts.
+      const GSOL_VALIDATOR = 'LSTmLs1DENX82ihc7jU134mydiV3NDEPXsRrekAY6Ys';
       let apy: number | undefined;
-      let apySource = 'marinade-1y';
+      let apySource = 'gsol-validator';
 
       try {
-        const marinadeResp = await fetch('https://api.marinade.finance/msol/apy/1y', {
-          signal: AbortSignal.timeout(6000)
-        });
-        if (marinadeResp.ok) {
-          const marinadeData = await marinadeResp.json();
-          if (marinadeData?.value > 0) {
-            apy = marinadeData.value * 100;
+        const [epochJ, stakeAcctsJ] = await Promise.all([
+          fetch(heliusUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getEpochInfo', params: [] })
+          }).then(r => r.json()),
+          fetch(heliusUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0', id: 2, method: 'getProgramAccounts',
+              params: ['Stake11111111111111111111111111111111111111', {
+                filters: [{ memcmp: { offset: 124, bytes: GSOL_VALIDATOR } }],
+                encoding: 'jsonParsed',
+                commitment: 'finalized',
+                dataSlice: { offset: 0, length: 0 }
+              }]
+            })
+          }).then(r => r.json()),
+        ]);
+
+        const currentEpoch: number = epochJ.result?.epoch ?? 0;
+        const slotsPerEpoch: number = epochJ.result?.slotsInEpoch ?? 432000;
+        const epochsPerYear = (365.25 * 24 * 3600) / (slotsPerEpoch * 0.4);
+
+        // Pick the 5 largest stake accounts (most reliable reward data)
+        const stakeAccts: string[] = (stakeAcctsJ.result ?? [])
+          .sort((a: any, b: any) => (b.account?.lamports ?? 0) - (a.account?.lamports ?? 0))
+          .slice(0, 5)
+          .map((a: any) => a.pubkey);
+
+        if (stakeAccts.length > 0) {
+          // Try the last few epochs to find one with completed rewards
+          for (let epochOffset = 1; epochOffset <= 3; epochOffset++) {
+            const rewardsJ = await fetch(heliusUrl, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0', id: 3, method: 'getInflationReward',
+                params: [stakeAccts, { epoch: currentEpoch - epochOffset }]
+              })
+            }).then(r => r.json());
+
+            const rewards: any[] = (rewardsJ.result ?? []).filter((r: any) => r && r.amount > 0);
+            if (rewards.length > 0) {
+              const avgEpochYield = rewards.reduce((sum: number, r: any) => {
+                const pre = r.postBalance - r.amount;
+                return sum + (pre > 0 ? r.amount / pre : 0);
+              }, 0) / rewards.length;
+              // GSOL validator has 0% commission — gross yield = net yield for stakers
+              apy = (Math.pow(1 + avgEpochYield, epochsPerYear) - 1) * 100;
+              apy = Math.max(3, Math.min(15, apy));
+              break;
+            }
           }
         }
       } catch (_) {}
 
-      // ── 3. Fallback: on-chain inflation formula ──────────────────────────
-      // If Marinade API unavailable, compute from live Solana inflation data.
+      // ── 3. Fallback: on-chain inflation formula (0% commission) ─────────
       if (apy === undefined) {
         try {
           const [inflResp, voteResp, supplyResp] = await Promise.all([
@@ -11166,22 +11210,16 @@ Claimer: ${walletAddress}`;
 
           if (inflationValidator > 0 && totalSupplyLamports > 0 && totalStakeLamports > 0) {
             const stakingRatio = totalStakeLamports / totalSupplyLamports;
-            // Solana epochs: 432,000 slots × 0.4s ≈ 2.02 days → ~180.6 epochs/year
             const epochsPerYear = (365.25 * 24 * 3600) / (432000 * 0.4);
-            // Pre-commission yield
             const epochYield = inflationValidator / epochsPerYear / stakingRatio;
-            const grossApy = (Math.pow(1 + epochYield, epochsPerYear) - 1) * 100;
-            // Stake-weighted average commission from live vote accounts
-            const totalWeightedCommission = current.reduce((s: number, v: any) =>
-              s + ((v.commission ?? 0) / 100) * (v.activatedStake ?? 0), 0);
-            const avgCommission = totalWeightedCommission / Math.max(totalStakeLamports, 1);
-            apy = grossApy * (1 - avgCommission);
+            // 0% commission on GSOL validator = full gross yield to stakers
+            apy = (Math.pow(1 + epochYield, epochsPerYear) - 1) * 100;
             apySource = 'solana-inflation';
           }
         } catch (_) {}
       }
 
-      if (apy === undefined) apy = 7.3;
+      if (apy === undefined) apy = 5.96;
       if (!solValue) solValue = 1.07;
 
       const result = {
