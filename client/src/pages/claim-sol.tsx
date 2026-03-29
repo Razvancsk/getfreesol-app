@@ -3553,8 +3553,8 @@ export default function SolRefund() {
 
 
   return (
-    <><div className="h-screen md:min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-hidden">
-      <div className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden container mx-auto pt-1 max-w-6xl md:max-w-7xl ${activeTab === 'docs' ? 'px-0' : 'px-4'} pb-2`}>
+    <><div className="h-screen md:h-auto md:min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
+      <div className={`flex-1 min-h-0 overflow-y-auto md:overflow-visible md:flex-grow container mx-auto pt-1 max-w-6xl md:max-w-7xl ${activeTab === 'docs' ? 'px-0' : 'px-4'} pb-2`}>
         <div className="space-y-1">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-0 space-y-1 lg:space-y-0">
