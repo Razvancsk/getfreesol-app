@@ -7184,7 +7184,7 @@ export default function SolRefund() {
             {/* Claim */}
             <button
               onClick={() => setActiveTab('reclaim')}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors ${
                 activeTab === 'reclaim' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
               }`}
             >
@@ -7199,7 +7199,7 @@ export default function SolRefund() {
             {/* Burn */}
             <button
               onClick={() => setActiveTab('burnTokens')}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors ${
                 activeTab === 'burnTokens' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
               }`}
             >
@@ -7210,7 +7210,7 @@ export default function SolRefund() {
             {/* Stake */}
             <button
               onClick={() => setActiveTab('staking')}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors ${
                 activeTab === 'staking' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
               }`}
             >
