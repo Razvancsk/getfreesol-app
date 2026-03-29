@@ -3554,7 +3554,7 @@ export default function SolRefund() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
-      <div className={`container mx-auto pt-1 pb-2 max-w-6xl md:max-w-7xl flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'} pb-20 md:pb-2`}>
+      <div className={`container mx-auto pt-1 pb-2 max-w-6xl md:max-w-7xl flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'} pb-14 md:pb-2`}>
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
@@ -7184,11 +7184,11 @@ export default function SolRefund() {
             {/* Claim */}
             <button
               onClick={() => setActiveTab('reclaim')}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors ${
                 activeTab === 'reclaim' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
               }`}
             >
-              <svg className="w-6 h-6" viewBox="0 0 397.7 311.7" fill="currentColor">
+              <svg className="w-5 h-5" viewBox="0 0 397.7 311.7" fill="currentColor">
                 <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                 <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                 <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
@@ -7199,22 +7199,22 @@ export default function SolRefund() {
             {/* Burn */}
             <button
               onClick={() => setActiveTab('burnTokens')}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors ${
                 activeTab === 'burnTokens' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
               }`}
             >
-              <Flame className="w-6 h-6" />
+              <Flame className="w-5 h-5" />
               <span className="text-xs font-semibold">Burn</span>
             </button>
 
             {/* Stake */}
             <button
               onClick={() => setActiveTab('staking')}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors ${
                 activeTab === 'staking' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
               }`}
             >
-              <FaSackDollar className="w-6 h-6" />
+              <FaSackDollar className="w-5 h-5" />
               <span className="text-xs font-semibold">Stake</span>
             </button>
           </div>
