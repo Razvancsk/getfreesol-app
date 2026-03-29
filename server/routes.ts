@@ -11734,6 +11734,48 @@ Claimer: ${walletAddress}`;
     return { solPriceUsd, gsolSolRate };
   }
 
+  // Get staking position + next reward info for a wallet
+  app.get('/api/staking/position/:wallet', async (req, res) => {
+    try {
+      const { wallet } = req.params;
+      if (!wallet) return res.status(400).json({ error: 'wallet required' });
+
+      const positions = await storage.getAllActiveStakingPositions();
+      const pos = positions.find(p => p.walletAddress === wallet);
+
+      if (!pos || Number(pos.gsolAmount) <= 0) {
+        return res.json({ hasPosition: false });
+      }
+
+      const { solPriceUsd, gsolSolRate } = await fetchStakingPrices();
+      const gsolAmt = Number(pos.gsolAmount);
+      const estimatedXP = gsolAmt * gsolSolRate * solPriceUsd;
+
+      const lastPointsAt = pos.lastPointsAt ? new Date(pos.lastPointsAt) : null;
+      const nextRewardAt = lastPointsAt ? new Date(lastPointsAt.getTime() + 24 * 60 * 60 * 1000) : new Date();
+      const msUntilNext = Math.max(0, nextRewardAt.getTime() - Date.now());
+      const hoursUntilNext = Math.floor(msUntilNext / (1000 * 60 * 60));
+      const minutesUntilNext = Math.floor((msUntilNext % (1000 * 60 * 60)) / (1000 * 60));
+      const readyNow = msUntilNext === 0;
+
+      res.json({
+        hasPosition: true,
+        gsolAmount: gsolAmt,
+        lastPointsAt: lastPointsAt?.toISOString() ?? null,
+        nextRewardAt: nextRewardAt.toISOString(),
+        hoursUntilNext,
+        minutesUntilNext,
+        readyNow,
+        estimatedXP,
+        solPriceUsd,
+        gsolSolRate,
+      });
+    } catch (e: any) {
+      console.error('[staking/position]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Manual trigger for daily staking points (admin only)
   app.post('/api/staking/run-daily-points', async (req, res) => {
     try {

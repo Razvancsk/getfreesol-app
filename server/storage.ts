@@ -1514,6 +1514,12 @@ export class DatabaseStorage implements IStorage {
       const gsolAmt = Number(pos.gsolAmount);
       if (gsolAmt <= 0) continue;
 
+      // Only award if 24 hours have passed since last award
+      if (pos.lastPointsAt) {
+        const msSinceLast = now.getTime() - new Date(pos.lastPointsAt).getTime();
+        if (msSinceLast < 24 * 60 * 60 * 1000) continue;
+      }
+
       // XP = exact dollar value per day (no rounding)
       const dollarValue = gsolAmt * gsolSolRate * solPriceUsd;
       const basePoints = dollarValue;
