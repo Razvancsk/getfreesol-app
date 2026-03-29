@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import bs58 from "bs58";
@@ -3554,8 +3553,8 @@ export default function SolRefund() {
 
 
   return (
-    <><div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
-      <div className={`container mx-auto pt-1 max-w-6xl md:max-w-7xl md:flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'} pb-36 md:pb-2`}>
+    <><div className="h-screen md:min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-hidden">
+      <div className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden container mx-auto pt-1 max-w-6xl md:max-w-7xl ${activeTab === 'docs' ? 'px-0' : 'px-4'} pb-2`}>
         <div className="space-y-1">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-0 space-y-1 lg:space-y-0">
@@ -7477,53 +7476,38 @@ export default function SolRefund() {
           animation: spin-slow 10s linear infinite;
         }
       `}</style>
+
+      {/* Mobile bottom nav — flex child of the h-screen container, no fixed/portal needed */}
+      {isConnected && (
+        <div className="md:hidden shrink-0 flex items-center py-3" style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(100,116,139,0.3)' }}>
+          <button
+            onClick={() => setActiveTab('reclaim')}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'reclaim' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <svg style={{ width: '20px', height: '20px' }} viewBox="0 0 397.7 311.7" fill="currentColor">
+              <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+              <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+              <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+            </svg>
+            <span style={{ fontSize: '12px', fontWeight: 500 }}>Claim</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('burnTokens')}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'burnTokens' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <Flame style={{ width: '20px', height: '20px' }} />
+            <span style={{ fontSize: '12px', fontWeight: 500 }}>Burn</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('staking')}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'staking' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <Coins style={{ width: '20px', height: '20px' }} />
+            <span style={{ fontSize: '12px', fontWeight: 500 }}>Stake</span>
+          </button>
+        </div>
+      )}
     </div>
-
-    {isConnected && createPortal(
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 99999,
-        backgroundColor: '#0f172a',
-        borderTop: '1px solid rgba(100,116,139,0.3)',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '12px 0',
-      }}
-      className="md:hidden"
-      >
-        <button
-          onClick={() => setActiveTab('reclaim')}
-          style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'reclaim' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          <svg style={{ width: '20px', height: '20px' }} viewBox="0 0 397.7 311.7" fill="currentColor">
-            <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-            <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-            <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-          </svg>
-          <span style={{ fontSize: '12px', fontWeight: 500 }}>Claim</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('burnTokens')}
-          style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'burnTokens' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          <Flame style={{ width: '20px', height: '20px' }} />
-          <span style={{ fontSize: '12px', fontWeight: 500 }}>Burn</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('staking')}
-          style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'staking' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          <Coins style={{ width: '20px', height: '20px' }} />
-          <span style={{ fontSize: '12px', fontWeight: 500 }}>Stake</span>
-        </button>
-      </div>,
-      document.body
-    )}
     </>
   );
 }
