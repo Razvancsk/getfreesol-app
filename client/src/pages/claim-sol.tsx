@@ -7489,21 +7489,21 @@ export default function SolRefund() {
               <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
               <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
             </svg>
-            <span style={{ fontSize: '12px', fontWeight: 500 }}>Claim</span>
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Claim Rent</span>
           </button>
           <button
             onClick={() => setActiveTab('burnTokens')}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'burnTokens' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             <Flame style={{ width: '20px', height: '20px' }} />
-            <span style={{ fontSize: '12px', fontWeight: 500 }}>Burn</span>
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Burn Tokens/NFTs</span>
           </button>
           <button
             onClick={() => setActiveTab('staking')}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'staking' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             <FaSackDollar style={{ width: '20px', height: '20px' }} />
-            <span style={{ fontSize: '12px', fontWeight: 500 }}>Stake</span>
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
           </button>
         </div>
       )}
