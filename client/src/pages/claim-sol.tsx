@@ -7222,7 +7222,7 @@ export default function SolRefund() {
       )}
 
       {/* Footer */}
-      <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm mt-auto">
+      <div className="hidden md:block border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm mt-auto">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
