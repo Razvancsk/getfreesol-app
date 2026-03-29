@@ -7179,7 +7179,7 @@ export default function SolRefund() {
 
       {/* Mobile Bottom Navigation — Claim / Burn / Stake */}
       {isConnected && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-800 border-t border-slate-700">
           <div className="flex items-stretch">
             {/* Claim */}
             <button
