@@ -5155,48 +5155,6 @@ export default function SolRefund() {
 
               </div>
 
-              {/* 24h XP Reward Countdown */}
-              {stakingPositionData?.hasPosition && (
-                <div className="rounded-2xl border border-purple-500/40 bg-purple-900/40 p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-5 h-5 text-purple-300" />
-                    <span className="text-white font-bold text-base">Daily XP Reward</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-purple-800/40 rounded-xl p-3 text-center">
-                      <p className="text-white text-xs mb-1">Your GSOL</p>
-                      <p className="text-white font-black text-lg">{stakingPositionData.gsolAmount.toFixed(4)}</p>
-                      <p className="text-purple-300 text-xs">GSOL staked</p>
-                    </div>
-                    <div className="bg-purple-800/40 rounded-xl p-3 text-center">
-                      <p className="text-white text-xs mb-1">Next Reward</p>
-                      <p className="text-white font-black text-lg">
-                        +{formatXP(stakingPositionData.estimatedXP)} XP
-                      </p>
-                      <p className="text-purple-300 text-xs">≈ ${stakingPositionData.estimatedXP.toFixed(2)}</p>
-                    </div>
-                  </div>
-                  {stakingPositionData.readyNow ? (
-                    <div className="flex items-center gap-2 bg-green-500/20 border border-green-500/40 rounded-xl px-4 py-3">
-                      <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                      <span className="text-green-300 text-sm font-semibold">Reward ready — will be credited in the next daily run</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 bg-purple-800/40 border border-purple-500/30 rounded-xl px-4 py-3">
-                      <Clock className="w-4 h-4 text-purple-300 shrink-0" />
-                      <span className="text-white text-sm">
-                        Next reward in <span className="text-white font-black">{stakingPositionData.hoursUntilNext}h {stakingPositionData.minutesUntilNext}m</span>
-                      </span>
-                      <span className="ml-auto text-purple-400 text-xs">Updates every minute</span>
-                    </div>
-                  )}
-                  {stakingPositionData.lastPointsAt && (
-                    <p className="text-purple-400 text-xs mt-3 text-center">
-                      Last reward: {new Date(stakingPositionData.lastPointsAt).toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              )}
 
               {/* GSOL FAQ Accordion */}
               <div className="space-y-3">
