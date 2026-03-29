@@ -7479,7 +7479,7 @@ export default function SolRefund() {
 
       {/* Mobile bottom nav — flex child of the h-screen container, no fixed/portal needed */}
       {isConnected && (
-        <div className="md:hidden shrink-0 flex items-center py-3" style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(100,116,139,0.3)' }}>
+        <div className="md:hidden shrink-0 flex items-center py-3 relative z-[60]" style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(100,116,139,0.3)' }}>
           <button
             onClick={() => setActiveTab('reclaim')}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'reclaim' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
