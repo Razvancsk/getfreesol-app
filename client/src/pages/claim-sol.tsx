@@ -7502,7 +7502,7 @@ export default function SolRefund() {
             onClick={() => setActiveTab('staking')}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'staking' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            <Coins style={{ width: '20px', height: '20px' }} />
+            <FaSackDollar style={{ width: '20px', height: '20px' }} />
             <span style={{ fontSize: '12px', fontWeight: 500 }}>Stake</span>
           </button>
         </div>
