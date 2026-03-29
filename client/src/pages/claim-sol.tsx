@@ -7185,7 +7185,7 @@ export default function SolRefund() {
             <button
               onClick={() => setActiveTab('reclaim')}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
-                activeTab === 'reclaim' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
+                activeTab === 'reclaim' ? 'text-purple-400' : 'text-white/70'
               }`}
             >
               <svg className="w-6 h-6" viewBox="0 0 397.7 311.7" fill="currentColor">
@@ -7200,7 +7200,7 @@ export default function SolRefund() {
             <button
               onClick={() => setActiveTab('burnTokens')}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
-                activeTab === 'burnTokens' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
+                activeTab === 'burnTokens' ? 'text-purple-400' : 'text-white/70'
               }`}
             >
               <Flame className="w-6 h-6" />
@@ -7211,7 +7211,7 @@ export default function SolRefund() {
             <button
               onClick={() => setActiveTab('staking')}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
-                activeTab === 'staking' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
+                activeTab === 'staking' ? 'text-purple-400' : 'text-white/70'
               }`}
             >
               <FaSackDollar className="w-6 h-6" />
