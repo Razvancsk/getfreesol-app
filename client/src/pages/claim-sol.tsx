@@ -3553,7 +3553,7 @@ export default function SolRefund() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
+    <><div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
       <div className={`container mx-auto pt-1 max-w-6xl md:max-w-7xl md:flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'} pb-36 md:pb-2`}>
         <div className="space-y-1">
           {/* Header with Navigation and Wallet Connection */}
@@ -7177,50 +7177,6 @@ export default function SolRefund() {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation — Claim / Burn / Stake */}
-      {isConnected && (
-        <div className="mobile-nav-bar md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-slate-900 border-t border-slate-700/50">
-          <div className="flex items-center py-3 w-full">
-            {/* Claim */}
-            <button
-              onClick={() => setActiveTab('reclaim')}
-              className={`flex-1 flex flex-col items-center gap-1 transition-colors ${
-                activeTab === 'reclaim' ? 'text-purple-400' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <svg className="w-5 h-5" viewBox="0 0 397.7 311.7" fill="currentColor">
-                <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-              </svg>
-              <span className="text-xs font-medium">Claim</span>
-            </button>
-
-            {/* Burn */}
-            <button
-              onClick={() => setActiveTab('burnTokens')}
-              className={`flex-1 flex flex-col items-center gap-1 transition-colors ${
-                activeTab === 'burnTokens' ? 'text-purple-400' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Flame className="w-5 h-5" />
-              <span className="text-xs font-medium">Burn</span>
-            </button>
-
-            {/* Stake */}
-            <button
-              onClick={() => setActiveTab('staking')}
-              className={`flex-1 flex flex-col items-center gap-1 transition-colors ${
-                activeTab === 'staking' ? 'text-purple-400' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <FaSackDollar className="w-5 h-5" />
-              <span className="text-xs font-medium">Stake</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
       <div className="hidden md:block border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm mt-auto">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -7521,5 +7477,44 @@ export default function SolRefund() {
         }
       `}</style>
     </div>
+
+    {/* Mobile Bottom Navigation — outside main wrapper to avoid stacking context issues */}
+    {isConnected && (
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[9999]" style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(100,116,139,0.3)' }}>
+        <div className="flex items-center py-3 w-full">
+          <button
+            onClick={() => setActiveTab('reclaim')}
+            style={{ color: activeTab === 'reclaim' ? '#c084fc' : '#9ca3af' }}
+            className="flex-1 flex flex-col items-center gap-1 transition-colors"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 397.7 311.7" fill="currentColor">
+              <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+              <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+              <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+            </svg>
+            <span className="text-xs font-medium">Claim</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('burnTokens')}
+            style={{ color: activeTab === 'burnTokens' ? '#c084fc' : '#9ca3af' }}
+            className="flex-1 flex flex-col items-center gap-1 transition-colors"
+          >
+            <Flame className="w-5 h-5" />
+            <span className="text-xs font-medium">Burn</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('staking')}
+            style={{ color: activeTab === 'staking' ? '#c084fc' : '#9ca3af' }}
+            className="flex-1 flex flex-col items-center gap-1 transition-colors"
+          >
+            <FaSackDollar className="w-5 h-5" />
+            <span className="text-xs font-medium">Stake</span>
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
