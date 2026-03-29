@@ -7179,43 +7179,43 @@ export default function SolRefund() {
 
       {/* Mobile Bottom Navigation — Claim / Burn / Stake */}
       {isConnected && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-slate-800 border-t border-white/10">
-          <div className="flex items-stretch">
+        <div className="mobile-nav-bar md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-slate-900 border-t border-slate-700/50">
+          <div className="flex items-center py-3 w-full">
             {/* Claim */}
             <button
               onClick={() => setActiveTab('reclaim')}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
-                activeTab === 'reclaim' ? 'text-purple-400' : 'text-white/70'
+              className={`flex-1 flex flex-col items-center gap-1 transition-colors ${
+                activeTab === 'reclaim' ? 'text-purple-400' : 'text-gray-400 hover:text-white'
               }`}
             >
-              <svg className="w-6 h-6" viewBox="0 0 397.7 311.7" fill="currentColor">
+              <svg className="w-5 h-5" viewBox="0 0 397.7 311.7" fill="currentColor">
                 <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                 <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                 <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
               </svg>
-              <span className="text-xs font-semibold">Claim</span>
+              <span className="text-xs font-medium">Claim</span>
             </button>
 
             {/* Burn */}
             <button
               onClick={() => setActiveTab('burnTokens')}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
-                activeTab === 'burnTokens' ? 'text-purple-400' : 'text-white/70'
+              className={`flex-1 flex flex-col items-center gap-1 transition-colors ${
+                activeTab === 'burnTokens' ? 'text-purple-400' : 'text-gray-400 hover:text-white'
               }`}
             >
-              <Flame className="w-6 h-6" />
-              <span className="text-xs font-semibold">Burn</span>
+              <Flame className="w-5 h-5" />
+              <span className="text-xs font-medium">Burn</span>
             </button>
 
             {/* Stake */}
             <button
               onClick={() => setActiveTab('staking')}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
-                activeTab === 'staking' ? 'text-purple-400' : 'text-white/70'
+              className={`flex-1 flex flex-col items-center gap-1 transition-colors ${
+                activeTab === 'staking' ? 'text-purple-400' : 'text-gray-400 hover:text-white'
               }`}
             >
-              <FaSackDollar className="w-6 h-6" />
-              <span className="text-xs font-semibold">Stake</span>
+              <FaSackDollar className="w-5 h-5" />
+              <span className="text-xs font-medium">Stake</span>
             </button>
           </div>
         </div>
