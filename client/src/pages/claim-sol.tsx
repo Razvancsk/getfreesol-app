@@ -3555,9 +3555,9 @@ export default function SolRefund() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
       <div className={`container mx-auto pt-1 pb-2 max-w-6xl md:max-w-7xl flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'} pb-14 md:pb-2`}>
-        <div className="space-y-2">
+        <div className="space-y-1">
           {/* Header with Navigation and Wallet Connection */}
-          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
+          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-0 space-y-1 lg:space-y-0">
             {activeTab === 'docs' ? (
               /* Docs Mode Header - Logo only */
               <div className="flex items-center justify-between w-full">
@@ -3576,7 +3576,7 @@ export default function SolRefund() {
                     <img 
                       src={logoImage}
                       alt="Get your SOL back!"
-                      className="h-[100px] w-[100px]"
+                      className="h-[70px] w-[70px] md:h-[100px] md:w-[100px]"
                     />
                   </div>
 
