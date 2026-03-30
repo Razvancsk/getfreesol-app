@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import bs58 from "bs58";
@@ -106,8 +106,6 @@ export default function SolRefund() {
   // Note: UMI will be created inside the burn handler to avoid initialization errors
   
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  // Prevents auto-scan immediately after a successful claim (user must manually rescan)
-  const preventAutoScanRef = useRef(false);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'coinflip' | 'staking'>('reclaim');
   const [claimSubTab, setClaimSubTab] = useState<'empty' | 'programs'>('empty');
