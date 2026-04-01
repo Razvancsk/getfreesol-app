@@ -11115,17 +11115,31 @@ Claimer: ${walletAddress}`;
         } catch (_) {}
       }
 
-      // ── 2. Real GSOL APY — Sanctum methodology (inception-to-now) ──────
-      // GSOL pool's own stake account: HwzMUGq3C7STPuHgD9UGPKDhqpcmXyN4JzKigwNqavej
-      // Creation epoch: 941 (slot 406,824,214 = March 16, 2026)
-      // APY = annualized compound return from pool creation to current epoch,
-      // including warmup epochs with 0 reward — matches Sanctum's displayed APY.
+      // ── 2. Real GSOL APY — try Sanctum extra-api first, then on-chain ──
       const GSOL_STAKE_ACCT = 'HwzMUGq3C7STPuHgD9UGPKDhqpcmXyN4JzKigwNqavej';
       const GSOL_CREATION_EPOCH = 941;
       let apy: number | undefined;
       let apySource = 'gsol-inception';
 
+      // ── 2a. Sanctum extra-api APY (primary, requires GSOL to be registered) ──
       try {
+        const sanctumApyRes = await fetch(
+          `https://extra-api.sanctum.so/v1/apy/latest?lst=${GSOL_MINT_ADDR}`,
+          { headers: process.env.SANCTUM_API_KEY ? { 'Api-Key': process.env.SANCTUM_API_KEY } : {} }
+        );
+        if (sanctumApyRes.ok) {
+          const sanctumApyData = await sanctumApyRes.json();
+          const sanctumApy = sanctumApyData?.apys?.[GSOL_MINT_ADDR];
+          if (typeof sanctumApy === 'number' && sanctumApy > 0) {
+            apy = sanctumApy * 100; // Sanctum returns as decimal (e.g. 0.061 = 6.1%)
+            apySource = 'sanctum-api';
+            console.log(`✅ Sanctum APY for GSOL: ${apy.toFixed(2)}%`);
+          }
+        }
+      } catch (_) {}
+
+      // ── 2b. On-chain inception-to-now APY (fallback if Sanctum doesn't have GSOL) ──
+      if (apy === undefined) try {
         const epochJ = await fetch(heliusUrl, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getEpochInfo', params: [] })
