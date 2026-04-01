@@ -11723,7 +11723,9 @@ Claimer: ${walletAddress}`;
     // Fetch GSOL/SOL rate from Sanctum
     try {
       const GSOL_MINT_ADDR = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
-      const sanctumRes = await fetch(`https://extra-api.sanctum.so/v1/sol-value/current?lst=${GSOL_MINT_ADDR}`);
+      const sanctumRes = await fetch(`https://extra-api.sanctum.so/v1/sol-value/current?lst=${GSOL_MINT_ADDR}`, {
+        headers: process.env.SANCTUM_API_KEY ? { 'Api-Key': process.env.SANCTUM_API_KEY } : {},
+      });
       const sanctumData = await sanctumRes.json();
       const priceEntry = sanctumData?.solValues?.[GSOL_MINT_ADDR];
       if (priceEntry?.price) gsolSolRate = Number(priceEntry.price);
