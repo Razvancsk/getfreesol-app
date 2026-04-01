@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 const COLORS = [
   '#9945FF', '#14F195', '#00C2FF', '#FFD700',
   '#FF4ECD', '#FF6B35', '#ffffff', '#43E97B',
+  '#FF3CAC', '#784BA0', '#2B86C5',
 ];
 
 interface Piece {
@@ -12,32 +13,12 @@ interface Piece {
   vy: number;
   rotation: number;
   rotationSpeed: number;
-  width: number;
-  height: number;
+  w: number;
+  h: number;
   color: string;
   alpha: number;
-  shape: 'rect' | 'circle' | 'strip';
-}
-
-function burst(canvas: HTMLCanvasElement, ox: number, oy: number, pieces: Piece[], count = 80) {
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 4 + Math.random() * 14;
-    const shape = (['rect', 'circle', 'strip'] as const)[Math.floor(Math.random() * 3)];
-    pieces.push({
-      x: ox,
-      y: oy,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 6,
-      rotation: Math.random() * Math.PI * 2,
-      rotationSpeed: (Math.random() - 0.5) * 0.3,
-      width: 6 + Math.random() * 8,
-      height: 4 + Math.random() * 6,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      alpha: 1,
-      shape,
-    });
-  }
+  wobble: number;
+  wobbleSpeed: number;
 }
 
 interface ConfettiProps {
@@ -62,66 +43,65 @@ export function Confetti({ onDone }: ConfettiProps) {
     window.addEventListener('resize', resize);
 
     const pieces: Piece[] = [];
-    const duration = 3500;
+    const TOTAL = 180;
+    const DURATION = 4000;
     const start = Date.now();
 
-    // Initial big bursts from multiple screen positions
-    burst(canvas, canvas.width * 0.2, canvas.height * 0.35, pieces, 90);
-    burst(canvas, canvas.width * 0.5, canvas.height * 0.3, pieces, 110);
-    burst(canvas, canvas.width * 0.8, canvas.height * 0.35, pieces, 90);
-    burst(canvas, canvas.width * 0.35, canvas.height * 0.55, pieces, 60);
-    burst(canvas, canvas.width * 0.65, canvas.height * 0.55, pieces, 60);
-
-    // Extra staggered bursts
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    timers.push(setTimeout(() => burst(canvas, canvas.width * 0.1,  canvas.height * 0.5, pieces, 70), 250));
-    timers.push(setTimeout(() => burst(canvas, canvas.width * 0.9,  canvas.height * 0.5, pieces, 70), 350));
-    timers.push(setTimeout(() => burst(canvas, canvas.width * 0.5,  canvas.height * 0.6, pieces, 80), 500));
-    timers.push(setTimeout(() => burst(canvas, canvas.width * 0.25, canvas.height * 0.2, pieces, 60), 700));
-    timers.push(setTimeout(() => burst(canvas, canvas.width * 0.75, canvas.height * 0.2, pieces, 60), 800));
+    // Spawn all pieces spread across the top
+    for (let i = 0; i < TOTAL; i++) {
+      pieces.push({
+        x: Math.random() * canvas.width,
+        y: -20 - Math.random() * canvas.height * 0.5,
+        vx: (Math.random() - 0.5) * 3,
+        vy: 3 + Math.random() * 5,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.15,
+        w: 8 + Math.random() * 10,
+        h: 4 + Math.random() * 5,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        alpha: 1,
+        wobble: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.05 + Math.random() * 0.07,
+      });
+    }
 
     let rafId: number;
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const elapsed = Date.now() - start;
+      const fadeStart = DURATION * 0.65;
 
-      for (let i = pieces.length - 1; i >= 0; i--) {
+      let alive = 0;
+
+      for (let i = 0; i < pieces.length; i++) {
         const p = pieces[i];
+        if (p.alpha <= 0) continue;
+        alive++;
+
+        // Fade out in the last portion
+        if (elapsed > fadeStart) {
+          p.alpha = Math.max(0, 1 - (elapsed - fadeStart) / (DURATION - fadeStart));
+        }
 
         ctx.save();
         ctx.globalAlpha = p.alpha;
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation);
         ctx.fillStyle = p.color;
-
-        if (p.shape === 'circle') {
-          ctx.beginPath();
-          ctx.arc(0, 0, p.width / 2, 0, Math.PI * 2);
-          ctx.fill();
-        } else if (p.shape === 'strip') {
-          ctx.fillRect(-p.width, -p.height / 4, p.width * 2, p.height / 2);
-        } else {
-          ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
-        }
-
+        // Draw a flat rectangle (classic confetti strip)
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
         ctx.restore();
 
-        p.x += p.vx;
+        p.wobble += p.wobbleSpeed;
+        p.x += p.vx + Math.sin(p.wobble) * 1.2;
         p.y += p.vy;
-        p.vy += 0.35;
-        p.vx *= 0.98;
+        p.vy += 0.12; // gravity
+        p.vx *= 0.995;
         p.rotation += p.rotationSpeed;
-
-        if (elapsed > duration * 0.5) {
-          p.alpha -= 0.012;
-        }
-        if (p.alpha <= 0 || p.y > canvas.height + 40) {
-          pieces.splice(i, 1);
-        }
       }
 
-      if (elapsed < duration || pieces.length > 0) {
+      if (elapsed < DURATION || alive > 0) {
         rafId = requestAnimationFrame(animate);
       } else {
         setVisible(false);
@@ -133,7 +113,6 @@ export function Confetti({ onDone }: ConfettiProps) {
 
     return () => {
       cancelAnimationFrame(rafId);
-      timers.forEach(clearTimeout);
       window.removeEventListener('resize', resize);
     };
   }, []);
