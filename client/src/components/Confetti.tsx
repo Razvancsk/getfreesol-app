@@ -1,33 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
-const COLORS = [
-  '#9945FF', '#14F195', '#00C2FF', '#FFD700',
-  '#FF4ECD', '#FF6B35', '#ffffff', '#43E97B',
-  '#FF3CAC', '#784BA0', '#2B86C5',
-];
+const COLORS = ['#9945FF', '#14F195', '#00C2FF', '#FFD700', '#FF4ECD', '#FF6B35', '#ffffff'];
 
-interface Piece {
+type Shape = 'ribbon' | 'circle' | 'square';
+
+interface Particle {
   x: number;
   y: number;
   vx: number;
   vy: number;
-  rotation: number;
-  rotationSpeed: number;
-  w: number;
-  h: number;
+  angle: number;
+  spin: number;
+  size: number;
   color: string;
-  alpha: number;
-  wobble: number;
-  wobbleSpeed: number;
+  shape: Shape;
+  wobbleOffset: number;
+  opacity: number;
 }
 
-interface ConfettiProps {
-  onDone?: () => void;
-}
-
-export function Confetti({ onDone }: ConfettiProps) {
+export function Confetti() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -35,94 +28,97 @@ export function Confetti({ onDone }: ConfettiProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    const pieces: Piece[] = [];
-    const TOTAL = 180;
-    const DURATION = 4000;
-    const start = Date.now();
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
 
-    // Spawn all pieces spread across the top
-    for (let i = 0; i < TOTAL; i++) {
-      pieces.push({
-        x: Math.random() * canvas.width,
-        y: -20 - Math.random() * canvas.height * 0.5,
-        vx: (Math.random() - 0.5) * 3,
-        vy: 3 + Math.random() * 5,
-        rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.15,
-        w: 8 + Math.random() * 10,
-        h: 4 + Math.random() * 5,
+    const shapes: Shape[] = ['ribbon', 'circle', 'square'];
+    const particles: Particle[] = Array.from({ length: 200 }, () => {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 4 + Math.random() * 14;
+      return {
+        x: cx,
+        y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 4,
+        angle: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 0.2,
+        size: 5 + Math.random() * 8,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        alpha: 1,
-        wobble: Math.random() * Math.PI * 2,
-        wobbleSpeed: 0.05 + Math.random() * 0.07,
-      });
-    }
+        shape: shapes[Math.floor(Math.random() * 3)],
+        wobbleOffset: Math.random() * Math.PI * 2,
+        opacity: 1,
+      };
+    });
 
+    let frame = 0;
     let rafId: number;
 
-    const animate = () => {
+    const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const elapsed = Date.now() - start;
-      const fadeStart = DURATION * 0.65;
+      frame++;
 
       let alive = 0;
 
-      for (let i = 0; i < pieces.length; i++) {
-        const p = pieces[i];
-        if (p.alpha <= 0) continue;
+      for (const p of particles) {
+        if (p.opacity <= 0) continue;
         alive++;
 
-        // Fade out in the last portion
-        if (elapsed > fadeStart) {
-          p.alpha = Math.max(0, 1 - (elapsed - fadeStart) / (DURATION - fadeStart));
+        // Physics
+        p.vy += 0.28;
+        p.vx *= 0.99;
+        p.x += p.vx + Math.sin(p.wobbleOffset + frame * 0.05) * 0.8;
+        p.y += p.vy;
+        p.angle += p.spin;
+
+        // Fade after frame 120
+        if (frame > 120) {
+          p.opacity = Math.max(0, p.opacity - 0.018);
         }
 
         ctx.save();
-        ctx.globalAlpha = p.alpha;
+        ctx.globalAlpha = p.opacity;
         ctx.translate(p.x, p.y);
-        ctx.rotate(p.rotation);
+        ctx.rotate(p.angle);
         ctx.fillStyle = p.color;
-        // Draw a flat rectangle (classic confetti strip)
-        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+
+        if (p.shape === 'circle') {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.shape === 'ribbon') {
+          ctx.fillRect(-p.size, -p.size / 4, p.size * 2, p.size / 2);
+        } else {
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        }
+
         ctx.restore();
-
-        p.wobble += p.wobbleSpeed;
-        p.x += p.vx + Math.sin(p.wobble) * 1.2;
-        p.y += p.vy;
-        p.vy += 0.12; // gravity
-        p.vx *= 0.995;
-        p.rotation += p.rotationSpeed;
       }
 
-      if (elapsed < DURATION || alive > 0) {
-        rafId = requestAnimationFrame(animate);
-      } else {
-        setVisible(false);
-        onDone?.();
+      if (alive > 0 && frame < 400) {
+        rafId = requestAnimationFrame(draw);
       }
     };
 
-    rafId = requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(draw);
 
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', resize);
-    };
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
-  if (!visible) return null;
-
-  return (
+  return createPortal(
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-[80]"
-    />
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100vw',
+        height: '100vh',
+        pointerEvents: 'none',
+        zIndex: 9999,
+      }}
+    />,
+    document.body
   );
 }
