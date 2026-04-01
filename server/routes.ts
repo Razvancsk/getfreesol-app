@@ -11121,19 +11121,23 @@ Claimer: ${walletAddress}`;
       let apy: number | undefined;
       let apySource = 'gsol-inception';
 
-      // ── 2a. Sanctum extra-api APY (primary, requires GSOL to be registered) ──
+      // ── 2a. Sanctum Ironforge API APY (primary) ──────────────────────────
+      // GET /lsts/{mint} returns avgApy (what Sanctum displays in their UI)
       try {
         const sanctumApyRes = await fetch(
-          `https://extra-api.sanctum.so/v1/apy/latest?lst=${GSOL_MINT_ADDR}`,
-          { headers: process.env.SANCTUM_API_KEY ? { 'Api-Key': process.env.SANCTUM_API_KEY } : {} }
+          `https://sanctum-api.ironforge.network/lsts/${GSOL_MINT_ADDR}?apiKey=${process.env.SANCTUM_API_KEY}`
         );
         if (sanctumApyRes.ok) {
           const sanctumApyData = await sanctumApyRes.json();
-          const sanctumApy = sanctumApyData?.apys?.[GSOL_MINT_ADDR];
-          if (typeof sanctumApy === 'number' && sanctumApy > 0) {
-            apy = sanctumApy * 100; // Sanctum returns as decimal (e.g. 0.061 = 6.1%)
+          const lstData = sanctumApyData?.data?.[0];
+          // avgApy matches what Sanctum shows in their UI (decimal, e.g. 0.0332 = 3.32%)
+          const avgApy = lstData?.avgApy;
+          if (typeof avgApy === 'number' && avgApy > 0) {
+            apy = avgApy * 100;
             apySource = 'sanctum-api';
-            console.log(`✅ Sanctum APY for GSOL: ${apy.toFixed(2)}%`);
+            // also grab solValue while we have it
+            if (lstData?.solValue) solValue = Number(lstData.solValue) / 1e9;
+            console.log(`✅ Sanctum GSOL avgApy: ${apy.toFixed(2)}%, solValue: ${solValue}`);
           }
         }
       } catch (_) {}
@@ -11734,15 +11738,18 @@ Claimer: ${walletAddress}`;
   async function fetchStakingPrices(): Promise<{ solPriceUsd: number; gsolSolRate: number }> {
     let gsolSolRate = 1.07; // fallback
 
-    // Fetch GSOL/SOL rate from Sanctum
+    // Fetch GSOL/SOL rate from Sanctum Ironforge API
     try {
       const GSOL_MINT_ADDR = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
-      const sanctumRes = await fetch(`https://extra-api.sanctum.so/v1/sol-value/current?lst=${GSOL_MINT_ADDR}`, {
-        headers: process.env.SANCTUM_API_KEY ? { 'Api-Key': process.env.SANCTUM_API_KEY } : {},
-      });
-      const sanctumData = await sanctumRes.json();
-      const priceEntry = sanctumData?.solValues?.[GSOL_MINT_ADDR];
-      if (priceEntry?.price) gsolSolRate = Number(priceEntry.price);
+      const sanctumRes = await fetch(
+        `https://sanctum-api.ironforge.network/lsts/${GSOL_MINT_ADDR}?apiKey=${process.env.SANCTUM_API_KEY}`
+      );
+      if (sanctumRes.ok) {
+        const sanctumData = await sanctumRes.json();
+        const lstData = sanctumData?.data?.[0];
+        // solValue is in lamports per token (e.g. 1001600160 = 1.0016 SOL per GSOL)
+        if (lstData?.solValue) gsolSolRate = Number(lstData.solValue) / 1e9;
+      }
     } catch { /* use fallback */ }
 
     const solPriceUsd = await fetchSolPriceUsd();
