@@ -11088,7 +11088,7 @@ Claimer: ${walletAddress}`;
   const GSOL_MINT_ADDR  = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
 
   // Cache staking info for 5 minutes to reduce RPC calls
-  let _stakingInfoCache: { apy: string; solValue: string; source: string; cachedAt: number } | null = null;
+  let _stakingInfoCache: { apy: string; solValue: string; tvl: string; holders: number; source: string; cachedAt: number } | null = null;
   const STAKING_INFO_CACHE_MS = 5 * 60 * 1000;
 
   app.get('/api/staking/info', async (_req, res) => {
@@ -11103,6 +11103,8 @@ Claimer: ${walletAddress}`;
 
       // ── 1. Fetch GSOL/SOL exchange rate ──────────────────────────────────
       let solValue: number | undefined;
+      let sanctumTvl: number | undefined;
+      let sanctumHolders: number | undefined;
       if (jupKey) {
         try {
           const priceUrl = `https://api.jup.ag/price/v2?ids=${GSOL_MINT_ADDR}&vsToken=So11111111111111111111111111111111111111112`;
@@ -11135,9 +11137,11 @@ Claimer: ${walletAddress}`;
           if (typeof avgApy === 'number' && avgApy > 0) {
             apy = avgApy * 100;
             apySource = 'sanctum-api';
-            // also grab solValue while we have it
+            // grab solValue, tvl, holders while we have the response
             if (lstData?.solValue) solValue = Number(lstData.solValue) / 1e9;
-            console.log(`✅ Sanctum GSOL avgApy: ${apy.toFixed(2)}%, solValue: ${solValue}`);
+            if (lstData?.tvl)      sanctumTvl = Number(lstData.tvl);
+            if (lstData?.holders)  sanctumHolders = Number(lstData.holders);
+            console.log(`✅ Sanctum GSOL avgApy: ${apy.toFixed(2)}%, solValue: ${solValue}, tvl: ${sanctumTvl}, holders: ${sanctumHolders}`);
           }
         }
       } catch (_) {}
@@ -11229,6 +11233,8 @@ Claimer: ${walletAddress}`;
       const result = {
         apy: apy.toFixed(2),
         solValue: solValue.toFixed(6),
+        tvl: sanctumTvl !== undefined ? sanctumTvl.toString() : undefined,
+        holders: sanctumHolders,
         source: apySource,
         cachedAt: Date.now()
       };

@@ -125,6 +125,8 @@ export default function SolRefund() {
   const [showRewardsInfo, setShowRewardsInfo] = useState(false);
   const [gsolApy, setGsolApy] = useState<number | null>(null);
   const [gsolSolValue, setGsolSolValue] = useState<number>(1);
+  const [gsolTvl, setGsolTvl] = useState<number | null>(null);
+  const [gsolHolders, setGsolHolders] = useState<number | null>(null);
   const [stakeQuote, setStakeQuote] = useState<{ outputAmount: number; priceImpactPct: number } | null>(null);
   const [stakeQuoteLoading, setStakeQuoteLoading] = useState(false);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
@@ -911,13 +913,15 @@ export default function SolRefund() {
     }
   }, [activeTab, publicKey, connection]);
 
-  // Fetch GSOL APY and SOL value from Sanctum
+  // Fetch GSOL APY, SOL value, TVL, holders from Sanctum
   useEffect(() => {
     fetch('/api/staking/info')
       .then(r => r.json())
       .then(data => {
         if (data.apy !== undefined && data.apy !== null) setGsolApy(parseFloat(parseFloat(data.apy).toFixed(2)));
         if (data.solValue) setGsolSolValue(parseFloat(data.solValue));
+        if (data.tvl !== undefined && data.tvl !== null) setGsolTvl(parseFloat(data.tvl));
+        if (data.holders !== undefined && data.holders !== null) setGsolHolders(Number(data.holders));
       }).catch(() => {});
   }, []);
 
@@ -4941,7 +4945,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* APY + Est. rewards row — no card, just two cols with a divider */}
-                  <div className="flex mb-6">
+                  <div className="flex mb-4">
                     {/* Left: APY */}
                     <div className="flex-1 flex flex-col items-center pr-5">
                       <div className="flex items-center gap-1.5 mb-1">
@@ -4973,6 +4977,38 @@ export default function SolRefund() {
                           <span className="text-white font-semibold text-base">SOL</span>
                         </span>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* TVL + Holders + Exchange Rate row */}
+                  <div className="flex mb-6 border-t border-white/10 pt-4">
+                    {/* TVL */}
+                    <div className="flex-1 flex flex-col items-center">
+                      <span className="text-white/60 text-xs mb-1">TVL</span>
+                      <span className="text-white font-semibold text-sm">
+                        {gsolTvl !== null
+                          ? (() => {
+                              const sol = gsolTvl / 1e9;
+                              return sol >= 1000 ? `${(sol / 1000).toFixed(1)}K SOL` : `${sol.toFixed(2)} SOL`;
+                            })()
+                          : '—'}
+                      </span>
+                    </div>
+                    <div className="w-px bg-white/10 self-stretch" />
+                    {/* Holders */}
+                    <div className="flex-1 flex flex-col items-center">
+                      <span className="text-white/60 text-xs mb-1">Holders</span>
+                      <span className="text-white font-semibold text-sm">
+                        {gsolHolders !== null ? gsolHolders.toLocaleString() : '—'}
+                      </span>
+                    </div>
+                    <div className="w-px bg-white/10 self-stretch" />
+                    {/* Exchange Rate */}
+                    <div className="flex-1 flex flex-col items-center">
+                      <span className="text-white/60 text-xs mb-1">1 GSOL</span>
+                      <span className="text-white font-semibold text-sm">
+                        {gsolSolValue > 1 ? `${gsolSolValue.toFixed(4)} SOL` : '—'}
+                      </span>
                     </div>
                   </div>
 
