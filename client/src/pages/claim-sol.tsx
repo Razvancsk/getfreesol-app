@@ -4851,7 +4851,7 @@ export default function SolRefund() {
 
                     <div className="flex flex-col items-center px-6 pt-8 pb-7">
                       {/* Solana logo */}
-                      <img src="/gsol-logo.png" alt="Solana" className="w-16 h-16 rounded-full mb-4 shadow-lg" />
+                      <img src="/solana-logo.png" alt="Solana" className="w-16 h-16 rounded-full mb-4 shadow-lg" />
                       <h2 className="text-white font-bold text-xl mb-5">Successfully Staked</h2>
 
                       {/* Amount staked */}
