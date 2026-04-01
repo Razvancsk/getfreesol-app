@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, BookOpen, HelpCircle } from "lucide-react";
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
+import { Confetti } from '@/components/Confetti';
 import { FaSackDollar } from 'react-icons/fa6';
 import {
   DropdownMenu,
@@ -4828,6 +4829,9 @@ export default function SolRefund() {
           {/* Staking Page */}
           {activeTab === 'staking' && (
             <div className="space-y-6">
+
+              {/* Confetti burst on stake success */}
+              {stakeSuccessData && <Confetti />}
 
               {/* Stake Success Card */}
               {stakeSuccessData && (
