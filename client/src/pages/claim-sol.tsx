@@ -4849,44 +4849,33 @@ export default function SolRefund() {
                       <X className="w-4 h-4" />
                     </button>
 
-                    <div className="flex flex-col items-center px-6 pt-8 pb-6">
-                      {/* GSOL logo */}
-                      <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-14 h-14 rounded-full mb-3 shadow-lg" />
-                      <h2 className="text-white font-bold text-xl mb-4">Successfully Staked</h2>
+                    <div className="flex flex-col items-center px-6 pt-8 pb-7">
+                      {/* Solana logo */}
+                      <img src="/gsol-logo.png" alt="Solana" className="w-16 h-16 rounded-full mb-4 shadow-lg" />
+                      <h2 className="text-white font-bold text-xl mb-5">Successfully Staked</h2>
 
                       {/* Amount staked */}
                       <div
-                        className="w-full rounded-2xl py-3 px-4 text-center mb-4"
-                        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
+                        className="w-full rounded-2xl py-4 px-4 text-center mb-5"
+                        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                       >
                         <span className="text-white font-bold text-2xl">{stakeSuccessData.amount} SOL</span>
                       </div>
 
-                      {/* GSOL received (if known) */}
-                      {stakeSuccessData.gsolReceived !== undefined && (
-                        <div className="w-full flex justify-between items-center px-1 mb-2">
-                          <span className="text-white/50 text-sm">GSOL received</span>
-                          <span className="text-white font-semibold text-sm">{stakeSuccessData.gsolReceived.toFixed(6)} GSOL</span>
-                        </div>
-                      )}
-
-                      {/* APY reminder */}
-                      <div className="w-full flex justify-between items-center px-1 mb-5">
-                        <span className="text-white/50 text-sm">Earning APY</span>
-                        <span className="text-green-400 font-semibold text-sm">{gsolApy !== null ? `${gsolApy.toFixed(2)}%` : '—'}</span>
-                      </div>
-
-                      {/* View on Solscan */}
+                      {/* Transaction link */}
                       {stakeSuccessData.txid && (
-                        <a
-                          href={`https://solscan.io/tx/${stakeSuccessData.txid}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full py-3 rounded-2xl text-center text-sm font-semibold text-white/80 hover:text-white transition-colors"
-                          style={{ background: 'rgba(153, 69, 255, 0.25)', border: '1px solid rgba(153, 69, 255, 0.4)' }}
-                        >
-                          View Transaction ↗
-                        </a>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-white/40 text-xs">Transaction</span>
+                          <a
+                            href={`https://solscan.io/tx/${stakeSuccessData.txid}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-white font-semibold text-sm hover:text-purple-300 transition-colors"
+                          >
+                            {stakeSuccessData.txid.slice(0, 6)}…{stakeSuccessData.txid.slice(-4)}
+                            <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                          </a>
+                        </div>
                       )}
                     </div>
                   </div>
