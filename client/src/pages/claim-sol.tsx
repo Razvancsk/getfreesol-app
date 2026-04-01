@@ -127,6 +127,7 @@ export default function SolRefund() {
   const [gsolSolValue, setGsolSolValue] = useState<number>(1);
   const [gsolTvl, setGsolTvl] = useState<number | null>(null);
   const [gsolHolders, setGsolHolders] = useState<number | null>(null);
+  const [stakeSuccessData, setStakeSuccessData] = useState<{ amount: number; txid: string; gsolReceived?: number } | null>(null);
   const [stakeQuote, setStakeQuote] = useState<{ outputAmount: number; priceImpactPct: number } | null>(null);
   const [stakeQuoteLoading, setStakeQuoteLoading] = useState(false);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
@@ -1004,39 +1005,17 @@ export default function SolRefund() {
         txid = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
         await connection.confirmTransaction(txid, 'confirmed');
       }
-      // Award staking points (first-time bonus only)
-      const stakeToastAction = txid
-        ? <ToastAction altText="View on Solscan" onClick={() => window.open(`https://solscan.io/tx/${txid}`, '_blank')}>View Tx</ToastAction>
-        : undefined;
+      // Show success card
+      setStakeSuccessData({ amount: amt, txid, gsolReceived: stakeQuote?.outputAmount ? stakeQuote.outputAmount / 1e9 : undefined });
 
+      // Award staking points (fire-and-forget)
       if (publicKey) {
         fetch('/api/staking/award-points', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ walletAddress: publicKey.toBase58(), solAmount: amt })
-        }).then(r => r.json()).then(d => {
-          if (d.isFirstTime) {
-            const bonusText = d.pointsAwarded > 0 ? ` +${d.pointsAwarded} pts!` : '';
-            toast({
-              title: `🎉 Staked ${amt} GSOL — Welcome bonus!${bonusText}`,
-              description: 'You now earn 1 XP per dollar of GSOL held every 24h.',
-              variant: 'success',
-              action: stakeToastAction
-            });
-          } else {
-            toast({
-              title: `✅ Staked ${amt} GSOL`,
-              description: 'Earning 1 XP per dollar of GSOL held every 24h.',
-              variant: 'success',
-              action: stakeToastAction
-            });
-          }
-        }).catch(() => {
-          toast({ title: `✅ Staked ${amt} GSOL`, variant: 'success', action: stakeToastAction });
-        });
+        }).catch(() => {});
         queryClient.invalidateQueries({ queryKey: ['/api/user/gfs-discount', publicKey.toBase58()] });
-      } else {
-        toast({ title: `✅ Staked ${amt} GSOL`, variant: 'success', action: stakeToastAction });
       }
       setStakeAmount('');
       // Refresh balances
@@ -4849,6 +4828,70 @@ export default function SolRefund() {
           {/* Staking Page */}
           {activeTab === 'staking' && (
             <div className="space-y-6">
+
+              {/* Stake Success Card */}
+              {stakeSuccessData && (
+                <div
+                  className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                  onClick={() => setStakeSuccessData(null)}
+                >
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                  <div
+                    className="relative w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"
+                    style={{ animation: '0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards modalBounce', border: '1px solid rgba(153, 69, 255, 0.35)' }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {/* Close */}
+                    <button
+                      onClick={() => setStakeSuccessData(null)}
+                      className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full text-white/40 hover:text-white/80 z-10 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+
+                    <div className="flex flex-col items-center px-6 pt-8 pb-6">
+                      {/* GSOL logo */}
+                      <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-14 h-14 rounded-full mb-3 shadow-lg" />
+                      <h2 className="text-white font-bold text-xl mb-4">Successfully Staked</h2>
+
+                      {/* Amount staked */}
+                      <div
+                        className="w-full rounded-2xl py-3 px-4 text-center mb-4"
+                        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
+                      >
+                        <span className="text-white font-bold text-2xl">{stakeSuccessData.amount} SOL</span>
+                      </div>
+
+                      {/* GSOL received (if known) */}
+                      {stakeSuccessData.gsolReceived !== undefined && (
+                        <div className="w-full flex justify-between items-center px-1 mb-2">
+                          <span className="text-white/50 text-sm">GSOL received</span>
+                          <span className="text-white font-semibold text-sm">{stakeSuccessData.gsolReceived.toFixed(6)} GSOL</span>
+                        </div>
+                      )}
+
+                      {/* APY reminder */}
+                      <div className="w-full flex justify-between items-center px-1 mb-5">
+                        <span className="text-white/50 text-sm">Earning APY</span>
+                        <span className="text-green-400 font-semibold text-sm">{gsolApy !== null ? `${gsolApy.toFixed(2)}%` : '—'}</span>
+                      </div>
+
+                      {/* View on Solscan */}
+                      {stakeSuccessData.txid && (
+                        <a
+                          href={`https://solscan.io/tx/${stakeSuccessData.txid}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-3 rounded-2xl text-center text-sm font-semibold text-white/80 hover:text-white transition-colors"
+                          style={{ background: 'rgba(153, 69, 255, 0.25)', border: '1px solid rgba(153, 69, 255, 0.4)' }}
+                        >
+                          View Transaction ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* How to Choose modal */}
               {showHowToChoose && (

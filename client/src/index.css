@@ -358,3 +358,8 @@ input[type="number"] {
   max-width: 390px !important;
   max-height: 577px !important;
 }
+
+@keyframes modalBounce {
+  from { opacity: 0; transform: scale(0.85) translateY(20px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
