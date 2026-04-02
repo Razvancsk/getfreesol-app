@@ -4885,7 +4885,7 @@ export default function SolRefund() {
                       {/* Transaction link */}
                       {stakeSuccessData.txid && (
                         <div className="w-full flex flex-col justify-center items-center mt-2 mb-2 gap-1">
-                          <span className="text-white/40 text-sm">Transaction</span>
+                          <span className="text-white text-sm">Transaction</span>
                           <a
                             href={`https://solscan.io/tx/${stakeSuccessData.txid}`}
                             target="_blank"
