@@ -4857,26 +4857,26 @@ export default function SolRefund() {
                       <X className="w-4 h-4" />
                     </button>
 
-                    <div className="flex flex-col items-center px-6 pt-8 pb-7">
+                    <div className="flex flex-col items-center px-6 pt-8 pb-6">
                       {/* Solana logo */}
-                      <img src="/solana-logo.png" alt="Solana" className="w-16 h-16 rounded-full mb-4 shadow-lg" />
-                      <h2 className="text-white font-bold text-xl mb-5">Successfully Staked</h2>
+                      <img src="/solana-logo.png" alt="GSOL" className="w-14 h-14 rounded-full mb-3 shadow-lg" />
+                      <h2 className="text-white font-bold text-xl mb-3">Successfully Staked</h2>
 
                       {/* Staked + Minted rows */}
                       <div
-                        className="w-full rounded-2xl overflow-hidden mb-5"
-                        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+                        className="w-full rounded-2xl py-3 px-4 mb-2"
+                        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
                       >
-                        <div className="flex items-center justify-between px-4 py-3">
-                          <span className="text-white/60 text-sm font-medium">You staked</span>
-                          <span className="text-white font-bold text-base">{stakeSuccessData.amount} SOL</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white text-sm">You staked</span>
+                          <span className="text-white font-bold text-lg">{stakeSuccessData.amount} SOL</span>
                         </div>
                         {stakeSuccessData.gsolReceived !== undefined && (
                           <>
-                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-                            <div className="flex items-center justify-between px-4 py-3">
-                              <span className="text-white/60 text-sm font-medium">Minted</span>
-                              <span className="text-green-400 font-bold text-base">+{stakeSuccessData.gsolReceived.toFixed(6)} GSOL</span>
+                            <div className="h-px my-2" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                            <div className="flex justify-between items-center">
+                              <span className="text-white text-sm">Minted</span>
+                              <span className="font-bold text-lg whitespace-nowrap" style={{ color: 'rgb(20,241,149)' }}>+{stakeSuccessData.gsolReceived.toFixed(6)} GSOL</span>
                             </div>
                           </>
                         )}
@@ -4884,16 +4884,16 @@ export default function SolRefund() {
 
                       {/* Transaction link */}
                       {stakeSuccessData.txid && (
-                        <div className="w-full flex flex-col items-center gap-1.5 text-center">
-                          <span className="text-white/40 text-sm tracking-wide">Transaction</span>
+                        <div className="w-full flex flex-col justify-center items-center mt-2 mb-2 gap-1">
+                          <span className="text-white/40 text-sm">Transaction</span>
                           <a
                             href={`https://solscan.io/tx/${stakeSuccessData.txid}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 text-white font-bold text-lg hover:text-purple-300 transition-colors"
+                            className="flex items-center gap-1.5 text-white font-bold text-base hover:text-purple-300 transition-colors"
                           >
                             {stakeSuccessData.txid.slice(0, 7)}…{stakeSuccessData.txid.slice(-4)}
-                            <ExternalLink className="w-5 h-5 opacity-80" />
+                            <ExternalLink className="w-4 h-4 opacity-80" />
                           </a>
                         </div>
                       )}
