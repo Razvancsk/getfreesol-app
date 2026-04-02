@@ -1007,7 +1007,11 @@ export default function SolRefund() {
         await connection.confirmTransaction(txid, 'confirmed');
       }
       // Show success card
-      setStakeSuccessData({ amount: amt, txid, gsolReceived: stakeQuote?.outputAmount ? stakeQuote.outputAmount / 1e9 : undefined });
+      // Calculate GSOL received: Jupiter quote if available, otherwise estimate from exchange rate
+      const gsolReceived = stakeQuote?.outputAmount
+        ? stakeQuote.outputAmount / 1e9
+        : gsolSolValue > 0 ? amt / gsolSolValue : undefined;
+      setStakeSuccessData({ amount: amt, txid, gsolReceived });
 
       // Award staking points (fire-and-forget)
       if (publicKey) {
@@ -4858,12 +4862,24 @@ export default function SolRefund() {
                       <img src="/solana-logo.png" alt="Solana" className="w-16 h-16 rounded-full mb-4 shadow-lg" />
                       <h2 className="text-white font-bold text-xl mb-5">Successfully Staked</h2>
 
-                      {/* Amount staked */}
+                      {/* Staked + Minted rows */}
                       <div
-                        className="w-full rounded-2xl py-4 px-4 text-center mb-5"
+                        className="w-full rounded-2xl overflow-hidden mb-5"
                         style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                       >
-                        <span className="text-white font-bold text-2xl">{stakeSuccessData.amount} SOL</span>
+                        <div className="flex items-center justify-between px-4 py-3">
+                          <span className="text-white/60 text-sm font-medium">You staked</span>
+                          <span className="text-white font-bold text-base">{stakeSuccessData.amount} SOL</span>
+                        </div>
+                        {stakeSuccessData.gsolReceived !== undefined && (
+                          <>
+                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                            <div className="flex items-center justify-between px-4 py-3">
+                              <span className="text-white/60 text-sm font-medium">Minted</span>
+                              <span className="text-green-400 font-bold text-base">+{stakeSuccessData.gsolReceived.toFixed(6)} GSOL</span>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* Transaction link */}
