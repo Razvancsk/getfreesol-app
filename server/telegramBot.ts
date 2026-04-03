@@ -176,6 +176,7 @@ async function executeClaimTransaction(
         platformFeeAmount: batchPlatformFee,
         referralFeeAmount: prepareData.referralFeeAmount || 0,
         source: 'auto',
+        skipXPost: true,
       }),
     });
 

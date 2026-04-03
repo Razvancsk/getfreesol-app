@@ -2862,9 +2862,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to send Discord alert:', discordError);
       }
 
-      // Post to X (Twitter) using centralized helper
+      // X claim posting DISABLED — re-enable by changing false → !skipXPost
       let xPostId: string | null = null;
-      if (!skipXPost) try {
+      if (false) try {
         const xResult = await xApiService.announceTransactionOnX({
           transactionType: 'sol_reclaim',
           netAmount,
@@ -2875,11 +2875,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (xResult.success && xResult.postId) {
           xPostId = xResult.postId;
-          // Update the transaction ledger to mark as posted
           await storage.markTransactionPostedToX(signature, xPostId);
         }
       } catch (xError) {
-        // Don't fail the whole request if X post fails
         console.error('Failed to post claim alert to X (exception):', xError);
       }
 
@@ -4209,8 +4207,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to send Discord token burn alert:', discordError);
       }
 
-      // Post to X (Twitter) using centralized helper — skipped if caller will post batch total
-      if (!skipXPost) try {
+      // X claim posting DISABLED — re-enable by changing false → !skipXPost
+      if (false) try {
         const netAmountNumber = Number(netAmount || 0);
         const xResult = await xApiService.announceTransactionOnX({
           transactionType: 'token_burn',
@@ -5213,8 +5211,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Failed to send Discord NFT burn alert:', discordError);
         }
 
-        // Post to X (Twitter) using centralized helper — skipped if caller will post batch total
-        if (!skipXPost) try {
+        // X claim posting DISABLED — re-enable by changing false → !skipXPost
+        if (false) try {
           const xResult = await xApiService.announceTransactionOnX({
             transactionType: 'nft_burn',
             netAmount: realNetAmount,
