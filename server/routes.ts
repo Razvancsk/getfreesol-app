@@ -11463,10 +11463,10 @@ Claimer: ${walletAddress}`;
       ],
     });
 
-    const heliusConn = new Connection(
-      process.env.HELIUS_RPC_URL ||
-      `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-    );
+    const sanctumRpcUrl = process.env.SANCTUM_RPC_KEY
+      ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
+      : (process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`);
+    const heliusConn = new Connection(sanctumRpcUrl);
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
 
     const FEE_DEST = new PublicKey('77N86XfcBSAvcGNPYMAVjjyf2feUJwmUoiJ96HzPtySd');
@@ -11536,10 +11536,10 @@ Claimer: ${walletAddress}`;
     // ── Pool reserve pre-check (SP12 enforces this on-chain, check here first) ─
     // Reserve stake account balance minus minimum rent = max withdrawable lamports
     const MIN_STAKE_RENT = 2_282_880;
-    const checkConn = new Connection(
-      process.env.HELIUS_RPC_URL ||
-      `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-    );
+    const sanctumRpcUrlCheck = process.env.SANCTUM_RPC_KEY
+      ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
+      : (process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`);
+    const checkConn = new Connection(sanctumRpcUrlCheck);
     const reserveBalance = await checkConn.getBalance(POOL_VALIDATOR_LIST);
     const maxWithdrawable = Math.max(0, reserveBalance - MIN_STAKE_RENT);
     if (lamports > maxWithdrawable) {
@@ -11592,10 +11592,10 @@ Claimer: ${walletAddress}`;
     // CloseAccount: closes wSOL ATA → user gets native SOL
     const closeIx = createCloseAccountInstruction(wSOLAta, userPubkey, userPubkey);
 
-    const heliusConn = new Connection(
-      process.env.HELIUS_RPC_URL ||
-      `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-    );
+    const sanctumRpcUrlUnstake = process.env.SANCTUM_RPC_KEY
+      ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
+      : (process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`);
+    const heliusConn = new Connection(sanctumRpcUrlUnstake);
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
 
     const FEE_DEST = new PublicKey('FzESY59j4xCef1EjqoprVBDXEFTWcrx8hGq6AYYvGH1v');
