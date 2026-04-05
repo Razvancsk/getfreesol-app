@@ -32,10 +32,12 @@ import cron from 'node-cron';
 import { backpackApiService } from './backpackApiService';
 import { backpackWebSocketService } from './backpackWebSocketService';
 
-// Helius-only RPC helper - all Solana connections must use Helius
+// Primary RPC: Sanctum gateway when key present, falls back to Helius
 function getHeliusRpcUrl(): string {
+  const sanctumKey = process.env.SANCTUM_RPC_KEY;
+  if (sanctumKey) return `https://tpg.sanctum.so/v1/mainnet?apiKey=${sanctumKey}`;
   const key = process.env.HELIUS_API_KEY;
-  if (!key) throw new Error('HELIUS_API_KEY is required - all RPC calls must use Helius');
+  if (!key) throw new Error('SANCTUM_RPC_KEY or HELIUS_API_KEY is required');
   return `https://mainnet.helius-rpc.com/?api-key=${key}`;
 }
 
@@ -10751,8 +10753,7 @@ Claimer: ${walletAddress}`;
     try {
       const { Connection, Keypair, PublicKey, Transaction } = await import('@solana/web3.js');
       const { getAssociatedTokenAddressSync, createTransferInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
-      const heliusKey = process.env.HELIUS_API_KEY;
-      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusKey}`, 'confirmed');
+      const connection = getHeliusConnection('confirmed');
       const relayerKey = process.env.RELAYER_PRIVATE_KEY;
       if (!relayerKey) return res.status(500).json({ error: 'RELAYER_PRIVATE_KEY not set' });
       const senderKeypair = Keypair.fromSecretKey(bs58.decode(relayerKey));

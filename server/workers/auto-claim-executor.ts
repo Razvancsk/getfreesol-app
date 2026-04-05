@@ -3,9 +3,11 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createCloseAccountInstruction 
 import { storage } from "../storage";
 import bs58 from "bs58";
 
-const HELIUS_RPC = process.env.HELIUS_API_KEY 
-  ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-  : "https://api.mainnet-beta.solana.com";
+const HELIUS_RPC = process.env.SANCTUM_RPC_KEY
+  ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
+  : process.env.HELIUS_API_KEY
+    ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+    : "https://api.mainnet-beta.solana.com";
 
 const PLATFORM_WALLET = "GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT";
 const PLATFORM_FEE_BPS = 1500; // 15%

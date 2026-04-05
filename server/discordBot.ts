@@ -396,10 +396,12 @@ async function scanWallet(walletAddress: string): Promise<{
   emptyAccounts: number;
   totalReclaimable: string;
 }> {
-  // Helius-only RPC
-  const heliusApiKey = process.env.HELIUS_API_KEY;
-  if (!heliusApiKey) throw new Error('HELIUS_API_KEY is required');
-  const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, 'confirmed');
+  const rpcUrl = process.env.SANCTUM_RPC_KEY
+    ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
+    : process.env.HELIUS_API_KEY
+      ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+      : (() => { throw new Error('SANCTUM_RPC_KEY or HELIUS_API_KEY is required'); })();
+  const connection = new Connection(rpcUrl, 'confirmed');
 
   const walletPublicKey = new PublicKey(walletAddress);
 
