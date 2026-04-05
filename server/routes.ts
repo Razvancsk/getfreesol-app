@@ -43,6 +43,33 @@ function getHeliusConnection(commitment: 'confirmed' | 'finalized' | 'processed'
   return new Connection(getHeliusRpcUrl(), commitment);
 }
 
+// Sanctum TPG (Transaction Processing Gateway) — send-only; NOT a full RPC node.
+// getLatestBlockhash / getBalance etc. must still use Helius.
+// sendRawTransaction IS accepted by Sanctum TPG for better transaction landing.
+async function sendRawViaSanctum(
+  serializedTx: Buffer | Uint8Array,
+  opts: { skipPreflight?: boolean } = {}
+): Promise<string> {
+  const key = process.env.SANCTUM_RPC_KEY;
+  if (!key) return ''; // caller falls back to Helius when empty string returned
+  const body = JSON.stringify({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'sendTransaction',
+    params: [
+      Buffer.from(serializedTx).toString('base64'),
+      { encoding: 'base64', skipPreflight: opts.skipPreflight ?? false, maxRetries: 5 },
+    ],
+  });
+  const res = await fetch(`https://tpg.sanctum.so/v1/mainnet?apiKey=${key}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+  const json: any = await res.json();
+  if (json.error) throw new Error(`Sanctum TPG error: ${json.error.message}`);
+  return json.result as string; // tx signature
+}
 
 // Extend global for temporary OAuth token storage
 declare global {
@@ -233,7 +260,9 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
     tx.feePayer = senderKeypair.publicKey;
     tx.sign(senderKeypair);
 
-    const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
+    const serialized = tx.serialize();
+    let sig = await sendRawViaSanctum(serialized, { skipPreflight: false }).catch(() => '');
+    if (!sig) sig = await connection.sendRawTransaction(serialized, { skipPreflight: false });
     await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
 
     console.log(`[GFS Cashback] ✅ Sent ${gfsAmount.toFixed(2)} $GFS to ${walletAddress.slice(0, 8)}… tx=${sig.slice(0, 20)}…`);
