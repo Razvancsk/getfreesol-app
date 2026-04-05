@@ -43,12 +43,6 @@ function getHeliusConnection(commitment: 'confirmed' | 'finalized' | 'processed'
   return new Connection(getHeliusRpcUrl(), commitment);
 }
 
-// Sanctum gateway — used only for transaction building (getLatestBlockhash + sendRawTransaction)
-function getSanctumTxConnection(commitment: 'confirmed' | 'finalized' = 'confirmed'): Connection {
-  const sanctumKey = process.env.SANCTUM_RPC_KEY;
-  if (sanctumKey) return new Connection(`https://tpg.sanctum.so/v1/mainnet?apiKey=${sanctumKey}`, commitment);
-  return getHeliusConnection(commitment); // fallback
-}
 
 // Extend global for temporary OAuth token storage
 declare global {
@@ -234,14 +228,13 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
 
     tx.add(createTransferInstruction(senderAta, recipientAta, senderKeypair.publicKey, gfsAmountRaw, [], tokenProgramId));
 
-    const { blockhash, lastValidBlockHeight } = await getSanctumTxConnection('confirmed').getLatestBlockhash('confirmed');
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
     tx.recentBlockhash = blockhash;
     tx.feePayer = senderKeypair.publicKey;
     tx.sign(senderKeypair);
 
-    const gfsTxConn = getSanctumTxConnection('confirmed');
-    const sig = await gfsTxConn.sendRawTransaction(tx.serialize(), { skipPreflight: false });
-    await gfsTxConn.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+    const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
+    await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
 
     console.log(`[GFS Cashback] ✅ Sent ${gfsAmount.toFixed(2)} $GFS to ${walletAddress.slice(0, 8)}… tx=${sig.slice(0, 20)}…`);
   } catch (e: any) {
@@ -819,7 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`✅ Got swap instructions`);
 
       // Step 3: Build transaction with swap + close account + fee transfer
-      const { blockhash, lastValidBlockHeight } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       
       // Helper to deserialize instruction from API response
       const deserializeInstruction = (ix: any) => ({
@@ -1208,7 +1201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       decompiled.instructions.unshift(computeIx);
       
       // Get fresh blockhash
-      const { blockhash, lastValidBlockHeight } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       decompiled.recentBlockhash = blockhash;
       
       // Recompile transaction
@@ -1799,7 +1792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get latest blockhash via backend (avoids CORS issues)
   app.get("/api/rpc/blockhash", async (req, res) => {
     try {
-      const { blockhash, lastValidBlockHeight } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       res.json({ success: true, blockhash, lastValidBlockHeight });
     } catch (error: any) {
       console.error('Failed to get blockhash:', error);
@@ -2272,7 +2265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const platformFeeLamports = totalFeeLamports - referralFeeLamports;
 
       // Build transaction
-      const { blockhash, lastValidBlockHeight } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       
       const transaction = new Transaction();
       transaction.recentBlockhash = blockhash;
@@ -2573,7 +2566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`💰 Actual SOL to recover: ${actualRecoveredLamports} lamports (originally ${totalRecoveredLamports} from all selected accounts)`);
 
       // Get recent blockhash for fee estimation
-      const { blockhash } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = new PublicKey(walletAddress);
 
@@ -3797,7 +3790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Batch tokens: max 15 per transaction
       const TOKENS_PER_BATCH = 15;
       const batches: any[] = [];
-      const { blockhash } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash();
       const { ComputeBudgetProgram } = await import('@solana/web3.js');
       
       // Check referral wallet once for all batches
@@ -4091,7 +4084,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transaction.add(closeInstruction);
       
       // Get recent blockhash
-      const { blockhash } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = ownerPublicKey;
       
@@ -4572,7 +4565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcUrl = getHeliusRpcUrl();
       const connection = getHeliusConnection();
-      const { blockhash } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash();
       
       for (const mintAddress of nftMints) {
         try {
@@ -4890,7 +4883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
               
               // Build transaction using proper Transaction class
-              const { blockhash } = await getSanctumTxConnection().getLatestBlockhash();
+              const { blockhash } = await connection.getLatestBlockhash();
               
               const transaction = new Transaction({
                 recentBlockhash: blockhash,
@@ -4962,7 +4955,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get recent blockhash
-      const { blockhash } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = ownerPublicKey;
       
@@ -6945,7 +6938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Set RELAYER as fee payer (sponsored transaction)
         transaction.feePayer = relayerKeypair.publicKey;
-        const { blockhash } = await getSanctumTxConnection().getLatestBlockhash("confirmed");
+        const { blockhash } = await connection.getLatestBlockhash("confirmed");
         transaction.recentBlockhash = blockhash;
 
         // Relayer signs first (pays fees)
@@ -9166,7 +9159,7 @@ Claimer: ${walletAddress}`;
       }
       
       // Get recent blockhash
-      const { blockhash } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = feeKeypair.publicKey;
       
@@ -9662,7 +9655,7 @@ Claimer: ${walletAddress}`;
         try {
           // Get FRESH blockhash right before sending
           console.log(`🔄 Attempt ${attempt}/${maxRetries}: Fetching fresh blockhash...`);
-          const blockhashData = await getSanctumTxConnection('confirmed').getLatestBlockhash('confirmed');
+          const blockhashData = await connection.getLatestBlockhash('confirmed');
           blockhash = blockhashData.blockhash;
           lastValidBlockHeight = blockhashData.lastValidBlockHeight;
           
@@ -10338,7 +10331,7 @@ Claimer: ${walletAddress}`;
         );
       }
 
-      const { blockhash } = await getSanctumTxConnection().getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = new PublicKey(task.creatorWallet);
 
@@ -10798,7 +10791,7 @@ Claimer: ${walletAddress}`;
       for (let i = 0; i < holders.length; i += BATCH_SIZE) {
         const batch = holders.slice(i, i + BATCH_SIZE);
         try {
-          const { blockhash, lastValidBlockHeight } = await getSanctumTxConnection('confirmed').getLatestBlockhash('confirmed');
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
           const tx = new Transaction();
           tx.recentBlockhash = blockhash;
           tx.feePayer = senderKeypair.publicKey;
@@ -11470,10 +11463,9 @@ Claimer: ${walletAddress}`;
       ],
     });
 
-    const sanctumRpcUrl = process.env.SANCTUM_RPC_KEY
-      ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
-      : (process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`);
-    const heliusConn = new Connection(sanctumRpcUrl);
+    const heliusConn = new Connection(
+      process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+    );
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
 
     const FEE_DEST = new PublicKey('77N86XfcBSAvcGNPYMAVjjyf2feUJwmUoiJ96HzPtySd');
@@ -11543,10 +11535,9 @@ Claimer: ${walletAddress}`;
     // ── Pool reserve pre-check (SP12 enforces this on-chain, check here first) ─
     // Reserve stake account balance minus minimum rent = max withdrawable lamports
     const MIN_STAKE_RENT = 2_282_880;
-    const sanctumRpcUrlCheck = process.env.SANCTUM_RPC_KEY
-      ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
-      : (process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`);
-    const checkConn = new Connection(sanctumRpcUrlCheck);
+    const checkConn = new Connection(
+      process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+    );
     const reserveBalance = await checkConn.getBalance(POOL_VALIDATOR_LIST);
     const maxWithdrawable = Math.max(0, reserveBalance - MIN_STAKE_RENT);
     if (lamports > maxWithdrawable) {
@@ -11599,10 +11590,9 @@ Claimer: ${walletAddress}`;
     // CloseAccount: closes wSOL ATA → user gets native SOL
     const closeIx = createCloseAccountInstruction(wSOLAta, userPubkey, userPubkey);
 
-    const sanctumRpcUrlUnstake = process.env.SANCTUM_RPC_KEY
-      ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
-      : (process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`);
-    const heliusConn = new Connection(sanctumRpcUrlUnstake);
+    const heliusConn = new Connection(
+      process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+    );
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
 
     const FEE_DEST = new PublicKey('FzESY59j4xCef1EjqoprVBDXEFTWcrx8hGq6AYYvGH1v');
