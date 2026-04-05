@@ -3,11 +3,9 @@ import { storage } from "../storage";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
 import bs58 from "bs58";
 
-const HELIUS_RPC = process.env.SANCTUM_RPC_KEY
-  ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
-  : process.env.HELIUS_API_KEY
-    ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-    : "https://api.mainnet-beta.solana.com";
+const HELIUS_RPC = process.env.HELIUS_API_KEY
+  ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+  : "https://api.mainnet-beta.solana.com";
 
 interface EmptyAccountScanResult {
   walletAddress: string;

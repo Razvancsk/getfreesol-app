@@ -48,11 +48,9 @@ export function getVaultPrivateKey(): string {
 }
 
 function getConnection(): Connection {
-  const rpcUrl = process.env.SANCTUM_RPC_KEY
-    ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
-    : process.env.HELIUS_API_KEY
-      ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-      : (() => { throw new Error('SANCTUM_RPC_KEY or HELIUS_API_KEY is required'); })();
+  const apiKey = process.env.HELIUS_API_KEY;
+  if (!apiKey) throw new Error('HELIUS_API_KEY is required');
+  const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${apiKey}`;
   return new Connection(rpcUrl, 'confirmed');
 }
 

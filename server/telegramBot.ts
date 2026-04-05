@@ -16,11 +16,8 @@ const processedMessages = new Set<string>();
 const APP_BASE_URL = 'http://0.0.0.0:5000';
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
-const RPC_URL = process.env.SANCTUM_RPC_KEY
-  ? `https://tpg.sanctum.so/v1/mainnet?apiKey=${process.env.SANCTUM_RPC_KEY}`
-  : HELIUS_API_KEY
-    ? `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`
-    : (() => { throw new Error('SANCTUM_RPC_KEY or HELIUS_API_KEY is required'); })();
+if (!HELIUS_API_KEY) throw new Error('HELIUS_API_KEY is required');
+const RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 
 const connection = new Connection(RPC_URL, 'confirmed');
 

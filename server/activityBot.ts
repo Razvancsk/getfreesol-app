@@ -28,10 +28,8 @@ const PLATFORM_FEE    = 0.20; // 20%
 function getPort() { return process.env.PORT || '5000'; }
 
 function getHeliusConnection(): Connection {
-  const sanctumKey = process.env.SANCTUM_RPC_KEY;
-  if (sanctumKey) return new Connection(`https://tpg.sanctum.so/v1/mainnet?apiKey=${sanctumKey}`, 'confirmed');
   const key = process.env.HELIUS_API_KEY;
-  if (!key) throw new Error('SANCTUM_RPC_KEY or HELIUS_API_KEY is required');
+  if (!key) throw new Error('HELIUS_API_KEY is required');
   return new Connection(`https://mainnet.helius-rpc.com/?api-key=${key}`, 'confirmed');
 }
 
