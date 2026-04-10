@@ -3944,7 +3944,7 @@ export default function SolRefund() {
                         </div>
                         <div className="h-px my-2" style={{ background: 'rgba(255,255,255,0.08)' }} />
                         <div className="flex justify-between items-center">
-                          <span className="text-white text-sm">SOL received</span>
+                          <span className="text-white text-sm">Claimed</span>
                           <span className="font-bold text-lg whitespace-nowrap" style={{ color: 'rgb(20,241,149)' }}>+{claimSuccessData.solReceived.toFixed(5)} SOL</span>
                         </div>
                       </div>
