@@ -3556,17 +3556,22 @@ export default function SolRefund() {
               </div>
             ) : (
               <>
-                {/* Top row: Logo and Wallet Connection (mobile) */}
-                <div className="flex items-center justify-between">
-                  {/* Logo */}
-                  <div className="flex items-center">
-                    <img 
+                {/* Logo + Brand name — centered across the full header */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                  <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
+                    <img
                       src={logoImage}
-                      alt="Get your SOL back!"
-                      className="h-[70px] w-[70px] md:h-[100px] md:w-[100px]"
+                      alt="GetFreeSol"
+                      className="h-[44px] w-[44px] md:h-[56px] md:w-[56px]"
                     />
+                    <span className="text-white font-extrabold tracking-widest uppercase text-base md:text-xl select-none">
+                      GET FREE SOL
+                    </span>
                   </div>
+                </div>
 
+                {/* Top row: Mobile wallet on right */}
+                <div className="flex items-center justify-end relative">
                   {/* Mobile Wallet Connection */}
                   <div className="lg:hidden flex items-center space-x-2">
                 {isConnected && publicKey ? (
