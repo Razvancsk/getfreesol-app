@@ -322,29 +322,6 @@ export default function PartnersPage() {
         {/* Partner position */}
         {wallet && (
           <>
-            {/* My Stats */}
-            <div className="bg-gradient-to-br from-purple-900/30 to-indigo-900/20 border border-purple-600/30 rounded-2xl p-5 space-y-4">
-              <h2 className="font-semibold text-gray-200 flex items-center gap-2">
-                <BadgeDollarSign className="w-4 h-4 text-purple-400" />
-                Your Position
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-black/30 rounded-xl p-3 text-center">
-                  <div className="text-xs text-gray-400 mb-1">Deposited</div>
-                  <div className="font-bold text-white">{partnerLoading ? "…" : `${fmt(partner?.depositedSol ?? "0", 3)} SOL`}</div>
-                </div>
-                <div className="bg-black/30 rounded-xl p-3 text-center">
-                  <div className="text-xs text-gray-400 mb-1">Your Share</div>
-                  <div className="font-bold text-purple-300">{partnerLoading ? "…" : `${parseFloat(sharePercent).toFixed(2)}%`}</div>
-                </div>
-
-                <div className="bg-black/30 rounded-xl p-3 text-center">
-                  <div className="text-xs text-gray-400 mb-1">Total Earned</div>
-                  <div className="font-bold text-green-400">{partnerLoading ? "…" : `${fmt(partner?.totalEarned ?? "0", 5)} SOL`}</div>
-                </div>
-              </div>
-            </div>
-
             {/* Actions */}
             <div className="grid md:grid-cols-3 gap-4">
               {/* Deposit */}
