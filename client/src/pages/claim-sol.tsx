@@ -3962,13 +3962,25 @@ export default function SolRefund() {
                           </a>
                         </div>
                       )}
-                      <button
-                        onClick={() => { setClaimSuccessData(null); setActiveTab('coinflip'); }}
-                        className="w-full mt-1 py-2.5 rounded-2xl font-bold text-base text-white transition-all"
-                        style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', border: '1px solid rgba(34,197,94,0.4)' }}
-                      >
-                        🪙 Flip It
-                      </button>
+                      <div className="w-full flex gap-2 mt-1">
+                        <a
+                          href={`https://x.com/intent/tweet?text=${encodeURIComponent(`Just claimed ${claimSuccessData.solReceived.toFixed(5)} SOL from ${claimSuccessData.accountsClosed} empty account${claimSuccessData.accountsClosed !== 1 ? 's' : ''} on @getfreesol_xyz 🚀\n\nGet your SOL back for free → getfreesol.xyz\n\n#Solana #GetFreeSol`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl font-bold text-base text-white transition-all"
+                          style={{ background: 'linear-gradient(135deg, #0f1923, #1d2f40)', border: '1px solid rgba(255,255,255,0.15)' }}
+                        >
+                          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.736-8.856L1.254 2.25H8.08l4.258 5.635 5.906-5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                          Share
+                        </a>
+                        <button
+                          onClick={() => { setClaimSuccessData(null); setActiveTab('coinflip'); }}
+                          className="flex-1 py-2.5 rounded-2xl font-bold text-base text-white transition-all"
+                          style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', border: '1px solid rgba(34,197,94,0.4)' }}
+                        >
+                          🪙 Flip It
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
