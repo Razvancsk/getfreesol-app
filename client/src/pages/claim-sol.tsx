@@ -7338,7 +7338,7 @@ export default function SolRefund() {
           accountsClosed={shareData.accountsClosed}
           claimType={shareData.claimType}
           walletAddress={publicKey?.toBase58()}
-          onStake={() => setActiveTab('staking')}
+          onFlip={() => setActiveTab('coinflip')}
         />
       )}
 

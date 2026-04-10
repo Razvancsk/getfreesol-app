@@ -11,10 +11,10 @@ interface ShareModalProps {
   accountsClosed?: number;
   claimType?: 'accounts' | 'tokens' | 'nfts';
   walletAddress?: string;
-  onStake?: () => void;
+  onFlip?: () => void;
 }
 
-export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts', onStake }: ShareModalProps) {
+export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts', onFlip }: ShareModalProps) {
   const [tweetText, setTweetText] = useState("");
   const [shareUrl, setShareUrl] = useState("");
   
@@ -76,13 +76,13 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
               >
                 <span className="text-white font-mono font-bold text-sm whitespace-nowrap">Tweet It</span>
               </button>
-              {onStake && (
+              {onFlip && (
               <button 
-                onClick={() => { onClose(); onStake(); }}
+                onClick={() => { onClose(); onFlip(); }}
                 className="flex-1 py-3 transition-colors rounded-br-xl"
-                style={{ backgroundColor: '#4ade80' }}
+                style={{ backgroundColor: '#7c3aed' }}
               >
-                <span className="text-white font-mono font-bold text-sm whitespace-nowrap">Stake It</span>
+                <span className="text-white font-mono font-bold text-sm whitespace-nowrap">🪙 Flip It</span>
               </button>
               )}
             </div>
