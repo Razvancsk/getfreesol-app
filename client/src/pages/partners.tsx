@@ -448,14 +448,14 @@ export default function PartnersPage() {
             </div>
 
             {/* Transaction History */}
-            {txHistory && txHistory.length > 0 && (
+            {txHistory && txHistory.filter(tx => tx.txType === "deposit" || tx.txType === "withdraw").length > 0 && (
               <div className="bg-[#1a0f2e] border border-purple-700/30 rounded-2xl p-5">
                 <h3 className="font-semibold text-gray-300 mb-3 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-purple-400" />
                   Transaction History
                 </h3>
                 <div className="space-y-2">
-                  {txHistory.map(tx => (
+                  {txHistory.filter(tx => tx.txType === "deposit" || tx.txType === "withdraw").map(tx => (
                     <div key={tx.id} className="flex items-center justify-between py-2 border-b border-purple-900/30 last:border-0">
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
