@@ -4408,9 +4408,10 @@ export default function SolRefund() {
               <div className="flex items-center justify-between mb-6 md:mb-8">
                 <div>
                   <h3 className="text-xl md:text-3xl font-semibold text-white">
-                    {nftData && nftData.nfts && nftData.nfts.length > 0 
-                      ? `${nftData.nfts.length} NFTs Found` 
-                      : 'NFT Scanner'}
+                    {(() => {
+                      const visibleCount = nftData?.nfts?.filter((nft: any) => nft.type !== 'cnft').length ?? 0;
+                      return visibleCount > 0 ? `${visibleCount} NFTs Found` : 'NFT Scanner';
+                    })()}
                   </h3>
                   {scanNftsMutation.isPending && (
                     <p className="text-xs text-white mt-1">Scanning wallet...</p>
