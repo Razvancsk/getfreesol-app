@@ -1,6 +1,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import logoImage from "@assets/image_1757882056840.png";
+import { Confetti } from "@/components/Confetti";
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -49,6 +50,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
+      {isOpen && <Confetti />}
       <DialogContent className="sm:max-w-lg bg-transparent border-0 p-0 [&>button]:hidden">
         <div className="space-y-4">
           <div 
