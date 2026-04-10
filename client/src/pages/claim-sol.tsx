@@ -3932,7 +3932,7 @@ export default function SolRefund() {
                       <X className="w-4 h-4" />
                     </button>
                     <div className="flex flex-col items-center px-6 pt-8 pb-6">
-                      <img src="/logo.png" alt="GetFreeSol" className="w-14 h-14 rounded-full mb-3 shadow-lg" />
+                      <img src="/getfreesol-logo.png" alt="GetFreeSol" className="w-14 h-14 rounded-full mb-3 shadow-lg" />
                       <h2 className="text-white font-bold text-xl mb-3">Successfully Claimed</h2>
                       <div
                         className="w-full rounded-2xl py-3 px-4 mb-2"
