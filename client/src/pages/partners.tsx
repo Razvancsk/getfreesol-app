@@ -408,25 +408,9 @@ export default function PartnersPage() {
                 </h3>
                 <p className="text-xs text-gray-400">Your share of every coin flip fee is sent directly to your wallet automatically — no action needed.</p>
 
-                <div className="bg-green-900/15 border border-green-700/30 rounded-lg p-3 space-y-2">
-                  {pending > 0 ? (
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-green-400 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
-                        Incoming (being processed)
-                      </span>
-                      <span className="font-bold text-green-400">+{fmt(partnerData?.pendingFees ?? "0", 6)} SOL</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-xs text-green-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
-                      Watching for new coin flip fees…
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center text-xs text-gray-500">
-                    <span>Your share</span>
-                    <span className="text-purple-300 font-medium">{parseFloat(sharePercent).toFixed(2)}% of 70% of all fees</span>
-                  </div>
+                <div className="bg-green-900/15 border border-green-700/30 rounded-lg p-3 text-center">
+                  <div className="text-xs text-gray-400 mb-1">Total Fees Earned</div>
+                  <div className="font-bold text-2xl text-green-400">{fmt(partner?.totalEarned ?? "0", 6)} SOL</div>
                 </div>
 
               </div>
