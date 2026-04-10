@@ -3614,6 +3614,9 @@ export default function SolRefund() {
                               </Link>
                             </>
                           )}
+                          <Link href="/partners" onClick={() => setMobileWalletMenuOpen(false)}>
+                            <div className="px-2 py-2 text-yellow-300 hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate">🤝 Partners</div>
+                          </Link>
                           <div
                             onClick={() => { disconnectWallet(); setMobileWalletMenuOpen(false); }}
                             className="px-2 py-2 text-white cursor-pointer text-xs text-center truncate"
@@ -3685,6 +3688,9 @@ export default function SolRefund() {
                             </Link>
                           </>
                         )}
+                        <Link href="/partners" onClick={() => setDesktopWalletMenuOpen(false)}>
+                          <div className="px-3 py-2 text-yellow-300 hover:bg-purple-600/40 cursor-pointer text-sm text-center truncate">🤝 Partners</div>
+                        </Link>
                         <div
                           onClick={() => { disconnectWallet(); setDesktopWalletMenuOpen(false); }}
                           className="px-3 py-2 text-white cursor-pointer text-sm text-center truncate"
@@ -3809,6 +3815,13 @@ export default function SolRefund() {
                 >
                   <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
                 </Button>
+                <Link href="/partners">
+                  <Button
+                    className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-yellow-600/20 text-yellow-300 hover:bg-yellow-600/40 border-yellow-500/40"
+                  >
+                    🤝 Partners
+                  </Button>
+                </Link>
               </div>
             </div>
           )}
