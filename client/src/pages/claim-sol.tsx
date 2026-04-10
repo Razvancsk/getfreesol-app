@@ -3949,24 +3949,6 @@ export default function SolRefund() {
                 <>
                   {scanResult.emptyAccounts > 0 ? (
                 <div className="space-y-6">
-                  {gsolBalance >= 1 && (
-                    <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-2.5">
-                      <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-6 h-6 rounded-full shrink-0" />
-                      <div>
-                        <p className="text-green-300 font-semibold text-sm">GSOL Holder — 0% Fee!</p>
-                        <p className="text-green-200/70 text-xs">You pay no platform fee — holding 1+ GSOL gives you free claims &amp; burns</p>
-                      </div>
-                    </div>
-                  )}
-                  {isGfsHolder && (
-                    <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-2.5">
-                      <span className="text-yellow-300 text-lg">👑</span>
-                      <div>
-                        <p className="text-yellow-300 font-semibold text-sm">GFS Holder Bonus Active!</p>
-                        <p className="text-yellow-200/70 text-xs">Flat fee: 0.002 SOL per account — holding 1M+ $GFS tokens</p>
-                      </div>
-                    </div>
-                  )}
                   <div className="grid grid-cols-2 gap-4 md:gap-6">
                     <div className="text-center p-4 md:p-8 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
                       <div className="text-2xl md:text-5xl font-bold text-white">{scanResult.emptyAccounts}</div>
@@ -7263,7 +7245,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">You receive 0.002 SOL per account — platform keeps the rest{gsolBalance >= 1 && <span className="ml-2 text-xs bg-green-500/20 text-green-300 border border-green-500/30 px-1.5 py-0.5 rounded-full font-semibold">0% — GSOL Holder</span>}</span>
+                  <span className="text-sm">You receive 0.002 SOL per account — platform keeps the rest</span>
                 </div>
               </div>
             </div>

@@ -2254,11 +2254,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Fee: platform takes everything above 0.002 SOL per account (user always gets 0.002 SOL back)
-      const bufferConnection = getHeliusConnection();
-      const gsolHolderBuffer = await isGsolHolder(walletAddress, bufferConnection);
       const USER_PAYOUT_PER_ACCOUNT = 2_000_000; // 0.002 SOL returned to user per account
       const userPayoutLamports = bufferAddresses.length * USER_PAYOUT_PER_ACCOUNT;
-      const totalFeeLamports = gsolHolderBuffer ? 0 : Math.max(0, totalLamports - userPayoutLamports);
+      const totalFeeLamports = Math.max(0, totalLamports - userPayoutLamports);
       
       // Split: 50% platform, 50% referral (if exists)
       const referralFeeLamports = referralCodeData ? Math.floor(totalFeeLamports * 0.5) : 0;
@@ -2602,12 +2600,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Fee: platform takes everything above 0.002 SOL per account (user always gets 0.002 SOL back per account)
       const walletFeeRates = await getWalletFeeRates(walletAddress);
-      const gsolHolderClaim = await isGsolHolder(walletAddress, connection);
       const REFERRAL_SPLIT_PERCENT = walletFeeRates.referralPercent;
       const USER_PAYOUT_LAMPORTS = 2_000_000; // 0.002 SOL returned to user per account
       const numAccountsClosed = validAccountsForTx.length;
       const userPayoutTotal = numAccountsClosed * USER_PAYOUT_LAMPORTS;
-      const totalFeeLamports = gsolHolderClaim ? 0 : Math.max(0, actualRecoveredLamports - userPayoutTotal);
+      const totalFeeLamports = Math.max(0, actualRecoveredLamports - userPayoutTotal);
 
       let referralFeeLamports = 0;
       let platformFeeLamports = totalFeeLamports;
