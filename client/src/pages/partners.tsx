@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -10,8 +10,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { ArrowLeft, TrendingUp, Users, Vault, Coins, ArrowDownToLine, ArrowUpFromLine, BadgeDollarSign, Clock, CheckCircle2, RefreshCw } from "lucide-react";
 
-const VAULT_WALLET = "GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT";
-const HELIUS_RPC = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY || ""}`;
 
 function fmt(sol: string | number, decimals = 4) {
   const n = typeof sol === "string" ? parseFloat(sol) : sol;
@@ -44,12 +42,18 @@ function txColor(type: string) {
 }
 
 export default function PartnersPage() {
+  const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
   const qc = useQueryClient();
   const { toast } = useToast();
   const [depositAmount, setDepositAmount] = useState("");
   const [depositLoading, setDepositLoading] = useState(false);
+
+  const { data: depositAddressData } = useQuery<{ depositAddress: string }>({
+    queryKey: ["/api/vault/deposit-address"],
+  });
+  const vaultDepositAddress = depositAddressData?.depositAddress ?? null;
 
   const { data: stats, isLoading: statsLoading } = useQuery<{ totalDeposited: string; partnerCount: number }>({
     queryKey: ["/api/vault/stats"],
@@ -98,6 +102,10 @@ export default function PartnersPage() {
 
   async function handleDeposit() {
     if (!wallet || !signTransaction) return;
+    if (!vaultDepositAddress) {
+      toast({ title: "Vault not ready", description: "Could not load deposit address", variant: "destructive" });
+      return;
+    }
     const amount = parseFloat(depositAmount);
     if (isNaN(amount) || amount <= 0) {
       toast({ title: "Invalid amount", variant: "destructive" });
@@ -105,13 +113,11 @@ export default function PartnersPage() {
     }
     setDepositLoading(true);
     try {
-      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY || ""}`;
-      const connection = new Connection(rpcUrl, "confirmed");
       const lamports = BigInt(Math.floor(amount * LAMPORTS_PER_SOL));
       const tx = new Transaction();
       tx.add(SystemProgram.transfer({
         fromPubkey: new PublicKey(wallet),
-        toPubkey: new PublicKey(VAULT_WALLET),
+        toPubkey: new PublicKey(vaultDepositAddress),
         lamports,
       }));
       const { blockhash } = await connection.getLatestBlockhash();

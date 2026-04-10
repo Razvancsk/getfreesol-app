@@ -11952,6 +11952,19 @@ Claimer: ${walletAddress}`;
 
   // ── Vault Partner Routes ────────────────────────────────────────────────
 
+  // GET /api/vault/deposit-address — returns the wallet address partners should deposit to
+  app.get('/api/vault/deposit-address', async (_req, res) => {
+    try {
+      const relayerKey = process.env.RELAYER_PRIVATE_KEY;
+      if (!relayerKey) return res.status(500).json({ error: 'Vault not configured' });
+      const { Keypair: KPD } = await import('@solana/web3.js');
+      const keypair = KPD.fromSecretKey(bs58.decode(relayerKey));
+      res.json({ depositAddress: keypair.publicKey.toBase58() });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // GET /api/vault/stats — public vault totals
   app.get('/api/vault/stats', async (_req, res) => {
     try {
