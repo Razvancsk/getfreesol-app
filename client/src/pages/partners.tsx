@@ -429,19 +429,6 @@ export default function PartnersPage() {
                   </div>
                 </div>
 
-                {/* Fallback manual claim if small amounts accumulated */}
-                {totalAvailable >= 0.000005 && (
-                  <Button
-                    onClick={() => claimFeesMutation.mutate()}
-                    disabled={claimFeesMutation.isPending}
-                    size="sm"
-                    className="w-full bg-yellow-700/50 hover:bg-yellow-600/70 text-yellow-200 text-xs font-medium rounded-xl border border-yellow-600/30"
-                  >
-                    {claimFeesMutation.isPending
-                      ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</>
-                      : `Manual claim ${fmt(totalAvailable.toFixed(9), 5)} SOL`}
-                  </Button>
-                )}
               </div>
             </div>
 
