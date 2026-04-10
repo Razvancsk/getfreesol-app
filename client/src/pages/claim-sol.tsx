@@ -3787,7 +3787,6 @@ export default function SolRefund() {
                     Swap
                   </Button>
                 )}
-                {canFlip && (
                 <Button
                   onClick={() => setActiveTab('coinflip')}
                   className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
@@ -3799,7 +3798,6 @@ export default function SolRefund() {
                 >
                   <span className="text-base md:text-xl">🪙</span> Flip
                 </Button>
-                )}
                 <Button
                   onClick={() => setActiveTab('staking')}
                   id="staking-tab-btn"
@@ -3822,9 +3820,46 @@ export default function SolRefund() {
 
 
 
-          {/* Burn sub-nav: Token / NFT pill toggle */}
+          {/* Mobile-only: Claim + Burn 3-way sub-tabs */}
+          {(activeTab === 'reclaim' || activeTab === 'burnTokens') && (
+            <div className="md:hidden flex items-center justify-center pb-2 px-4">
+              <div className="flex items-center bg-purple-900/40 rounded-xl p-1 gap-1 w-full max-w-xs">
+                <button
+                  onClick={() => setActiveTab('reclaim')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
+                    activeTab === 'reclaim' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <svg style={{ width: '12px', height: '12px', fill: '#00FFA3', flexShrink: 0 }} viewBox="0 0 397.7 311.7">
+                    <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                    <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                    <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                  </svg>
+                  Rent
+                </button>
+                <button
+                  onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('tokens'); }}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    activeTab === 'burnTokens' && burnSubTab === 'tokens' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  🪙 Tokens
+                </button>
+                <button
+                  onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('nft'); }}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    activeTab === 'burnTokens' && burnSubTab === 'nft' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  🖼️ NFTs
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Burn sub-nav: Token / NFT pill toggle — desktop only */}
           {activeTab === 'burnTokens' && (
-            <div className="flex items-center justify-center pb-2">
+            <div className="hidden md:flex items-center justify-center pb-2">
               <div className={`flex items-center gap-2`}>
                 <button
                   onClick={() => setBurnSubTab('tokens')}
@@ -4813,8 +4848,8 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Coin Flip Tab Content - Platform wallet only */}
-          {activeTab === 'coinflip' && canFlip && (
+          {/* Coin Flip Tab Content */}
+          {activeTab === 'coinflip' && (
             <>
               <CoinFlipGame />
               <div className="mt-10 space-y-6">
@@ -7528,21 +7563,21 @@ export default function SolRefund() {
         <div className="md:hidden shrink-0 flex items-center py-3 relative z-[60]" style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(100,116,139,0.3)' }}>
           <button
             onClick={() => setActiveTab('reclaim')}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'reclaim' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: (activeTab === 'reclaim' || activeTab === 'burnTokens') ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             <svg style={{ width: '20px', height: '20px', fill: '#00FFA3' }} viewBox="0 0 397.7 311.7">
               <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
               <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
               <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
             </svg>
-            <span style={{ fontSize: '11px', fontWeight: 500 }}>Claim Rent</span>
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Claim + Burn</span>
           </button>
           <button
-            onClick={() => setActiveTab('burnTokens')}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'burnTokens' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+            onClick={() => setActiveTab('coinflip')}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'coinflip' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            <Flame style={{ width: '20px', height: '20px' }} />
-            <span style={{ fontSize: '11px', fontWeight: 500 }}>Burn Tokens/NFTs</span>
+            <span style={{ fontSize: '20px', lineHeight: 1 }}>🪙</span>
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Coin Flip</span>
           </button>
           <button
             onClick={() => setActiveTab('staking')}
