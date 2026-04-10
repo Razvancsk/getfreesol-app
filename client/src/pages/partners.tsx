@@ -337,15 +337,7 @@ export default function PartnersPage() {
                   <div className="text-xs text-gray-400 mb-1">Your Share</div>
                   <div className="font-bold text-purple-300">{partnerLoading ? "…" : `${parseFloat(sharePercent).toFixed(2)}%`}</div>
                 </div>
-                <div className="bg-black/30 rounded-xl p-3 text-center">
-                  <div className="text-xs text-gray-400 mb-1 flex items-center justify-center gap-1">
-                    {pending > 0 && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />}
-                    Claimable Fees
-                  </div>
-                  <div className={`font-bold ${totalAvailable > 0 ? "text-yellow-400" : "text-gray-400"}`}>
-                    {partnerLoading ? "…" : `${fmt(totalAvailable.toFixed(9), 5)} SOL`}
-                  </div>
-                </div>
+
                 <div className="bg-black/30 rounded-xl p-3 text-center">
                   <div className="text-xs text-gray-400 mb-1">Total Earned</div>
                   <div className="font-bold text-green-400">{partnerLoading ? "…" : `${fmt(partner?.totalEarned ?? "0", 5)} SOL`}</div>
