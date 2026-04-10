@@ -3141,10 +3141,9 @@ export default function SolRefund() {
     setSelectedTokens(new Set());
   };
 
-  // Calculate total SOL to recover (net after fee)
+  // Calculate total SOL user receives (flat 0.002 SOL per account)
   const calculateTotalSOL = (count: number) => {
-    const grossAmount = count * 0.00203928;
-    const netAmount = grossAmount * (1 - effectiveFeePercent / 100);
+    const netAmount = count * 0.002;
     return `${netAmount.toFixed(6)}`;
   };
 
@@ -3531,8 +3530,8 @@ export default function SolRefund() {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
 
     const total = parseFloat(scanResult.totalReclaimable);
-    const donation = total * (effectiveFeePercent / 100);
-    const net = total - donation;
+    const net = scanResult.emptyAccounts * 0.002; // user always gets 0.002 SOL per account
+    const donation = Math.max(0, total - net); // platform keeps the rest
 
     return { total, donation, net };
   };
