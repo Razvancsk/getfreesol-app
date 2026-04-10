@@ -242,18 +242,18 @@ export default function PartnersPage() {
         {isAdmin && feeSummary && (
           <div className="bg-gradient-to-br from-orange-900/20 to-red-900/10 border border-orange-500/40 rounded-2xl p-5 space-y-4">
             <h2 className="font-bold text-orange-300 flex items-center gap-2 text-sm uppercase tracking-wide">
-              🛡️ Admin — Coin Flip House Profits (Lost Bets)
+              🛡️ Admin — Coin Flip Fees Collected (3.5% per bet)
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="bg-black/30 rounded-xl p-3 text-center">
                 <div className="text-xs text-gray-400 mb-1">Last 24h</div>
                 <div className="font-bold text-white">{fmt(feeSummary.last24hFees, 4)} SOL</div>
-                <div className="text-xs text-orange-400 mt-0.5">→ {fmt(feeSummary.last24hPartnerPool, 5)} to partners</div>
+                <div className="text-xs text-orange-400 mt-0.5">→ {fmt(feeSummary.last24hPartnerPool, 5)} SOL to partners (70%)</div>
               </div>
               <div className="bg-black/30 rounded-xl p-3 text-center">
                 <div className="text-xs text-gray-400 mb-1">Last 7 Days</div>
                 <div className="font-bold text-white">{fmt(feeSummary.last7dFees, 4)} SOL</div>
-                <div className="text-xs text-orange-400 mt-0.5">→ {fmt(feeSummary.last7dPartnerPool, 5)} to partners</div>
+                <div className="text-xs text-orange-400 mt-0.5">→ {fmt(feeSummary.last7dPartnerPool, 5)} SOL to partners (70%)</div>
               </div>
               <div className="bg-black/30 rounded-xl p-3 text-center">
                 <div className="text-xs text-gray-400 mb-1">All-Time</div>

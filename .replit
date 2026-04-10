@@ -46,3 +46,5 @@ integrations = ["javascript_object_storage:1.0.0", "javascript_openai_ai_integra
 
 [userenv.shared]
 SANCTUM_RPC_KEY = "01KNDARF8DJRXG2C7M9EJ9GCFT"
+FEES_WALLET = "8SDc57qmSJypVz3qwHK4ijgJAjsKduyHbFr6Yow1hBRc"
+COINFLIP_VAULT_ADDRESS = "6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy"

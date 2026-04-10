@@ -4,7 +4,7 @@ import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activ
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
-import { eq, sql, and, gte, notInArray, inArray } from 'drizzle-orm';
+import { eq, sql, and, gte, notInArray, inArray, isNotNull } from 'drizzle-orm';
 import { transactionLedger, userPoints } from '@shared/schema';
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
@@ -10941,7 +10941,8 @@ Claimer: ${walletAddress}`;
       let payoutAmount = 0;
       const platformFee = bet * PLATFORM_FEE_RATE; // 3.5% of bet — always collected
       let payoutTxSignature: string | null = null;
-      const platformWallet = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
+      const feesWalletAddr = process.env.FEES_WALLET ?? 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+      const platformWallet = new PublicKey(feesWalletAddr);
       const feeLamports = Math.floor(platformFee * LAMPORTS_PER_SOL);
 
       if (won) {
@@ -11010,7 +11011,7 @@ Claimer: ${walletAddress}`;
         feeTx.feePayer = vaultKeypair.publicKey;
         feeTx.sign(vaultKeypair);
         const feeSig = await payoutConnection.sendRawTransaction(feeTx.serialize(), { skipPreflight: true, maxRetries: 3 });
-        console.log(`🎰 Fee ${platformFee} SOL sent to platform wallet, tx: ${feeSig}`);
+        console.log(`🎰 Fee ${platformFee} SOL sent to fees wallet (${feesWalletAddr}), tx: ${feeSig}`);
       } catch (feeErr: any) {
         console.error('⚠️ Fee transfer to platform wallet failed (non-critical):', feeErr.message);
       }
@@ -11980,15 +11981,15 @@ Claimer: ${walletAddress}`;
         total: sql<string>`COALESCE(SUM(CAST(${pt.amountSol} AS NUMERIC)), 0)::text`
       }).from(pt).where(eq(pt.txType, 'fee_credit'));
 
-      const seventyPct = (parseFloat(all?.total ?? '0') * 0.70).toFixed(9);
-      const dayPool    = (parseFloat(day?.total  ?? '0') * 0.70).toFixed(9);
-      const weekPool   = (parseFloat(week?.total ?? '0') * 0.70).toFixed(9);
+      const allTimePool = (parseFloat(all?.total ?? '0') * 0.70).toFixed(9);
+      const dayPool     = (parseFloat(day?.total  ?? '0') * 0.70).toFixed(9);
+      const weekPool    = (parseFloat(week?.total ?? '0') * 0.70).toFixed(9);
 
       res.json({
         allTimeFees:      all?.total    ?? '0',
         last24hFees:      day?.total    ?? '0',
         last7dFees:       week?.total   ?? '0',
-        allTimePartnerPool: twentyPct,
+        allTimePartnerPool: allTimePool,
         last24hPartnerPool: dayPool,
         last7dPartnerPool:  weekPool,
         totalDistributed: distributed?.total ?? '0',
@@ -12163,29 +12164,33 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Daily cron: distribute 70% of that day's platform fees among vault partners
+  // Daily cron at 1am UTC: distribute 70% of yesterday's coin flip fees (3.5% collected per bet) to vault partners
   cron.schedule('0 1 * * *', async () => {
     try {
       const partners = await storage.getAllActivePartners();
       const totalDeposited = partners.reduce((sum, p) => sum + parseFloat(p.depositedSol), 0);
       if (totalDeposited <= 0) return;
-      // Tally yesterday's fees from the ledger
+
+      // Sum all platformFee from coin flips in the last 24h
       const yesterday = new Date(Date.now() - 86400000);
       const { db: rawDb } = await import('./db');
-      const { transactionLedger: tl } = await import('@shared/schema');
-      const { gte: gteOp, sql: sqlOp } = await import('drizzle-orm');
-      const [feeRow] = await rawDb.select({ total: sqlOp<string>`COALESCE(SUM(CAST(${tl.feeAmount} AS NUMERIC)), 0)::text` })
-        .from(tl).where(gteOp(tl.processedAt, yesterday));
+      const { coinFlips: cf } = await import('@shared/schema');
+      const { gte: gteOp, isNotNull: isNotNullOp, sql: sqlOp } = await import('drizzle-orm');
+      const [feeRow] = await rawDb.select({
+        total: sqlOp<string>`COALESCE(SUM(CAST(${cf.platformFee} AS NUMERIC)), 0)::text`
+      }).from(cf).where(gteOp(cf.createdAt, yesterday));
+
       const totalFees = parseFloat(feeRow?.total ?? '0');
-      const partnerPool = totalFees * 0.20; // 20% of fees to partners
+      const partnerPool = totalFees * 0.70; // 70% of collected 3.5% fees go to partners
       if (partnerPool < 0.0001) return;
+
       for (const partner of partners) {
         const deposit = parseFloat(partner.depositedSol);
         if (deposit <= 0) continue;
         const share = (deposit / totalDeposited) * partnerPool;
         await storage.creditPartnerFees(partner.walletAddress, share.toFixed(9));
       }
-      console.log(`✅ Vault partner fee distribution: ${partnerPool.toFixed(4)} SOL split among ${partners.length} partners`);
+      console.log(`✅ Vault partner fee distribution: ${partnerPool.toFixed(6)} SOL (70% of ${totalFees.toFixed(6)} SOL fees) split among ${partners.length} partners`);
     } catch (e: any) {
       console.error('❌ Vault partner fee cron failed:', e.message);
     }
