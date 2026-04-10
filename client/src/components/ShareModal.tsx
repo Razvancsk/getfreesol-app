@@ -54,9 +54,9 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
           <div 
             className="w-full aspect-[16/9] bg-gradient-to-r from-[#1a0a2e] via-[#2d1b4e] to-[#1a0a2e] rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden"
           >
-            <div className="absolute top-4 left-4 flex items-center gap-3 z-10">
+            <div className="flex items-center gap-3 z-10 mb-3">
               <img src={logoImage} alt="GetFreeSol" className="w-12 h-12" />
-              <span className="text-white font-bold text-xl">GET FREE SOL</span>
+              <span className="text-white font-bold text-xl tracking-widest uppercase">GET FREE SOL</span>
             </div>
             <p className="text-2xl md:text-3xl font-black text-green-400 tracking-wide z-10">
               CLAIMED
