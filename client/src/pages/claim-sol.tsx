@@ -3796,7 +3796,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-coinflip"
                 >
-                  <span className="text-base md:text-xl">🪙</span> Flip
+                  <span className="text-base md:text-xl">🪙</span> Coin Flip
                 </Button>
                 <Button
                   onClick={() => setActiveTab('staking')}
