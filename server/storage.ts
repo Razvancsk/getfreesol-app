@@ -99,7 +99,13 @@ import {
   type CrateOpen,
   type InsertCrateOpen,
   gsolStakingPositions,
-  type GsolStakingPosition
+  type GsolStakingPosition,
+  vaultPartners,
+  partnerTransactions,
+  type VaultPartner,
+  type InsertVaultPartner,
+  type PartnerTransaction,
+  type InsertPartnerTransaction
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and, ne, gte } from "drizzle-orm";
@@ -312,6 +318,18 @@ export interface IStorage {
   createGiveawayWinner(winner: InsertGiveawayWinner): Promise<GiveawayWinner>;
   getGiveawayWinners(giveawayId: string): Promise<GiveawayWinner[]>;
   updateGiveawayWinnerPayout(id: string, txSignature: string, prizeSol: string): Promise<void>;
+
+  // Vault Partners
+  getVaultPartner(walletAddress: string): Promise<VaultPartner | undefined>;
+  getOrCreateVaultPartner(walletAddress: string): Promise<VaultPartner>;
+  getAllActivePartners(): Promise<VaultPartner[]>;
+  addPartnerDeposit(walletAddress: string, solAmount: string, signature: string): Promise<VaultPartner>;
+  removePartnerDeposit(walletAddress: string, solAmount: string): Promise<VaultPartner>;
+  creditPartnerFees(walletAddress: string, solAmount: string): Promise<void>;
+  clearPartnerClaimableFees(walletAddress: string): Promise<string>;
+  getVaultStats(): Promise<{ totalDeposited: string; partnerCount: number }>;
+  createPartnerTransaction(tx: InsertPartnerTransaction): Promise<PartnerTransaction>;
+  getPartnerTransactions(walletAddress: string, limit?: number): Promise<PartnerTransaction[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2002,6 +2020,84 @@ export class DatabaseStorage implements IStorage {
         paidAt: new Date()
       })
       .where(eq(giveawayWinners.id, id));
+  }
+
+  // ── Vault Partners ────────────────────────────────────────────────────────
+
+  async getVaultPartner(walletAddress: string): Promise<VaultPartner | undefined> {
+    const [row] = await db.select().from(vaultPartners).where(eq(vaultPartners.walletAddress, walletAddress));
+    return row || undefined;
+  }
+
+  async getOrCreateVaultPartner(walletAddress: string): Promise<VaultPartner> {
+    const existing = await this.getVaultPartner(walletAddress);
+    if (existing) return existing;
+    const [created] = await db.insert(vaultPartners).values({ walletAddress, depositedSol: "0", claimableFees: "0", totalEarned: "0", isActive: true }).returning();
+    return created;
+  }
+
+  async getAllActivePartners(): Promise<VaultPartner[]> {
+    return db.select().from(vaultPartners).where(eq(vaultPartners.isActive, true));
+  }
+
+  async addPartnerDeposit(walletAddress: string, solAmount: string, signature: string): Promise<VaultPartner> {
+    await this.getOrCreateVaultPartner(walletAddress);
+    const [updated] = await db.update(vaultPartners)
+      .set({ depositedSol: sql`CAST(${vaultPartners.depositedSol} AS NUMERIC) + CAST(${solAmount} AS NUMERIC)`, updatedAt: new Date() })
+      .where(eq(vaultPartners.walletAddress, walletAddress))
+      .returning();
+    await db.insert(partnerTransactions).values({ walletAddress, txType: 'deposit', amountSol: solAmount, signature });
+    return updated;
+  }
+
+  async removePartnerDeposit(walletAddress: string, solAmount: string): Promise<VaultPartner> {
+    const [updated] = await db.update(vaultPartners)
+      .set({ depositedSol: sql`GREATEST(0, CAST(${vaultPartners.depositedSol} AS NUMERIC) - CAST(${solAmount} AS NUMERIC))`, updatedAt: new Date() })
+      .where(eq(vaultPartners.walletAddress, walletAddress))
+      .returning();
+    await db.insert(partnerTransactions).values({ walletAddress, txType: 'withdraw', amountSol: solAmount });
+    return updated;
+  }
+
+  async creditPartnerFees(walletAddress: string, solAmount: string): Promise<void> {
+    await db.update(vaultPartners)
+      .set({
+        claimableFees: sql`CAST(${vaultPartners.claimableFees} AS NUMERIC) + CAST(${solAmount} AS NUMERIC)`,
+        totalEarned: sql`CAST(${vaultPartners.totalEarned} AS NUMERIC) + CAST(${solAmount} AS NUMERIC)`,
+        updatedAt: new Date()
+      })
+      .where(eq(vaultPartners.walletAddress, walletAddress));
+    await db.insert(partnerTransactions).values({ walletAddress, txType: 'fee_credit', amountSol: solAmount });
+  }
+
+  async clearPartnerClaimableFees(walletAddress: string): Promise<string> {
+    const partner = await this.getVaultPartner(walletAddress);
+    if (!partner) return "0";
+    const amount = partner.claimableFees;
+    await db.update(vaultPartners)
+      .set({ claimableFees: "0", updatedAt: new Date() })
+      .where(eq(vaultPartners.walletAddress, walletAddress));
+    return amount;
+  }
+
+  async getVaultStats(): Promise<{ totalDeposited: string; partnerCount: number }> {
+    const [stats] = await db.select({
+      totalDeposited: sql<string>`COALESCE(SUM(CAST(${vaultPartners.depositedSol} AS NUMERIC)), 0)::text`,
+      partnerCount: sql<number>`COUNT(*)`
+    }).from(vaultPartners).where(eq(vaultPartners.isActive, true));
+    return { totalDeposited: stats?.totalDeposited ?? "0", partnerCount: Number(stats?.partnerCount ?? 0) };
+  }
+
+  async createPartnerTransaction(tx: InsertPartnerTransaction): Promise<PartnerTransaction> {
+    const [created] = await db.insert(partnerTransactions).values(tx).returning();
+    return created;
+  }
+
+  async getPartnerTransactions(walletAddress: string, limit = 20): Promise<PartnerTransaction[]> {
+    return db.select().from(partnerTransactions)
+      .where(eq(partnerTransactions.walletAddress, walletAddress))
+      .orderBy(desc(partnerTransactions.createdAt))
+      .limit(limit);
   }
 }
 

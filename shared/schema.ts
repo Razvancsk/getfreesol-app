@@ -1034,3 +1034,33 @@ export type TelegramReferral = typeof telegramReferrals.$inferSelect;
 export type InsertTelegramReferral = z.infer<typeof insertTelegramReferralSchema>;
 export type TelegramReferralEarning = typeof telegramReferralEarnings.$inferSelect;
 export type InsertTelegramReferralEarning = z.infer<typeof insertTelegramReferralEarningSchema>;
+
+// Vault Partners — deposit SOL, earn proportional share of platform fees
+export const vaultPartners = pgTable("vault_partners", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull().unique(),
+  depositedSol: decimal("deposited_sol", { precision: 18, scale: 9 }).notNull().default("0"),
+  claimableFees: decimal("claimable_fees", { precision: 18, scale: 9 }).notNull().default("0"),
+  totalEarned: decimal("total_earned", { precision: 18, scale: 9 }).notNull().default("0"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const partnerTransactions = pgTable("partner_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull(),
+  txType: text("tx_type").notNull(), // 'deposit', 'withdraw', 'fee_credit', 'fee_claim'
+  amountSol: decimal("amount_sol", { precision: 18, scale: 9 }).notNull(),
+  signature: text("signature"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertVaultPartnerSchema = createInsertSchema(vaultPartners).omit({ id: true, createdAt: true, updatedAt: true });
+export type VaultPartner = typeof vaultPartners.$inferSelect;
+export type InsertVaultPartner = z.infer<typeof insertVaultPartnerSchema>;
+
+export const insertPartnerTransactionSchema = createInsertSchema(partnerTransactions).omit({ id: true, createdAt: true });
+export type PartnerTransaction = typeof partnerTransactions.$inferSelect;
+export type InsertPartnerTransaction = z.infer<typeof insertPartnerTransactionSchema>;

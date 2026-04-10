@@ -20,6 +20,7 @@ import SwapPage from "@/pages/swap";
 import DesignPreview from "@/pages/design-preview";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsConditions from "@/pages/terms-conditions";
+import PartnersPage from "@/pages/partners";
 import NotFound from "@/pages/not-found";
 import GsolWelcomeModal from "@/components/GsolWelcomeModal";
 
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/design" component={DesignPreview} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsConditions} />
+      <Route path="/partners" component={PartnersPage} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
       <Route path="/:referralCode" component={ClaimSol} />
       <Route component={NotFound} />

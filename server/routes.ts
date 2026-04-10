@@ -11950,6 +11950,187 @@ Claimer: ${walletAddress}`;
     }
   }, { timezone: 'UTC' });
 
+  // ── Vault Partner Routes ────────────────────────────────────────────────
+
+  // GET /api/vault/stats — public vault totals
+  app.get('/api/vault/stats', async (_req, res) => {
+    try {
+      const stats = await storage.getVaultStats();
+      res.json(stats);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // GET /api/vault/partner/:wallet — get partner record + computed share %
+  app.get('/api/vault/partner/:wallet', async (req, res) => {
+    try {
+      const { wallet } = req.params;
+      const partner = await storage.getVaultPartner(wallet);
+      const stats = await storage.getVaultStats();
+      const totalDeposited = parseFloat(stats.totalDeposited) || 0;
+      const myDeposit = partner ? parseFloat(partner.depositedSol) : 0;
+      const sharePercent = totalDeposited > 0 ? (myDeposit / totalDeposited) * 100 : 0;
+      res.json({ partner: partner || null, sharePercent: sharePercent.toFixed(4), totalDeposited: stats.totalDeposited, partnerCount: stats.partnerCount });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/vault/deposit — record a confirmed on-chain deposit
+  app.post('/api/vault/deposit', async (req, res) => {
+    try {
+      const { walletAddress, amountSol, signature } = req.body;
+      if (!walletAddress || !amountSol || !signature) return res.status(400).json({ error: 'Missing fields' });
+      const amount = parseFloat(amountSol);
+      if (isNaN(amount) || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+      const partner = await storage.addPartnerDeposit(walletAddress, amount.toString(), signature);
+      const stats = await storage.getVaultStats();
+      const totalDeposited = parseFloat(stats.totalDeposited) || 0;
+      const sharePercent = totalDeposited > 0 ? (parseFloat(partner.depositedSol) / totalDeposited) * 100 : 0;
+      res.json({ success: true, partner, sharePercent: sharePercent.toFixed(4) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/vault/withdraw — bot sends deposited SOL back to partner
+  app.post('/api/vault/withdraw', async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+      if (!walletAddress) return res.status(400).json({ error: 'Missing walletAddress' });
+      const partner = await storage.getVaultPartner(walletAddress);
+      if (!partner) return res.status(404).json({ error: 'No partner record found' });
+      const depositedAmount = parseFloat(partner.depositedSol);
+      if (depositedAmount <= 0) return res.status(400).json({ error: 'No deposit to withdraw' });
+
+      const relayerKey = process.env.RELAYER_PRIVATE_KEY;
+      if (!relayerKey) return res.status(500).json({ error: 'RELAYER_PRIVATE_KEY not set' });
+
+      const { Connection: C2, Keypair: KP2, PublicKey: PK2, Transaction: TX2, SystemProgram: SP2, LAMPORTS_PER_SOL: LPS2 } = await import('@solana/web3.js');
+      const connection = getHeliusConnection('confirmed');
+      const senderKeypair = KP2.fromSecretKey(bs58.decode(relayerKey));
+      const lamports = BigInt(Math.floor(depositedAmount * 1e9));
+
+      const transaction = new TX2();
+      transaction.add(SP2.transfer({ fromPubkey: senderKeypair.publicKey, toPubkey: new PK2(walletAddress), lamports }));
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = senderKeypair.publicKey;
+      transaction.sign(senderKeypair);
+      const sig = await connection.sendRawTransaction(transaction.serialize());
+      await connection.confirmTransaction(sig, 'confirmed');
+
+      await storage.removePartnerDeposit(walletAddress, depositedAmount.toString());
+      res.json({ success: true, signature: sig, amountSol: depositedAmount });
+    } catch (e: any) {
+      console.error('[Vault Withdraw]', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/vault/claim-fees — bot sends claimable fees to partner
+  app.post('/api/vault/claim-fees', async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+      if (!walletAddress) return res.status(400).json({ error: 'Missing walletAddress' });
+      const partner = await storage.getVaultPartner(walletAddress);
+      if (!partner) return res.status(404).json({ error: 'No partner record found' });
+      const claimable = parseFloat(partner.claimableFees);
+      if (claimable <= 0) return res.status(400).json({ error: 'No fees to claim' });
+
+      const relayerKey = process.env.RELAYER_PRIVATE_KEY;
+      if (!relayerKey) return res.status(500).json({ error: 'RELAYER_PRIVATE_KEY not set' });
+
+      const { Keypair: KP3, PublicKey: PK3, Transaction: TX3, SystemProgram: SP3 } = await import('@solana/web3.js');
+      const connection = getHeliusConnection('confirmed');
+      const senderKeypair = KP3.fromSecretKey(bs58.decode(relayerKey));
+      const lamports = BigInt(Math.floor(claimable * 1e9));
+
+      const transaction = new TX3();
+      transaction.add(SP3.transfer({ fromPubkey: senderKeypair.publicKey, toPubkey: new PK3(walletAddress), lamports }));
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = senderKeypair.publicKey;
+      transaction.sign(senderKeypair);
+      const sig = await connection.sendRawTransaction(transaction.serialize());
+      await connection.confirmTransaction(sig, 'confirmed');
+
+      const claimed = await storage.clearPartnerClaimableFees(walletAddress);
+      await storage.createPartnerTransaction({ walletAddress, txType: 'fee_claim', amountSol: claimed, signature: sig });
+      res.json({ success: true, signature: sig, claimedSol: claimed });
+    } catch (e: any) {
+      console.error('[Vault Claim Fees]', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/vault/distribute-fees — admin: distribute fee pool to all partners proportionally
+  app.post('/api/vault/distribute-fees', async (req, res) => {
+    try {
+      const { adminKey, totalFeeSol } = req.body;
+      if (adminKey !== process.env.ADMIN_SECRET && adminKey !== process.env.RELAYER_PRIVATE_KEY) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      const feeAmount = parseFloat(totalFeeSol);
+      if (isNaN(feeAmount) || feeAmount <= 0) return res.status(400).json({ error: 'Invalid fee amount' });
+
+      const partners = await storage.getAllActivePartners();
+      const totalDeposited = partners.reduce((sum, p) => sum + parseFloat(p.depositedSol), 0);
+      if (totalDeposited <= 0) return res.status(400).json({ error: 'No active partners with deposits' });
+
+      const distributions: { wallet: string; amount: string }[] = [];
+      for (const partner of partners) {
+        const deposit = parseFloat(partner.depositedSol);
+        if (deposit <= 0) continue;
+        const share = (deposit / totalDeposited) * feeAmount;
+        await storage.creditPartnerFees(partner.walletAddress, share.toFixed(9));
+        distributions.push({ wallet: partner.walletAddress, amount: share.toFixed(9) });
+      }
+      res.json({ success: true, distributed: feeAmount, partners: distributions.length, distributions });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // GET /api/vault/transactions/:wallet — partner tx history
+  app.get('/api/vault/transactions/:wallet', async (req, res) => {
+    try {
+      const txs = await storage.getPartnerTransactions(req.params.wallet, 30);
+      res.json(txs);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Daily cron: distribute 70% of that day's platform fees among vault partners
+  cron.schedule('0 1 * * *', async () => {
+    try {
+      const partners = await storage.getAllActivePartners();
+      const totalDeposited = partners.reduce((sum, p) => sum + parseFloat(p.depositedSol), 0);
+      if (totalDeposited <= 0) return;
+      // Tally yesterday's fees from the ledger
+      const yesterday = new Date(Date.now() - 86400000);
+      const { db: rawDb } = await import('./db');
+      const { transactionLedger: tl } = await import('@shared/schema');
+      const { gte: gteOp, sql: sqlOp } = await import('drizzle-orm');
+      const [feeRow] = await rawDb.select({ total: sqlOp<string>`COALESCE(SUM(CAST(${tl.feeAmount} AS NUMERIC)), 0)::text` })
+        .from(tl).where(gteOp(tl.processedAt, yesterday));
+      const totalFees = parseFloat(feeRow?.total ?? '0');
+      const partnerPool = totalFees * 0.20; // 20% of fees to partners
+      if (partnerPool < 0.0001) return;
+      for (const partner of partners) {
+        const deposit = parseFloat(partner.depositedSol);
+        if (deposit <= 0) continue;
+        const share = (deposit / totalDeposited) * partnerPool;
+        await storage.creditPartnerFees(partner.walletAddress, share.toFixed(9));
+      }
+      console.log(`✅ Vault partner fee distribution: ${partnerPool.toFixed(4)} SOL split among ${partners.length} partners`);
+    } catch (e: any) {
+      console.error('❌ Vault partner fee cron failed:', e.message);
+    }
+  }, { timezone: 'UTC' });
+
   const httpServer = createServer(app);
   return httpServer;
 }
