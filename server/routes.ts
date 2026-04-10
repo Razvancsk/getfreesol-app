@@ -12038,7 +12038,7 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // GET /api/vault/partner/:wallet — get partner record + computed share %
+  // GET /api/vault/partner/:wallet — get partner record + computed share % + pending uncredited fees
   app.get('/api/vault/partner/:wallet', async (req, res) => {
     try {
       const { wallet } = req.params;
@@ -12047,7 +12047,24 @@ Claimer: ${walletAddress}`;
       const totalDeposited = parseFloat(stats.totalDeposited) || 0;
       const myDeposit = partner ? parseFloat(partner.depositedSol) : 0;
       const sharePercent = totalDeposited > 0 ? (myDeposit / totalDeposited) * 100 : 0;
-      res.json({ partner: partner || null, sharePercent: sharePercent.toFixed(4), totalDeposited: stats.totalDeposited, partnerCount: stats.partnerCount });
+
+      // Compute pending uncredited fees this partner would receive right now
+      let pendingFees = '0';
+      try {
+        const { coinFlips: cfp, partnerTransactions: ptp } = await import('@shared/schema');
+        const { gte: gteP, isNotNull: innP, sql: sqlP, and: andP } = await import('drizzle-orm');
+        const [lastDist] = await db.select({ lastTime: sqlP<string>`MAX(${ptp.createdAt})::text` })
+          .from(ptp).where(eq(ptp.txType, 'fee_credit'));
+        const since = lastDist?.lastTime ? new Date(lastDist.lastTime) : new Date(0);
+        const [feeRow] = await db.select({ total: sqlP<string>`COALESCE(SUM(CAST(${cfp.platformFee} AS NUMERIC)), 0)::text` })
+          .from(cfp).where(andP(innP(cfp.platformFee), gteP(cfp.createdAt, since)));
+        const newFees = parseFloat(feeRow?.total ?? '0');
+        const pool = newFees * 0.70;
+        const partnerShare = totalDeposited > 0 ? (myDeposit / totalDeposited) * pool : 0;
+        pendingFees = partnerShare.toFixed(9);
+      } catch (_) {}
+
+      res.json({ partner: partner || null, sharePercent: sharePercent.toFixed(4), totalDeposited: stats.totalDeposited, partnerCount: stats.partnerCount, pendingFees });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -12110,10 +12127,17 @@ Claimer: ${walletAddress}`;
     try {
       const { walletAddress } = req.body;
       if (!walletAddress) return res.status(400).json({ error: 'Missing walletAddress' });
+      const partnerBefore = await storage.getVaultPartner(walletAddress);
+      if (!partnerBefore) return res.status(404).json({ error: 'No partner record found' });
+
+      // Distribute any pending fees first so partner gets the latest amount
+      try { await distributeNewFees(); } catch (_) {}
+
+      // Re-fetch after distribution to get the most up-to-date claimable amount
       const partner = await storage.getVaultPartner(walletAddress);
       if (!partner) return res.status(404).json({ error: 'No partner record found' });
       const claimable = parseFloat(partner.claimableFees);
-      if (claimable <= 0) return res.status(400).json({ error: 'No fees to claim' });
+      if (claimable <= 0) return res.status(400).json({ error: 'No fees to claim — no new coin flip fees have been collected yet' });
 
       const feesWalletKey = process.env.FEES_WALLET_COINFLIP;
       if (!feesWalletKey) return res.status(500).json({ error: 'FEES_WALLET_COINFLIP not configured' });
@@ -12186,37 +12210,46 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Daily cron at 1am UTC: distribute 70% of yesterday's coin flip fees (3.5% collected per bet) to vault partners
-  cron.schedule('0 1 * * *', async () => {
-    try {
-      const partners = await storage.getAllActivePartners();
-      const totalDeposited = partners.reduce((sum, p) => sum + parseFloat(p.depositedSol), 0);
-      if (totalDeposited <= 0) return;
+  // Helper: distribute new coin flip fees to partners (only fees since last distribution)
+  async function distributeNewFees(): Promise<{ distributed: number; partners: number }> {
+    const partners = await storage.getAllActivePartners();
+    const totalDeposited = partners.reduce((sum, p) => sum + parseFloat(p.depositedSol), 0);
+    if (totalDeposited <= 0) return { distributed: 0, partners: 0 };
 
-      // Sum all platformFee from coin flips in the last 24h
-      const yesterday = new Date(Date.now() - 86400000);
-      const { db: rawDb } = await import('./db');
-      const { coinFlips: cf } = await import('@shared/schema');
-      const { gte: gteOp, isNotNull: isNotNullOp, sql: sqlOp } = await import('drizzle-orm');
-      const [feeRow] = await rawDb.select({
-        total: sqlOp<string>`COALESCE(SUM(CAST(${cf.platformFee} AS NUMERIC)), 0)::text`
-      }).from(cf).where(gteOp(cf.createdAt, yesterday));
+    const { coinFlips: cf2, partnerTransactions: pt2 } = await import('@shared/schema');
+    const { gte: gteOp2, isNotNull: isNotNullOp2, sql: sqlOp2, and: andOp2 } = await import('drizzle-orm');
 
-      const totalFees = parseFloat(feeRow?.total ?? '0');
-      const partnerPool = totalFees * 0.70; // 70% of collected 3.5% fees go to partners
-      if (partnerPool < 0.0001) return;
+    // Find when fees were last distributed
+    const [lastDist] = await db.select({
+      lastTime: sqlOp2<string>`MAX(${pt2.createdAt})::text`
+    }).from(pt2).where(eq(pt2.txType, 'fee_credit'));
+    const since = lastDist?.lastTime ? new Date(lastDist.lastTime) : new Date(Date.now() - 15 * 60 * 1000);
 
-      for (const partner of partners) {
-        const deposit = parseFloat(partner.depositedSol);
-        if (deposit <= 0) continue;
-        const share = (deposit / totalDeposited) * partnerPool;
-        await storage.creditPartnerFees(partner.walletAddress, share.toFixed(9));
-      }
-      console.log(`✅ Vault partner fee distribution: ${partnerPool.toFixed(6)} SOL (70% of ${totalFees.toFixed(6)} SOL fees) split among ${partners.length} partners`);
-    } catch (e: any) {
+    // Sum platformFee from ALL coin flips since last distribution
+    const [feeRow] = await db.select({
+      total: sqlOp2<string>`COALESCE(SUM(CAST(${cf2.platformFee} AS NUMERIC)), 0)::text`
+    }).from(cf2).where(andOp2(isNotNullOp2(cf2.platformFee), gteOp2(cf2.createdAt, since)));
+
+    const totalFees = parseFloat(feeRow?.total ?? '0');
+    const partnerPool = totalFees * 0.70;
+    if (partnerPool < 0.000001) return { distributed: 0, partners: 0 };
+
+    for (const partner of partners) {
+      const deposit = parseFloat(partner.depositedSol);
+      if (deposit <= 0) continue;
+      const share = (deposit / totalDeposited) * partnerPool;
+      await storage.creditPartnerFees(partner.walletAddress, share.toFixed(9));
+    }
+    console.log(`✅ Fee distribution: ${partnerPool.toFixed(6)} SOL (70% of ${totalFees.toFixed(6)} SOL) → ${partners.length} partners`);
+    return { distributed: partnerPool, partners: partners.length };
+  }
+
+  // Run every 15 minutes to keep partner claimable fees up-to-date
+  cron.schedule('*/15 * * * *', async () => {
+    try { await distributeNewFees(); } catch (e: any) {
       console.error('❌ Vault partner fee cron failed:', e.message);
     }
-  }, { timezone: 'UTC' });
+  });
 
   const httpServer = createServer(app);
   return httpServer;

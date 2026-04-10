@@ -69,10 +69,11 @@ export default function PartnersPage() {
     sharePercent: string;
     totalDeposited: string;
     partnerCount: number;
+    pendingFees: string;
   }>({
     queryKey: ["/api/vault/partner", wallet],
     enabled: !!wallet,
-    refetchInterval: 15000,
+    refetchInterval: 10000,
   });
 
   const { data: txHistory } = useQuery<Array<{
@@ -179,6 +180,8 @@ export default function PartnersPage() {
   const partner = partnerData?.partner;
   const sharePercent = partnerData?.sharePercent ?? "0";
   const claimable = parseFloat(partner?.claimableFees ?? "0");
+  const pending = parseFloat(partnerData?.pendingFees ?? "0");
+  const totalAvailable = claimable + pending;
   const deposited = parseFloat(partner?.depositedSol ?? "0");
 
   return (
@@ -276,7 +279,7 @@ export default function PartnersPage() {
 
             <div className="bg-black/20 rounded-xl p-3 text-xs text-gray-400 flex items-center gap-2">
               <span className="text-orange-400 font-bold">Flow:</span>
-              Fees wallet receives 3.5% of every bet on-chain → at 1am UTC, 70% is credited to partners proportionally → partners claim and SOL is sent from fees wallet
+              Fees wallet receives 3.5% of every bet on-chain → every 15 min, 70% of new fees is credited to partners proportionally → partners click Claim and SOL is sent instantly from the fees wallet
             </div>
 
             <div className="border-t border-orange-500/20 pt-3 space-y-2">
@@ -333,9 +336,12 @@ export default function PartnersPage() {
                   <div className="font-bold text-purple-300">{partnerLoading ? "…" : `${parseFloat(sharePercent).toFixed(2)}%`}</div>
                 </div>
                 <div className="bg-black/30 rounded-xl p-3 text-center">
-                  <div className="text-xs text-gray-400 mb-1">Claimable Fees</div>
-                  <div className={`font-bold ${claimable > 0 ? "text-yellow-400" : "text-gray-400"}`}>
-                    {partnerLoading ? "…" : `${fmt(partner?.claimableFees ?? "0", 5)} SOL`}
+                  <div className="text-xs text-gray-400 mb-1 flex items-center justify-center gap-1">
+                    {pending > 0 && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />}
+                    Claimable Fees
+                  </div>
+                  <div className={`font-bold ${totalAvailable > 0 ? "text-yellow-400" : "text-gray-400"}`}>
+                    {partnerLoading ? "…" : `${fmt(totalAvailable.toFixed(9), 5)} SOL`}
                   </div>
                 </div>
                 <div className="bg-black/30 rounded-xl p-3 text-center">
@@ -393,24 +399,41 @@ export default function PartnersPage() {
               </div>
 
               {/* Claim Fees */}
-              <div className={`bg-[#1a0f2e] border rounded-2xl p-5 space-y-3 ${claimable > 0 ? "border-yellow-500/50 shadow-[0_0_20px_rgba(234,179,8,0.1)]" : "border-purple-700/30"}`}>
+              <div className={`bg-[#1a0f2e] border rounded-2xl p-5 space-y-3 ${totalAvailable > 0 ? "border-yellow-500/50 shadow-[0_0_20px_rgba(234,179,8,0.1)]" : "border-purple-700/30"}`}>
                 <h3 className="font-semibold flex items-center gap-2 text-gray-200">
-                  <Coins className={`w-4 h-4 ${claimable > 0 ? "text-yellow-400" : "text-gray-500"}`} />
+                  <Coins className={`w-4 h-4 ${totalAvailable > 0 ? "text-yellow-400" : "text-gray-500"}`} />
                   Claim Fees
                 </h3>
-                <p className="text-xs text-gray-400">Claim your accumulated fee earnings. Fees are distributed every 24 hours.</p>
-                <div className={`rounded-lg p-3 text-center ${claimable > 0 ? "bg-yellow-900/20 border border-yellow-700/30" : "bg-black/30"}`}>
-                  <div className="text-xs text-gray-500 mb-0.5">Claimable</div>
-                  <div className={`font-bold text-lg ${claimable > 0 ? "text-yellow-400" : "text-gray-500"}`}>
-                    {fmt(partner?.claimableFees ?? "0", 6)} SOL
+                <p className="text-xs text-gray-400">Your 70% share of coin flip fees. Updates live as bets are placed.</p>
+                <div className={`rounded-lg p-3 space-y-2 ${totalAvailable > 0 ? "bg-yellow-900/20 border border-yellow-700/30" : "bg-black/30"}`}>
+                  {claimable > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">Ready to claim</span>
+                      <span className="font-bold text-yellow-400">{fmt(partner?.claimableFees ?? "0", 6)} SOL</span>
+                    </div>
+                  )}
+                  {pending > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-green-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                        Live (uncredited)
+                      </span>
+                      <span className="font-bold text-green-400">+{fmt(partnerData?.pendingFees ?? "0", 6)} SOL</span>
+                    </div>
+                  )}
+                  <div className="border-t border-white/10 pt-1.5 flex justify-between items-center">
+                    <span className="text-xs text-gray-400">Total</span>
+                    <span className={`font-bold text-lg ${totalAvailable > 0 ? "text-yellow-400" : "text-gray-500"}`}>
+                      {fmt(totalAvailable.toFixed(9), 6)} SOL
+                    </span>
                   </div>
                 </div>
                 <Button
                   onClick={() => claimFeesMutation.mutate()}
-                  disabled={claimFeesMutation.isPending || claimable <= 0}
-                  className={`w-full font-semibold rounded-xl ${claimable > 0 ? "bg-yellow-600 hover:bg-yellow-500 text-black" : "bg-gray-700 text-gray-500 cursor-not-allowed"}`}
+                  disabled={claimFeesMutation.isPending || totalAvailable <= 0}
+                  className={`w-full font-semibold rounded-xl ${totalAvailable > 0 ? "bg-yellow-600 hover:bg-yellow-500 text-black" : "bg-gray-700 text-gray-500 cursor-not-allowed"}`}
                 >
-                  {claimFeesMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : claimable > 0 ? "Claim Fees" : "No Fees Yet"}
+                  {claimFeesMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : totalAvailable > 0 ? `Claim ${fmt(totalAvailable.toFixed(9), 5)} SOL` : "No Fees Yet"}
                 </Button>
               </div>
             </div>
