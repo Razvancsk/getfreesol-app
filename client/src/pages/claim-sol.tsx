@@ -3948,20 +3948,6 @@ export default function SolRefund() {
                           <span className="font-bold text-lg whitespace-nowrap" style={{ color: 'rgb(20,241,149)' }}>+{claimSuccessData.solReceived.toFixed(5)} SOL</span>
                         </div>
                       </div>
-                      {claimSuccessData.txid && (
-                        <div className="w-full flex flex-col justify-center items-center mt-2 mb-3 gap-1">
-                          <span className="text-white text-sm">Transaction</span>
-                          <a
-                            href={`https://solscan.io/tx/${claimSuccessData.txid}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-white font-bold text-base hover:text-purple-300 transition-colors"
-                          >
-                            {claimSuccessData.txid.slice(0, 7)}…{claimSuccessData.txid.slice(-4)}
-                            <ExternalLink className="w-4 h-4 opacity-80" />
-                          </a>
-                        </div>
-                      )}
                       <div className="w-full flex gap-2 mt-1">
                         <a
                           href={`https://x.com/intent/tweet?text=${encodeURIComponent(`Just claimed ${claimSuccessData.solReceived.toFixed(5)} SOL from ${claimSuccessData.accountsClosed} empty account${claimSuccessData.accountsClosed !== 1 ? 's' : ''} on @getfreesol_xyz 🚀\n\nGet your SOL back for free → getfreesol.xyz\n\n#Solana #GetFreeSol`)}`}
