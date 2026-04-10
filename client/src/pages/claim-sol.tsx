@@ -3614,9 +3614,11 @@ export default function SolRefund() {
                               </Link>
                             </>
                           )}
-                          <Link href="/partners" onClick={() => setMobileWalletMenuOpen(false)}>
-                            <div className="px-2 py-2 text-yellow-300 hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate">🤝 Partners</div>
-                          </Link>
+                          {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+                            <Link href="/partners" onClick={() => setMobileWalletMenuOpen(false)}>
+                              <div className="px-2 py-2 text-yellow-300 hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate">🤝 Partners</div>
+                            </Link>
+                          )}
                           <div
                             onClick={() => { disconnectWallet(); setMobileWalletMenuOpen(false); }}
                             className="px-2 py-2 text-white cursor-pointer text-xs text-center truncate"
@@ -3688,9 +3690,11 @@ export default function SolRefund() {
                             </Link>
                           </>
                         )}
-                        <Link href="/partners" onClick={() => setDesktopWalletMenuOpen(false)}>
-                          <div className="px-3 py-2 text-yellow-300 hover:bg-purple-600/40 cursor-pointer text-sm text-center truncate">🤝 Partners</div>
-                        </Link>
+                        {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+                          <Link href="/partners" onClick={() => setDesktopWalletMenuOpen(false)}>
+                            <div className="px-3 py-2 text-yellow-300 hover:bg-purple-600/40 cursor-pointer text-sm text-center truncate">🤝 Partners</div>
+                          </Link>
+                        )}
                         <div
                           onClick={() => { disconnectWallet(); setDesktopWalletMenuOpen(false); }}
                           className="px-3 py-2 text-white cursor-pointer text-sm text-center truncate"
@@ -3793,17 +3797,19 @@ export default function SolRefund() {
                     Swap
                   </Button>
                 )}
-                <Button
-                  onClick={() => setActiveTab('coinflip')}
-                  className={`md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
-                    activeTab === 'coinflip'
-                      ? 'bg-green-600 text-white border-green-500'
-                      : 'bg-purple-800/40 text-white hover:bg-green-600/60 border-purple-500/30'
-                  }`}
-                  data-testid="button-coinflip"
-                >
-                  <span className="text-xl">🪙</span> Coin Flip
-                </Button>
+                {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+                  <Button
+                    onClick={() => setActiveTab('coinflip')}
+                    className={`md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
+                      activeTab === 'coinflip'
+                        ? 'bg-green-600 text-white border-green-500'
+                        : 'bg-purple-800/40 text-white hover:bg-green-600/60 border-purple-500/30'
+                    }`}
+                    data-testid="button-coinflip"
+                  >
+                    <span className="text-xl">🪙</span> Coin Flip
+                  </Button>
+                )}
                 <Button
                   onClick={() => setActiveTab('staking')}
                   id="staking-tab-btn"
@@ -3815,13 +3821,15 @@ export default function SolRefund() {
                 >
                   <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
                 </Button>
-                <Link href="/partners">
-                  <Button
-                    className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-yellow-600/20 text-yellow-300 hover:bg-yellow-600/40 border-yellow-500/40"
-                  >
-                    🤝 Partners
-                  </Button>
-                </Link>
+                {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+                  <Link href="/partners">
+                    <Button
+                      className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-yellow-600/20 text-yellow-300 hover:bg-yellow-600/40 border-yellow-500/40"
+                    >
+                      🤝 Partners
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           )}
@@ -7568,13 +7576,15 @@ export default function SolRefund() {
             </svg>
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Claim + Burn</span>
           </button>
-          <button
-            onClick={() => setActiveTab('coinflip')}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'coinflip' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <span style={{ fontSize: '20px', lineHeight: 1 }}>🪙</span>
-            <span style={{ fontSize: '11px', fontWeight: 500 }}>Coin Flip</span>
-          </button>
+          {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+            <button
+              onClick={() => setActiveTab('coinflip')}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'coinflip' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <span style={{ fontSize: '20px', lineHeight: 1 }}>🪙</span>
+              <span style={{ fontSize: '11px', fontWeight: 500 }}>Coin Flip</span>
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('staking')}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'staking' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -7582,10 +7592,12 @@ export default function SolRefund() {
             <FaSackDollar style={{ width: '20px', height: '20px' }} />
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
           </button>
-          <Link href="/partners" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#fde68a', textDecoration: 'none', cursor: 'pointer' }}>
-            <span style={{ fontSize: '20px', lineHeight: 1 }}>🤝</span>
-            <span style={{ fontSize: '11px', fontWeight: 500 }}>Partners</span>
-          </Link>
+          {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+            <Link href="/partners" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#fde68a', textDecoration: 'none', cursor: 'pointer' }}>
+              <span style={{ fontSize: '20px', lineHeight: 1 }}>🤝</span>
+              <span style={{ fontSize: '11px', fontWeight: 500 }}>Partners</span>
+            </Link>
+          )}
         </div>
       )}
     </div>
