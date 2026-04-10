@@ -101,6 +101,7 @@ export function CoinFlipGame() {
 
   const vaultAddress = (vaultQuery.data as any)?.address || '';
   const vaultBalance = (vaultQuery.data as any)?.balance || 0;
+  const feesWallet = (vaultQuery.data as any)?.feesWallet || '';
 
   const flipMutation = useMutation({
     mutationFn: async ({ walletAddress, betAmount, choice, betTxSignature }: any) => {
@@ -130,7 +131,6 @@ export function CoinFlipGame() {
 
     const FEE_RATE = 0.035;
     const feeAmount = betAmount * FEE_RATE;
-    const totalCharge = betAmount + feeAmount; // bet + 3.5% fee paid upfront
     const maxPayout = betAmount * 2; // win = full 2x bet
 
     if (vaultBalance < maxPayout) {
@@ -143,15 +143,22 @@ export function CoinFlipGame() {
     setShowResult(false);
 
     try {
-      // Send bet + fee to vault in one transaction
-      const lamports = Math.floor(totalCharge * LAMPORTS_PER_SOL);
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
+      // Two instructions: bet → vault, fee → fees wallet
+      const betLamports = Math.floor(betAmount * LAMPORTS_PER_SOL);
+      const feeLamports = Math.floor(feeAmount * LAMPORTS_PER_SOL);
+      const transaction = new Transaction()
+        .add(SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: new PublicKey(vaultAddress),
-          lamports,
-        })
-      );
+          lamports: betLamports,
+        }));
+      if (feesWallet) {
+        transaction.add(SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: new PublicKey(feesWallet),
+          lamports: feeLamports,
+        }));
+      }
 
       const { blockhash } = await connection.getLatestBlockhash('confirmed');
       transaction.recentBlockhash = blockhash;
