@@ -129,6 +129,7 @@ export default function SolRefund() {
   const [gsolTvl, setGsolTvl] = useState<number | null>(null);
   const [gsolHolders, setGsolHolders] = useState<number | null>(null);
   const [stakeSuccessData, setStakeSuccessData] = useState<{ amount: number; txid: string; gsolReceived?: number } | null>(null);
+  const [claimSuccessData, setClaimSuccessData] = useState<{ accountsClosed: number; solReceived: number; txid: string } | null>(null);
   const [stakeQuote, setStakeQuote] = useState<{ outputAmount: number; priceImpactPct: number } | null>(null);
   const [stakeQuoteLoading, setStakeQuoteLoading] = useState(false);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
@@ -3303,14 +3304,13 @@ export default function SolRefund() {
       }
     },
     onSuccess: (result: any) => {
-      // Only show share modal for single transactions (not during batching)
+      // Only show success modal for single transactions (not during batching)
       // Batch processing shows the modal at the end with total amount
       if (!isBatching) {
         const totalWithRebate = result.totalReceived + (result.rebateAmount || 0);
         const closedCount = result.accountsClosed || selectedAccounts.length;
-        setShareData({ solClaimed: totalWithRebate, accountsClosed: closedCount, claimType: 'accounts' });
-        setIsShareModalOpen(true);
-        
+        setClaimSuccessData({ accountsClosed: closedCount, solReceived: totalWithRebate, txid: result.signature });
+
         // Reset form and immediately refresh statistics and transaction history
         setScanResult(null);
 
@@ -3909,6 +3909,64 @@ export default function SolRefund() {
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && (
             <div className="space-y-4">
+
+              {/* Confetti burst on claim success */}
+              {claimSuccessData && <Confetti />}
+
+              {/* Claim Success Modal */}
+              {claimSuccessData && (
+                <div
+                  className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                  onClick={() => setClaimSuccessData(null)}
+                >
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                  <div
+                    className="relative w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"
+                    style={{ animation: '0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards modalBounce', border: '1px solid rgba(153, 69, 255, 0.35)' }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => setClaimSuccessData(null)}
+                      className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full text-white/40 hover:text-white/80 z-10 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="flex flex-col items-center px-6 pt-8 pb-6">
+                      <img src="/solana-logo.png" alt="Solana" className="w-14 h-14 rounded-full mb-3 shadow-lg" />
+                      <h2 className="text-white font-bold text-xl mb-3">Successfully Claimed</h2>
+                      <div
+                        className="w-full rounded-2xl py-3 px-4 mb-2"
+                        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-white text-sm">Accounts closed</span>
+                          <span className="text-white font-bold text-lg">{claimSuccessData.accountsClosed}</span>
+                        </div>
+                        <div className="h-px my-2" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                        <div className="flex justify-between items-center">
+                          <span className="text-white text-sm">SOL received</span>
+                          <span className="font-bold text-lg whitespace-nowrap" style={{ color: 'rgb(20,241,149)' }}>+{claimSuccessData.solReceived.toFixed(5)} SOL</span>
+                        </div>
+                      </div>
+                      {claimSuccessData.txid && (
+                        <div className="w-full flex flex-col justify-center items-center mt-2 mb-2 gap-1">
+                          <span className="text-white text-sm">Transaction</span>
+                          <a
+                            href={`https://solscan.io/tx/${claimSuccessData.txid}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-white font-bold text-base hover:text-purple-300 transition-colors"
+                          >
+                            {claimSuccessData.txid.slice(0, 7)}…{claimSuccessData.txid.slice(-4)}
+                            <ExternalLink className="w-4 h-4 opacity-80" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Empty Accounts Content */}
               {claimSubTab === 'empty' && !isConnected && (
                 <div className={`backdrop-blur-sm rounded-xl p-6 md:p-10 ${
