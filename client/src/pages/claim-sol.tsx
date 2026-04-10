@@ -3822,7 +3822,7 @@ export default function SolRefund() {
 
           {/* Mobile-only: Claim + Burn 3-way sub-tabs */}
           {(activeTab === 'reclaim' || activeTab === 'burnTokens') && (
-            <div className="md:hidden flex items-center pb-2 px-3">
+            <div className="md:hidden flex items-center pb-2">
               <div className="flex items-center bg-purple-900/40 rounded-xl p-1 gap-1 w-full">
                 <button
                   onClick={() => setActiveTab('reclaim')}
