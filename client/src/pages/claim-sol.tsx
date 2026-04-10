@@ -3826,7 +3826,7 @@ export default function SolRefund() {
               <div className="flex items-center bg-purple-900/40 rounded-xl p-1 gap-1 w-full">
                 <button
                   onClick={() => setActiveTab('reclaim')}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
                     activeTab === 'reclaim' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
@@ -3839,7 +3839,7 @@ export default function SolRefund() {
                 </button>
                 <button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('tokens'); }}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1 ${
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1 ${
                     activeTab === 'burnTokens' && burnSubTab === 'tokens' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
@@ -3847,7 +3847,7 @@ export default function SolRefund() {
                 </button>
                 <button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('nft'); }}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1 ${
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1 ${
                     activeTab === 'burnTokens' && burnSubTab === 'nft' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
