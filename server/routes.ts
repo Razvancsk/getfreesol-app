@@ -2253,11 +2253,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Fee: flat 0.002 SOL per account (0% for GSOL holders)
+      // Fee: platform takes everything above 0.002 SOL per account (user always gets 0.002 SOL back)
       const bufferConnection = getHeliusConnection();
       const gsolHolderBuffer = await isGsolHolder(walletAddress, bufferConnection);
-      const FLAT_FEE_PER_ACCOUNT_LAMPORTS = 2_000_000; // 0.002 SOL
-      const totalFeeLamports = gsolHolderBuffer ? 0 : Math.min(bufferAddresses.length * FLAT_FEE_PER_ACCOUNT_LAMPORTS, totalLamports);
+      const USER_PAYOUT_PER_ACCOUNT = 2_000_000; // 0.002 SOL returned to user per account
+      const userPayoutLamports = bufferAddresses.length * USER_PAYOUT_PER_ACCOUNT;
+      const totalFeeLamports = gsolHolderBuffer ? 0 : Math.max(0, totalLamports - userPayoutLamports);
       
       // Split: 50% platform, 50% referral (if exists)
       const referralFeeLamports = referralCodeData ? Math.floor(totalFeeLamports * 0.5) : 0;
@@ -2599,21 +2600,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate fees: flat 0.002 SOL per account (0% for GSOL holders)
+      // Fee: platform takes everything above 0.002 SOL per account (user always gets 0.002 SOL back per account)
       const walletFeeRates = await getWalletFeeRates(walletAddress);
       const gsolHolderClaim = await isGsolHolder(walletAddress, connection);
-      const REFERRAL_SPLIT_PERCENT = walletFeeRates.referralPercent; // 50% to referrer (70% for top 10)
-      const FLAT_FEE_CLAIM_LAMPORTS = 2_000_000; // 0.002 SOL per account
+      const REFERRAL_SPLIT_PERCENT = walletFeeRates.referralPercent;
+      const USER_PAYOUT_LAMPORTS = 2_000_000; // 0.002 SOL returned to user per account
       const numAccountsClosed = validAccountsForTx.length;
-      const totalFeeLamports = gsolHolderClaim ? 0 : Math.min(numAccountsClosed * FLAT_FEE_CLAIM_LAMPORTS, actualRecoveredLamports);
-      
+      const userPayoutTotal = numAccountsClosed * USER_PAYOUT_LAMPORTS;
+      const totalFeeLamports = gsolHolderClaim ? 0 : Math.max(0, actualRecoveredLamports - userPayoutTotal);
+
       let referralFeeLamports = 0;
       let platformFeeLamports = totalFeeLamports;
-      
+
       if (walletFeeRates.isTop10) {
         console.log(`🏆 TOP 10 USER DETECTED: ${walletAddress} - 70% referral commission!`);
       }
-      console.log(`Fee calculation: flat 0.002 SOL × ${numAccountsClosed} accounts = ${totalFeeLamports} lamports, actualRecovered=${actualRecoveredLamports} lamports, referral split=${REFERRAL_SPLIT_PERCENT}%`);
+      console.log(`Fee calculation: user gets ${userPayoutTotal} lamports (${numAccountsClosed}×0.002 SOL), platform fee=${totalFeeLamports} lamports, actualRecovered=${actualRecoveredLamports} lamports`);
       
       // Check referral/developer fee wallet BEFORE calculating final fees
       let referralWalletExists = false;

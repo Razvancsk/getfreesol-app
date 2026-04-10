@@ -7263,7 +7263,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">0.002 SOL/account fee supports platform development{gsolBalance >= 1 && <span className="ml-2 text-xs bg-green-500/20 text-green-300 border border-green-500/30 px-1.5 py-0.5 rounded-full font-semibold">0% — GSOL Holder</span>}</span>
+                  <span className="text-sm">You receive 0.002 SOL per account — platform keeps the rest{gsolBalance >= 1 && <span className="ml-2 text-xs bg-green-500/20 text-green-300 border border-green-500/30 px-1.5 py-0.5 rounded-full font-semibold">0% — GSOL Holder</span>}</span>
                 </div>
               </div>
             </div>
