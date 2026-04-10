@@ -7600,6 +7600,10 @@ export default function SolRefund() {
             <FaSackDollar style={{ width: '20px', height: '20px' }} />
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
           </button>
+          <Link href="/partners" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#fde68a', textDecoration: 'none', cursor: 'pointer' }}>
+            <span style={{ fontSize: '20px', lineHeight: 1 }}>🤝</span>
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Partners</span>
+          </Link>
         </div>
       )}
     </div>
