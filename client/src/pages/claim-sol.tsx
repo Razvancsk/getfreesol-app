@@ -3921,52 +3921,46 @@ export default function SolRefund() {
                 >
                   <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
                   <div
-                    className="relative w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"
-                    style={{ animation: '0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards modalBounce', border: '1px solid rgba(153, 69, 255, 0.35)' }}
+                    className="relative w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden"
+                    style={{ animation: '0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards modalBounce', background: '#1e1245', border: '1px solid rgba(139,92,246,0.4)' }}
                     onClick={e => e.stopPropagation()}
                   >
-                    <button
-                      onClick={() => setClaimSuccessData(null)}
-                      className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full text-white/40 hover:text-white/80 z-10 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <div className="flex flex-col items-center px-6 pt-8 pb-4">
-                      <img src="/getfreesol-logo.png" alt="GetFreeSol" className="w-14 h-14 mb-3" />
-                      <h2 className="text-white font-bold text-xl mb-3">Successfully Claimed</h2>
-                      <div
-                        className="w-full rounded-2xl py-3 px-4 mb-4"
-                        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
+                    {/* Header */}
+                    <div className="flex items-center gap-2 px-5 pt-5 pb-3">
+                      <img src="/getfreesol-logo.png" alt="GetFreeSol" className="w-8 h-8" />
+                      <span className="text-white font-bold text-sm tracking-wide">GET FREE SOL</span>
+                      <button
+                        onClick={() => setClaimSuccessData(null)}
+                        className="ml-auto w-6 h-6 flex items-center justify-center text-white/40 hover:text-white/80 transition-colors"
                       >
-                        <div className="flex justify-between items-center">
-                          <span className="text-white text-sm">Accounts closed</span>
-                          <span className="text-white font-bold text-lg">{claimSuccessData.accountsClosed}</span>
-                        </div>
-                        <div className="h-px my-2" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                        <div className="flex justify-between items-center">
-                          <span className="text-white text-sm">Claimed</span>
-                          <span className="font-bold text-lg whitespace-nowrap" style={{ color: 'rgb(20,241,149)' }}>+{claimSuccessData.solReceived.toFixed(5)} SOL</span>
-                        </div>
-                      </div>
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    {/* Body */}
+                    <div className="flex flex-col items-center px-5 pb-5">
+                      <p className="font-extrabold text-lg tracking-widest mb-1" style={{ color: 'rgb(20,241,149)' }}>CLAIMED</p>
+                      <p className="text-white font-extrabold text-5xl mb-2">+ {claimSuccessData.solReceived.toFixed(4)} SOL</p>
+                      <p className="text-sm font-mono mb-4" style={{ color: 'rgb(20,241,149)' }}>
+                        by closing {claimSuccessData.accountsClosed} empty account{claimSuccessData.accountsClosed !== 1 ? 's' : ''}!
+                      </p>
                     </div>
                     {/* Edge-to-edge buttons */}
-                    <div className="flex w-full overflow-hidden rounded-b-3xl">
+                    <div className="flex w-full overflow-hidden rounded-b-2xl">
                       <a
-                        href={`https://x.com/intent/tweet?text=${encodeURIComponent(`Just claimed ${claimSuccessData.solReceived.toFixed(5)} SOL from ${claimSuccessData.accountsClosed} empty account${claimSuccessData.accountsClosed !== 1 ? 's' : ''} on @getfreesol_xyz 🚀\n\nGet your SOL back for free → getfreesol.xyz\n\n#Solana #GetFreeSol`)}`}
+                        href={`https://x.com/intent/tweet?text=${encodeURIComponent(`Just claimed ${claimSuccessData.solReceived.toFixed(4)} SOL from ${claimSuccessData.accountsClosed} empty account${claimSuccessData.accountsClosed !== 1 ? 's' : ''} on @getfreesol_xyz 🚀\n\nGet your SOL back for free → getfreesol.xyz\n\n#Solana #GetFreeSol`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 font-bold text-base text-white transition-all"
-                        style={{ background: '#1a2535' }}
+                        className="flex-1 flex items-center justify-center gap-2 py-4 font-bold text-base text-white"
+                        style={{ background: '#4f6ef7' }}
                       >
-                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.736-8.856L1.254 2.25H8.08l4.258 5.635 5.906-5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        Share
+                        Tweet It
                       </a>
                       <button
                         onClick={() => { setClaimSuccessData(null); setActiveTab('coinflip'); }}
-                        className="flex-1 py-3.5 font-bold text-base text-white transition-all"
+                        className="flex-1 py-4 font-bold text-base text-white"
                         style={{ background: '#22c55e' }}
                       >
-                        🪙 Flip It
+                        Flip It
                       </button>
                     </div>
                   </div>
