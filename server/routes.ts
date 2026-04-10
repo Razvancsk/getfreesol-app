@@ -12229,27 +12229,35 @@ Claimer: ${walletAddress}`;
     const { Keypair: KPay, PublicKey: PKay, Transaction: TXpay, SystemProgram: SPay } = await import('@solana/web3.js');
     const payConn = getHeliusConnection('confirmed');
     const senderKeypair = KPay.fromSecretKey(bs58.decode(feesWalletKey));
-    const feesWalletBalance = await payConn.getBalance(senderKeypair.publicKey);
 
     for (const partner of partners) {
       const claimable = parseFloat(partner.claimableFees);
       if (claimable < AUTO_PAY_MIN_SOL) continue;
 
       const lamports = Math.floor(claimable * 1e9);
+      // Refresh balance each iteration so we don't over-commit with multiple partners
+      const feesWalletBalance = await payConn.getBalance(senderKeypair.publicKey);
       // Leave at least 10000 lamports in fees wallet for future tx fees
       if (feesWalletBalance < lamports + 10000) {
-        console.warn(`⚠️ Auto-pay: fees wallet balance insufficient for ${partner.walletAddress} (need ${claimable} SOL)`);
+        console.warn(`⚠️ Auto-pay: fees wallet balance insufficient for ${partner.walletAddress} (need ${claimable} SOL, have ${feesWalletBalance / 1e9})`);
         continue;
       }
 
       try {
         const tx = new TXpay();
-        const { blockhash } = await payConn.getLatestBlockhash('confirmed');
+        const { blockhash, lastValidBlockHeight } = await payConn.getLatestBlockhash('confirmed');
         tx.recentBlockhash = blockhash;
         tx.feePayer = senderKeypair.publicKey;
         tx.add(SPay.transfer({ fromPubkey: senderKeypair.publicKey, toPubkey: new PKay(partner.walletAddress), lamports }));
         tx.sign(senderKeypair);
         const sig = await payConn.sendRawTransaction(tx.serialize(), { skipPreflight: true, maxRetries: 5 });
+
+        // Wait for confirmation BEFORE clearing — if tx drops, partner keeps their balance
+        const confirmation = await payConn.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+        if (confirmation.value.err) {
+          console.error(`❌ Auto-pay tx failed on-chain for ${partner.walletAddress}:`, confirmation.value.err);
+          continue;
+        }
 
         const claimed = await storage.clearPartnerClaimableFees(partner.walletAddress);
         await storage.createPartnerTransaction({ walletAddress: partner.walletAddress, txType: 'fee_auto_pay', amountSol: claimed, signature: sig });
