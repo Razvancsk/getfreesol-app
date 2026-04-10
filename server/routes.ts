@@ -11987,15 +11987,28 @@ Claimer: ${walletAddress}`;
       const dayPool     = (parseFloat(day?.total  ?? '0') * 0.70).toFixed(9);
       const weekPool    = (parseFloat(week?.total ?? '0') * 0.70).toFixed(9);
 
+      // Live fees wallet balance
+      let feesWalletBalance = '0';
+      try {
+        const feesWalletAddr = process.env.FEES_WALLET ?? '';
+        if (feesWalletAddr) {
+          const { PublicKey: PK99 } = await import('@solana/web3.js');
+          const conn99 = getHeliusConnection();
+          const bal = await conn99.getBalance(new PK99(feesWalletAddr));
+          feesWalletBalance = (bal / 1e9).toFixed(9);
+        }
+      } catch (_) {}
+
       res.json({
-        allTimeFees:      all?.total    ?? '0',
-        last24hFees:      day?.total    ?? '0',
-        last7dFees:       week?.total   ?? '0',
+        allTimeFees:        all?.total    ?? '0',
+        last24hFees:        day?.total    ?? '0',
+        last7dFees:         week?.total   ?? '0',
         allTimePartnerPool: allTimePool,
         last24hPartnerPool: dayPool,
         last7dPartnerPool:  weekPool,
-        totalDistributed: distributed?.total ?? '0',
-        txCount: Number(all?.txCount ?? 0),
+        totalDistributed:   distributed?.total ?? '0',
+        txCount:            Number(all?.txCount ?? 0),
+        feesWalletBalance,
       });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -12092,7 +12105,7 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // POST /api/vault/claim-fees — bot sends claimable fees to partner
+  // POST /api/vault/claim-fees — sends claimable fees to partner from the fees wallet
   app.post('/api/vault/claim-fees', async (req, res) => {
     try {
       const { walletAddress } = req.body;
@@ -12102,13 +12115,19 @@ Claimer: ${walletAddress}`;
       const claimable = parseFloat(partner.claimableFees);
       if (claimable <= 0) return res.status(400).json({ error: 'No fees to claim' });
 
-      const relayerKey = process.env.RELAYER_PRIVATE_KEY;
-      if (!relayerKey) return res.status(500).json({ error: 'RELAYER_PRIVATE_KEY not set' });
+      const feesWalletKey = process.env.FEES_WALLET_COINFLIP;
+      if (!feesWalletKey) return res.status(500).json({ error: 'FEES_WALLET_COINFLIP not configured' });
 
       const { Keypair: KP3, PublicKey: PK3, Transaction: TX3, SystemProgram: SP3 } = await import('@solana/web3.js');
       const connection = getHeliusConnection('confirmed');
-      const senderKeypair = KP3.fromSecretKey(bs58.decode(relayerKey));
-      const lamports = BigInt(Math.floor(claimable * 1e9));
+      const senderKeypair = KP3.fromSecretKey(bs58.decode(feesWalletKey));
+
+      // Check fees wallet has enough balance
+      const feesWalletBalance = await connection.getBalance(senderKeypair.publicKey);
+      const lamports = Math.floor(claimable * 1e9);
+      if (feesWalletBalance < lamports + 10000) {
+        return res.status(400).json({ error: `Fees wallet balance too low (${(feesWalletBalance / 1e9).toFixed(6)} SOL). Contact admin.` });
+      }
 
       const transaction = new TX3();
       transaction.add(SP3.transfer({ fromPubkey: senderKeypair.publicKey, toPubkey: new PK3(walletAddress), lamports }));
@@ -12116,11 +12135,12 @@ Claimer: ${walletAddress}`;
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = senderKeypair.publicKey;
       transaction.sign(senderKeypair);
-      const sig = await connection.sendRawTransaction(transaction.serialize());
+      const sig = await connection.sendRawTransaction(transaction.serialize(), { skipPreflight: false, maxRetries: 5 });
       await connection.confirmTransaction(sig, 'confirmed');
 
       const claimed = await storage.clearPartnerClaimableFees(walletAddress);
       await storage.createPartnerTransaction({ walletAddress, txType: 'fee_claim', amountSol: claimed, signature: sig });
+      console.log(`💰 Partner fee claim: ${claimed} SOL sent to ${walletAddress}, tx: ${sig}`);
       res.json({ success: true, signature: sig, claimedSol: claimed });
     } catch (e: any) {
       console.error('[Vault Claim Fees]', e.message);
