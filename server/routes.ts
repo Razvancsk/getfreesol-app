@@ -11952,7 +11952,7 @@ Claimer: ${walletAddress}`;
 
   // ── Vault Partner Routes ────────────────────────────────────────────────
 
-  // GET /api/vault/fee-summary — admin: house profit from lost coin flips
+  // GET /api/vault/fee-summary — admin: 3.5% fees collected from all coin flips
   app.get('/api/vault/fee-summary', async (_req, res) => {
     try {
       const { coinFlips: cf } = await import('@shared/schema');
@@ -11960,19 +11960,19 @@ Claimer: ${walletAddress}`;
       const last24h = new Date(now.getTime() - 86400000);
       const last7d  = new Date(now.getTime() - 7 * 86400000);
 
-      // Sum betAmount for all lost flips (house kept the bet)
+      // Sum platformFee from ALL flips (3.5% collected on every bet regardless of win/loss)
       const [all] = await db.select({
-        total: sql<string>`COALESCE(SUM(CAST(${cf.betAmount} AS NUMERIC)), 0)::text`,
+        total: sql<string>`COALESCE(SUM(CAST(${cf.platformFee} AS NUMERIC)), 0)::text`,
         txCount: sql<number>`COUNT(*)`
-      }).from(cf).where(eq(cf.won, false));
+      }).from(cf).where(isNotNull(cf.platformFee));
 
       const [day] = await db.select({
-        total: sql<string>`COALESCE(SUM(CAST(${cf.betAmount} AS NUMERIC)), 0)::text`,
-      }).from(cf).where(and(eq(cf.won, false), gte(cf.createdAt, last24h)));
+        total: sql<string>`COALESCE(SUM(CAST(${cf.platformFee} AS NUMERIC)), 0)::text`,
+      }).from(cf).where(and(isNotNull(cf.platformFee), gte(cf.createdAt, last24h)));
 
       const [week] = await db.select({
-        total: sql<string>`COALESCE(SUM(CAST(${cf.betAmount} AS NUMERIC)), 0)::text`,
-      }).from(cf).where(and(eq(cf.won, false), gte(cf.createdAt, last7d)));
+        total: sql<string>`COALESCE(SUM(CAST(${cf.platformFee} AS NUMERIC)), 0)::text`,
+      }).from(cf).where(and(isNotNull(cf.platformFee), gte(cf.createdAt, last7d)));
 
       // How much has been credited to partners total
       const { partnerTransactions: pt } = await import('@shared/schema');
@@ -11980,9 +11980,9 @@ Claimer: ${walletAddress}`;
         total: sql<string>`COALESCE(SUM(CAST(${pt.amountSol} AS NUMERIC)), 0)::text`
       }).from(pt).where(eq(pt.txType, 'fee_credit'));
 
-      const twentyPct = (parseFloat(all?.total ?? '0') * 0.20).toFixed(9);
-      const dayPool   = (parseFloat(day?.total  ?? '0') * 0.20).toFixed(9);
-      const weekPool  = (parseFloat(week?.total ?? '0') * 0.20).toFixed(9);
+      const seventyPct = (parseFloat(all?.total ?? '0') * 0.70).toFixed(9);
+      const dayPool    = (parseFloat(day?.total  ?? '0') * 0.70).toFixed(9);
+      const weekPool   = (parseFloat(week?.total ?? '0') * 0.70).toFixed(9);
 
       res.json({
         allTimeFees:      all?.total    ?? '0',
