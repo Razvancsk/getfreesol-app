@@ -10611,7 +10611,8 @@ Claimer: ${walletAddress}`;
     try {
       const address = getVaultAddress();
       const balance = await getVaultBalance();
-      res.json({ success: true, address, balance });
+      const feesWallet = process.env.FEES_WALLET ?? 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+      res.json({ success: true, address, balance, feesWallet });
     } catch (error: any) {
       console.error('Error fetching vault info:', error);
       res.status(500).json({ error: 'Failed to fetch vault info' });
@@ -10884,16 +10885,36 @@ Claimer: ${walletAddress}`;
 
       const preBalances = txInfo.meta.preBalances;
       const postBalances = txInfo.meta.postBalances;
+      const FEES_WALLET_ADDRESS = process.env.FEES_WALLET ?? 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+
       const vaultIndex = accountKeys.indexOf(VAULT_ADDRESS);
       if (vaultIndex === -1) {
         return res.status(400).json({ error: 'Transaction does not transfer to game vault' });
       }
 
-      const receivedLamports = postBalances[vaultIndex] - preBalances[vaultIndex];
-      // Player sends bet + fee (bet * 1.035) to vault
-      const expectedLamports = Math.floor(bet * (1 + PLATFORM_FEE_RATE) * LAMPORTS_PER_SOL);
-      if (receivedLamports < expectedLamports * 0.99) {
-        return res.status(400).json({ error: 'Transaction amount does not match bet + fee amount' });
+      const feesWalletIndex = accountKeys.indexOf(FEES_WALLET_ADDRESS);
+
+      // Vault must receive the full bet amount
+      const vaultReceived = postBalances[vaultIndex] - preBalances[vaultIndex];
+      const expectedBetLamports = Math.floor(bet * LAMPORTS_PER_SOL);
+      if (vaultReceived < expectedBetLamports * 0.99) {
+        return res.status(400).json({ error: 'Vault did not receive the correct bet amount' });
+      }
+
+      // Fees wallet must receive the 3.5% fee (if present in the tx)
+      const expectedFeeLamports = Math.floor(bet * PLATFORM_FEE_RATE * LAMPORTS_PER_SOL);
+      if (feesWalletIndex !== -1) {
+        const feesReceived = postBalances[feesWalletIndex] - preBalances[feesWalletIndex];
+        if (feesReceived < expectedFeeLamports * 0.99) {
+          return res.status(400).json({ error: 'Fees wallet did not receive the correct 3.5% fee' });
+        }
+      } else {
+        // Fallback: accept old-style single transfer where vault got bet + fee
+        const totalReceived = vaultReceived;
+        const expectedTotal = Math.floor(bet * (1 + PLATFORM_FEE_RATE) * LAMPORTS_PER_SOL);
+        if (totalReceived < expectedTotal * 0.99) {
+          return res.status(400).json({ error: 'Transaction amount does not match bet + fee' });
+        }
       }
 
       const vaultKeypair = getVaultKeypair();
@@ -10939,11 +10960,8 @@ Claimer: ${walletAddress}`;
       const won = choice === result;
 
       let payoutAmount = 0;
-      const platformFee = bet * PLATFORM_FEE_RATE; // 3.5% of bet — always collected
+      const platformFee = bet * PLATFORM_FEE_RATE; // 3.5% of bet — collected directly on-chain by player tx
       let payoutTxSignature: string | null = null;
-      const feesWalletAddr = process.env.FEES_WALLET ?? 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
-      const platformWallet = new PublicKey(feesWalletAddr);
-      const feeLamports = Math.floor(platformFee * LAMPORTS_PER_SOL);
 
       if (won) {
         payoutAmount = bet * 2; // Full 2x — fee was paid upfront
@@ -10997,24 +11015,8 @@ Claimer: ${walletAddress}`;
         console.log(`🎰 Coin flip LOSS: ${walletAddress} bet ${bet} SOL, result: ${result}`);
       }
 
-      // Always transfer 3.5% fee to platform wallet (fee was included in player's upfront payment)
-      try {
-        const feeTx = new Transaction().add(
-          SystemProgram.transfer({
-            fromPubkey: vaultKeypair.publicKey,
-            toPubkey: platformWallet,
-            lamports: feeLamports,
-          })
-        );
-        const { blockhash: feeBlockhash } = await payoutConnection.getLatestBlockhash('confirmed');
-        feeTx.recentBlockhash = feeBlockhash;
-        feeTx.feePayer = vaultKeypair.publicKey;
-        feeTx.sign(vaultKeypair);
-        const feeSig = await payoutConnection.sendRawTransaction(feeTx.serialize(), { skipPreflight: true, maxRetries: 3 });
-        console.log(`🎰 Fee ${platformFee} SOL sent to fees wallet (${feesWalletAddr}), tx: ${feeSig}`);
-      } catch (feeErr: any) {
-        console.error('⚠️ Fee transfer to platform wallet failed (non-critical):', feeErr.message);
-      }
+      // 3.5% fee was sent directly to the fees wallet by the player's transaction (on-chain)
+      console.log(`🎰 Fee ${platformFee} SOL collected directly to fees wallet by player tx`);
 
       await db.insert(coinFlips).values({
         walletAddress,
