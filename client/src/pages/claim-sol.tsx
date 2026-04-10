@@ -3734,7 +3734,7 @@ export default function SolRefund() {
               <div className="flex items-center gap-2 md:gap-3 md:justify-center w-full">
                 <Button
                   onClick={() => setActiveTab('reclaim')}
-                  className={`flex-1 md:flex-none md:min-w-[150px] px-5 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
+                  className={`md:w-[215px] px-5 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
                     activeTab === 'reclaim' 
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
@@ -3749,7 +3749,7 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); }}
-                  className={`flex-1 md:flex-none md:min-w-[150px] px-5 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
+                  className={`md:w-[215px] px-5 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
                     activeTab === 'burnTokens'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
@@ -3789,7 +3789,7 @@ export default function SolRefund() {
                 )}
                 <Button
                   onClick={() => setActiveTab('coinflip')}
-                  className={`flex-1 md:flex-none md:min-w-[150px] px-5 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
+                  className={`md:w-[215px] px-5 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
                     activeTab === 'coinflip'
                       ? 'bg-green-600 text-white border-green-500'
                       : 'bg-purple-800/40 text-white hover:bg-green-600/60 border-purple-500/30'
@@ -3801,7 +3801,7 @@ export default function SolRefund() {
                 <Button
                   onClick={() => setActiveTab('staking')}
                   id="staking-tab-btn"
-                  className={`flex-1 md:flex-none md:min-w-[150px] px-5 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
+                  className={`md:w-[215px] px-5 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
                     activeTab === 'staking'
                       ? 'bg-purple-600 text-white border-purple-500'
                       : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
