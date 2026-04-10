@@ -11952,25 +11952,27 @@ Claimer: ${walletAddress}`;
 
   // ── Vault Partner Routes ────────────────────────────────────────────────
 
-  // GET /api/vault/fee-summary — admin: show accumulated platform fees available for distribution
+  // GET /api/vault/fee-summary — admin: house profit from lost coin flips
   app.get('/api/vault/fee-summary', async (_req, res) => {
     try {
+      const { coinFlips: cf } = await import('@shared/schema');
       const now = new Date();
       const last24h = new Date(now.getTime() - 86400000);
       const last7d  = new Date(now.getTime() - 7 * 86400000);
 
+      // Sum betAmount for all lost flips (house kept the bet)
       const [all] = await db.select({
-        total: sql<string>`COALESCE(SUM(CAST(${transactionLedger.feeAmount} AS NUMERIC)), 0)::text`,
+        total: sql<string>`COALESCE(SUM(CAST(${cf.betAmount} AS NUMERIC)), 0)::text`,
         txCount: sql<number>`COUNT(*)`
-      }).from(transactionLedger);
+      }).from(cf).where(eq(cf.won, false));
 
       const [day] = await db.select({
-        total: sql<string>`COALESCE(SUM(CAST(${transactionLedger.feeAmount} AS NUMERIC)), 0)::text`,
-      }).from(transactionLedger).where(gte(transactionLedger.processedAt, last24h));
+        total: sql<string>`COALESCE(SUM(CAST(${cf.betAmount} AS NUMERIC)), 0)::text`,
+      }).from(cf).where(and(eq(cf.won, false), gte(cf.createdAt, last24h)));
 
       const [week] = await db.select({
-        total: sql<string>`COALESCE(SUM(CAST(${transactionLedger.feeAmount} AS NUMERIC)), 0)::text`,
-      }).from(transactionLedger).where(gte(transactionLedger.processedAt, last7d));
+        total: sql<string>`COALESCE(SUM(CAST(${cf.betAmount} AS NUMERIC)), 0)::text`,
+      }).from(cf).where(and(eq(cf.won, false), gte(cf.createdAt, last7d)));
 
       // How much has been credited to partners total
       const { partnerTransactions: pt } = await import('@shared/schema');
