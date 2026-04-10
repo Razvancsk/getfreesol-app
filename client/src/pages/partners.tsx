@@ -49,6 +49,10 @@ export default function PartnersPage() {
   const { toast } = useToast();
   const [depositAmount, setDepositAmount] = useState("");
   const [depositLoading, setDepositLoading] = useState(false);
+  const [distributeAmount, setDistributeAmount] = useState("");
+  const [distributeLoading, setDistributeLoading] = useState(false);
+  const PLATFORM_WALLET = "GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT";
+  const isAdmin = wallet === PLATFORM_WALLET;
 
   const { data: depositAddressData } = useQuery<{ depositAddress: string }>({
     queryKey: ["/api/vault/deposit-address"],
@@ -78,6 +82,39 @@ export default function PartnersPage() {
     enabled: !!wallet,
     refetchInterval: 30000,
   });
+
+  const { data: feeSummary, refetch: refetchFees } = useQuery<{
+    allTimeFees: string; last24hFees: string; last7dFees: string;
+    allTimePartnerPool: string; last24hPartnerPool: string; last7dPartnerPool: string;
+    totalDistributed: string; txCount: number;
+  }>({
+    queryKey: ["/api/vault/fee-summary"],
+    enabled: isAdmin,
+    refetchInterval: 60000,
+  });
+
+  async function handleDistribute() {
+    const amount = parseFloat(distributeAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Invalid amount", variant: "destructive" });
+      return;
+    }
+    setDistributeLoading(true);
+    try {
+      const relayerKey = prompt("Enter admin key to confirm distribution:");
+      if (!relayerKey) return;
+      const res = await apiRequest("POST", "/api/vault/distribute-fees", { adminKey: relayerKey, totalFeeSol: amount });
+      const data = await res.json();
+      toast({ title: "Fees distributed!", description: `${fmt(data.distributed)} SOL split among ${data.partners} partners` });
+      setDistributeAmount("");
+      refetchFees();
+      qc.invalidateQueries({ queryKey: ["/api/vault/partner", wallet] });
+    } catch (e: any) {
+      toast({ title: "Distribution failed", description: e.message, variant: "destructive" });
+    } finally {
+      setDistributeLoading(false);
+    }
+  }
 
   const withdrawMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/vault/withdraw", { walletAddress: wallet }).then(r => r.json()),
@@ -200,6 +237,59 @@ export default function PartnersPage() {
             <div className="text-xl font-bold text-green-400">20% Daily</div>
           </div>
         </div>
+
+        {/* Admin Fee Summary Panel */}
+        {isAdmin && feeSummary && (
+          <div className="bg-gradient-to-br from-orange-900/20 to-red-900/10 border border-orange-500/40 rounded-2xl p-5 space-y-4">
+            <h2 className="font-bold text-orange-300 flex items-center gap-2 text-sm uppercase tracking-wide">
+              🛡️ Admin — Fee Accumulation Overview
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-black/30 rounded-xl p-3 text-center">
+                <div className="text-xs text-gray-400 mb-1">Last 24h Fees</div>
+                <div className="font-bold text-white">{fmt(feeSummary.last24hFees, 4)} SOL</div>
+                <div className="text-xs text-orange-400 mt-0.5">→ {fmt(feeSummary.last24hPartnerPool, 5)} to partners</div>
+              </div>
+              <div className="bg-black/30 rounded-xl p-3 text-center">
+                <div className="text-xs text-gray-400 mb-1">Last 7 Days</div>
+                <div className="font-bold text-white">{fmt(feeSummary.last7dFees, 4)} SOL</div>
+                <div className="text-xs text-orange-400 mt-0.5">→ {fmt(feeSummary.last7dPartnerPool, 5)} to partners</div>
+              </div>
+              <div className="bg-black/30 rounded-xl p-3 text-center">
+                <div className="text-xs text-gray-400 mb-1">All-Time Fees</div>
+                <div className="font-bold text-white">{fmt(feeSummary.allTimeFees, 4)} SOL</div>
+                <div className="text-xs text-gray-500 mt-0.5">{feeSummary.txCount} transactions</div>
+              </div>
+              <div className="bg-black/30 rounded-xl p-3 text-center">
+                <div className="text-xs text-gray-400 mb-1">Total Distributed</div>
+                <div className="font-bold text-green-400">{fmt(feeSummary.totalDistributed, 5)} SOL</div>
+                <div className="text-xs text-gray-500 mt-0.5">to partners</div>
+              </div>
+            </div>
+            <div className="border-t border-orange-500/20 pt-3 space-y-2">
+              <div className="text-xs text-gray-400 font-medium">Manual Fee Distribution</div>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="SOL amount to distribute"
+                  value={distributeAmount}
+                  onChange={e => setDistributeAmount(e.target.value)}
+                  className="bg-black/40 border-orange-700/40 text-white placeholder:text-gray-600 text-sm"
+                  min="0.001"
+                  step="0.01"
+                />
+                <Button
+                  onClick={handleDistribute}
+                  disabled={distributeLoading || !distributeAmount}
+                  className="bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-xl px-4 whitespace-nowrap text-sm"
+                >
+                  {distributeLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Distribute"}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500">Splits the entered amount proportionally across all active partners based on their vault share.</p>
+            </div>
+          </div>
+        )}
 
         {/* Connect prompt */}
         {!wallet && (

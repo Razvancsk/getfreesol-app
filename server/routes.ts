@@ -11952,6 +11952,51 @@ Claimer: ${walletAddress}`;
 
   // ── Vault Partner Routes ────────────────────────────────────────────────
 
+  // GET /api/vault/fee-summary — admin: show accumulated platform fees available for distribution
+  app.get('/api/vault/fee-summary', async (_req, res) => {
+    try {
+      const now = new Date();
+      const last24h = new Date(now.getTime() - 86400000);
+      const last7d  = new Date(now.getTime() - 7 * 86400000);
+
+      const [all] = await db.select({
+        total: sql<string>`COALESCE(SUM(CAST(${transactionLedger.feeAmount} AS NUMERIC)), 0)::text`,
+        txCount: sql<number>`COUNT(*)`
+      }).from(transactionLedger);
+
+      const [day] = await db.select({
+        total: sql<string>`COALESCE(SUM(CAST(${transactionLedger.feeAmount} AS NUMERIC)), 0)::text`,
+      }).from(transactionLedger).where(gte(transactionLedger.processedAt, last24h));
+
+      const [week] = await db.select({
+        total: sql<string>`COALESCE(SUM(CAST(${transactionLedger.feeAmount} AS NUMERIC)), 0)::text`,
+      }).from(transactionLedger).where(gte(transactionLedger.processedAt, last7d));
+
+      // How much has been credited to partners total
+      const { partnerTransactions: pt } = await import('@shared/schema');
+      const [distributed] = await db.select({
+        total: sql<string>`COALESCE(SUM(CAST(${pt.amountSol} AS NUMERIC)), 0)::text`
+      }).from(pt).where(eq(pt.txType, 'fee_credit'));
+
+      const twentyPct = (parseFloat(all?.total ?? '0') * 0.20).toFixed(9);
+      const dayPool   = (parseFloat(day?.total  ?? '0') * 0.20).toFixed(9);
+      const weekPool  = (parseFloat(week?.total ?? '0') * 0.20).toFixed(9);
+
+      res.json({
+        allTimeFees:      all?.total    ?? '0',
+        last24hFees:      day?.total    ?? '0',
+        last7dFees:       week?.total   ?? '0',
+        allTimePartnerPool: twentyPct,
+        last24hPartnerPool: dayPool,
+        last7dPartnerPool:  weekPool,
+        totalDistributed: distributed?.total ?? '0',
+        txCount: Number(all?.txCount ?? 0),
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // GET /api/vault/deposit-address — returns the wallet address partners should deposit to
   app.get('/api/vault/deposit-address', async (_req, res) => {
     try {
