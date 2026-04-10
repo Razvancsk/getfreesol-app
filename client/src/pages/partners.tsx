@@ -25,8 +25,9 @@ function txLabel(type: string) {
   switch (type) {
     case "deposit": return "Deposit";
     case "withdraw": return "Withdrawal";
-    case "fee_credit": return "Fee Credit";
-    case "fee_claim": return "Fee Claim";
+    case "fee_credit": return "Fee Credited";
+    case "fee_claim": return "Manual Claim";
+    case "fee_auto_pay": return "Auto-Pay";
     default: return type;
   }
 }
@@ -37,6 +38,7 @@ function txColor(type: string) {
     case "withdraw": return "text-red-400";
     case "fee_credit": return "text-yellow-400";
     case "fee_claim": return "text-purple-400";
+    case "fee_auto_pay": return "text-green-400";
     default: return "text-gray-400";
   }
 }
@@ -279,7 +281,7 @@ export default function PartnersPage() {
 
             <div className="bg-black/20 rounded-xl p-3 text-xs text-gray-400 flex items-center gap-2">
               <span className="text-orange-400 font-bold">Flow:</span>
-              Fees wallet receives 3.5% of every bet on-chain → every 15 min, 70% of new fees is credited to partners proportionally → partners click Claim and SOL is sent instantly from the fees wallet
+              Fees wallet receives 3.5% of every bet on-chain → immediately after each flip, 70% is credited to partners proportionally and auto-sent to their wallets → 15-min cron sweeps any missed amounts as fallback
             </div>
 
             <div className="border-t border-orange-500/20 pt-3 space-y-2">
@@ -398,43 +400,48 @@ export default function PartnersPage() {
                 </Button>
               </div>
 
-              {/* Claim Fees */}
-              <div className={`bg-[#1a0f2e] border rounded-2xl p-5 space-y-3 ${totalAvailable > 0 ? "border-yellow-500/50 shadow-[0_0_20px_rgba(234,179,8,0.1)]" : "border-purple-700/30"}`}>
+              {/* Auto-Pay Status */}
+              <div className="bg-[#1a0f2e] border border-green-500/40 rounded-2xl p-5 space-y-3 shadow-[0_0_20px_rgba(34,197,94,0.07)]">
                 <h3 className="font-semibold flex items-center gap-2 text-gray-200">
-                  <Coins className={`w-4 h-4 ${totalAvailable > 0 ? "text-yellow-400" : "text-gray-500"}`} />
-                  Claim Fees
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  Auto-Pay Active
                 </h3>
-                <p className="text-xs text-gray-400">Your 70% share of coin flip fees. Updates live as bets are placed.</p>
-                <div className={`rounded-lg p-3 space-y-2 ${totalAvailable > 0 ? "bg-yellow-900/20 border border-yellow-700/30" : "bg-black/30"}`}>
-                  {claimable > 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-400">Ready to claim</span>
-                      <span className="font-bold text-yellow-400">{fmt(partner?.claimableFees ?? "0", 6)} SOL</span>
-                    </div>
-                  )}
-                  {pending > 0 && (
+                <p className="text-xs text-gray-400">Your share of every coin flip fee is sent directly to your wallet automatically — no action needed.</p>
+
+                <div className="bg-green-900/15 border border-green-700/30 rounded-lg p-3 space-y-2">
+                  {pending > 0 ? (
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-green-400 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
-                        Live (uncredited)
+                        Incoming (being processed)
                       </span>
                       <span className="font-bold text-green-400">+{fmt(partnerData?.pendingFees ?? "0", 6)} SOL</span>
                     </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs text-green-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                      Watching for new coin flip fees…
+                    </div>
                   )}
-                  <div className="border-t border-white/10 pt-1.5 flex justify-between items-center">
-                    <span className="text-xs text-gray-400">Total</span>
-                    <span className={`font-bold text-lg ${totalAvailable > 0 ? "text-yellow-400" : "text-gray-500"}`}>
-                      {fmt(totalAvailable.toFixed(9), 6)} SOL
-                    </span>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Your share</span>
+                    <span className="text-purple-300 font-medium">{parseFloat(sharePercent).toFixed(2)}% of 70% of all fees</span>
                   </div>
                 </div>
-                <Button
-                  onClick={() => claimFeesMutation.mutate()}
-                  disabled={claimFeesMutation.isPending || totalAvailable <= 0}
-                  className={`w-full font-semibold rounded-xl ${totalAvailable > 0 ? "bg-yellow-600 hover:bg-yellow-500 text-black" : "bg-gray-700 text-gray-500 cursor-not-allowed"}`}
-                >
-                  {claimFeesMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : totalAvailable > 0 ? `Claim ${fmt(totalAvailable.toFixed(9), 5)} SOL` : "No Fees Yet"}
-                </Button>
+
+                {/* Fallback manual claim if small amounts accumulated */}
+                {totalAvailable >= 0.000005 && (
+                  <Button
+                    onClick={() => claimFeesMutation.mutate()}
+                    disabled={claimFeesMutation.isPending}
+                    size="sm"
+                    className="w-full bg-yellow-700/50 hover:bg-yellow-600/70 text-yellow-200 text-xs font-medium rounded-xl border border-yellow-600/30"
+                  >
+                    {claimFeesMutation.isPending
+                      ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</>
+                      : `Manual claim ${fmt(totalAvailable.toFixed(9), 5)} SOL`}
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -449,21 +456,21 @@ export default function PartnersPage() {
                   <div className="w-6 h-6 rounded-full bg-purple-700/60 text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-bold">1</div>
                   <div>
                     <div className="text-gray-200 font-medium mb-0.5">Deposit SOL</div>
-                    <div className="text-gray-500 text-xs">Send any amount to the vault. Your share percentage is calculated proportionally.</div>
+                    <div className="text-gray-500 text-xs">Send any amount to the vault. Your share percentage is calculated proportionally based on your deposit.</div>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-700/60 text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-bold">2</div>
                   <div>
-                    <div className="text-gray-200 font-medium mb-0.5">Earn Daily</div>
-                    <div className="text-gray-500 text-xs">Every 24 hours, 20% of all platform fees are split among partners proportionally.</div>
+                    <div className="text-gray-200 font-medium mb-0.5">Earn Per Flip</div>
+                    <div className="text-gray-500 text-xs">Every coin flip sends a 3.5% fee to the fees wallet. 70% of that is instantly split among all partners.</div>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-700/60 text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-bold">3</div>
                   <div>
-                    <div className="text-gray-200 font-medium mb-0.5">Claim Anytime</div>
-                    <div className="text-gray-500 text-xs">Press Claim Fees and the bot instantly sends your earned SOL to your wallet.</div>
+                    <div className="text-gray-200 font-medium mb-0.5">Auto-Paid to Wallet</div>
+                    <div className="text-gray-500 text-xs">Your earnings are sent directly to your wallet automatically after each flip. Nothing to click.</div>
                   </div>
                 </div>
               </div>

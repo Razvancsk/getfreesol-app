@@ -11039,6 +11039,11 @@ Claimer: ${walletAddress}`;
         platformFee: won ? platformFee : 0,
         payoutTxSignature,
       });
+
+      // Fire-and-forget: automatically distribute this flip's fee to partners and auto-pay on-chain
+      if (platformFee > 0) {
+        distributeFlipFee(platformFee).catch(e => console.error('❌ Auto-pay distribution failed:', e.message));
+      }
     } catch (error: any) {
       console.error('Error in coin flip:', error);
       res.status(500).json({ error: 'Coin flip failed' });
@@ -12210,6 +12215,75 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Minimum SOL per partner to trigger auto on-chain payout (covers Solana tx fee ~5000 lamports)
+  const AUTO_PAY_MIN_SOL = 0.000005;
+
+  // Auto-send claimable fees to each partner's wallet directly from fees wallet (no manual claim needed)
+  async function autoPayPartners(): Promise<void> {
+    const feesWalletKey = process.env.FEES_WALLET_COINFLIP;
+    if (!feesWalletKey) return;
+
+    const partners = await storage.getAllActivePartners();
+    if (partners.length === 0) return;
+
+    const { Keypair: KPay, PublicKey: PKay, Transaction: TXpay, SystemProgram: SPay } = await import('@solana/web3.js');
+    const payConn = getHeliusConnection('confirmed');
+    const senderKeypair = KPay.fromSecretKey(bs58.decode(feesWalletKey));
+    const feesWalletBalance = await payConn.getBalance(senderKeypair.publicKey);
+
+    for (const partner of partners) {
+      const claimable = parseFloat(partner.claimableFees);
+      if (claimable < AUTO_PAY_MIN_SOL) continue;
+
+      const lamports = Math.floor(claimable * 1e9);
+      // Leave at least 10000 lamports in fees wallet for future tx fees
+      if (feesWalletBalance < lamports + 10000) {
+        console.warn(`⚠️ Auto-pay: fees wallet balance insufficient for ${partner.walletAddress} (need ${claimable} SOL)`);
+        continue;
+      }
+
+      try {
+        const tx = new TXpay();
+        const { blockhash } = await payConn.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = blockhash;
+        tx.feePayer = senderKeypair.publicKey;
+        tx.add(SPay.transfer({ fromPubkey: senderKeypair.publicKey, toPubkey: new PKay(partner.walletAddress), lamports }));
+        tx.sign(senderKeypair);
+        const sig = await payConn.sendRawTransaction(tx.serialize(), { skipPreflight: true, maxRetries: 5 });
+
+        const claimed = await storage.clearPartnerClaimableFees(partner.walletAddress);
+        await storage.createPartnerTransaction({ walletAddress: partner.walletAddress, txType: 'fee_auto_pay', amountSol: claimed, signature: sig });
+        console.log(`✅ Auto-paid ${claimable} SOL → ${partner.walletAddress}, tx: ${sig}`);
+      } catch (err: any) {
+        console.error(`❌ Auto-pay failed for ${partner.walletAddress}:`, err.message);
+      }
+    }
+  }
+
+  // Called after each coin flip: credits each partner their share of this flip's fee, then auto-pays
+  async function distributeFlipFee(platformFeeSOL: number): Promise<void> {
+    if (platformFeeSOL <= 0) return;
+    const partners = await storage.getAllActivePartners();
+    if (partners.length === 0) return;
+
+    const totalDeposited = partners.reduce((sum, p) => sum + parseFloat(p.depositedSol), 0);
+    if (totalDeposited <= 0) return;
+
+    const partnerPool = platformFeeSOL * 0.70;
+    if (partnerPool < 0.000000001) return;
+
+    for (const partner of partners) {
+      const deposit = parseFloat(partner.depositedSol);
+      if (deposit <= 0) continue;
+      const share = (deposit / totalDeposited) * partnerPool;
+      await storage.creditPartnerFees(partner.walletAddress, share.toFixed(9));
+    }
+    console.log(`🪙 Flip fee credited: ${partnerPool.toFixed(9)} SOL (70% of ${platformFeeSOL.toFixed(9)}) → ${partners.length} partners`);
+
+    // Immediately attempt on-chain payout to any partner above threshold
+    await autoPayPartners();
+  }
+
   // Helper: distribute new coin flip fees to partners (only fees since last distribution)
   async function distributeNewFees(): Promise<{ distributed: number; partners: number }> {
     const partners = await storage.getAllActivePartners();
@@ -12244,9 +12318,12 @@ Claimer: ${walletAddress}`;
     return { distributed: partnerPool, partners: partners.length };
   }
 
-  // Run every 15 minutes to keep partner claimable fees up-to-date
+  // Safety net: every 15 minutes distribute any missed fees and auto-pay partners
   cron.schedule('*/15 * * * *', async () => {
-    try { await distributeNewFees(); } catch (e: any) {
+    try {
+      await distributeNewFees();
+      await autoPayPartners();
+    } catch (e: any) {
       console.error('❌ Vault partner fee cron failed:', e.message);
     }
   });
