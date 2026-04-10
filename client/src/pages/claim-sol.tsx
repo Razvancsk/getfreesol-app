@@ -3932,7 +3932,7 @@ export default function SolRefund() {
                       <X className="w-4 h-4" />
                     </button>
                     <div className="flex flex-col items-center px-6 pt-8 pb-6">
-                      <img src="/solana-logo.png" alt="Solana" className="w-14 h-14 rounded-full mb-3 shadow-lg" />
+                      <img src="/sol-logo-purple.png" alt="SOL" className="w-14 h-14 rounded-full mb-3 shadow-lg" />
                       <h2 className="text-white font-bold text-xl mb-3">Successfully Claimed</h2>
                       <div
                         className="w-full rounded-2xl py-3 px-4 mb-2"
@@ -3949,7 +3949,7 @@ export default function SolRefund() {
                         </div>
                       </div>
                       {claimSuccessData.txid && (
-                        <div className="w-full flex flex-col justify-center items-center mt-2 mb-2 gap-1">
+                        <div className="w-full flex flex-col justify-center items-center mt-2 mb-3 gap-1">
                           <span className="text-white text-sm">Transaction</span>
                           <a
                             href={`https://solscan.io/tx/${claimSuccessData.txid}`}
@@ -3962,6 +3962,13 @@ export default function SolRefund() {
                           </a>
                         </div>
                       )}
+                      <button
+                        onClick={() => { setClaimSuccessData(null); setActiveTab('coinflip'); }}
+                        className="w-full mt-1 py-2.5 rounded-2xl font-bold text-base text-white transition-all"
+                        style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', border: '1px solid rgba(34,197,94,0.4)' }}
+                      >
+                        🪙 Flip It
+                      </button>
                     </div>
                   </div>
                 </div>
