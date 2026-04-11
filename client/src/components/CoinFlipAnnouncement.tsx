@@ -1,44 +1,35 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useWalletAdapter } from "@/hooks/useWalletAdapter";
 
 const VERSION = "coin_flip_v4";
 
-function hasSeen(wallet: string) {
-  try {
-    return !!localStorage.getItem(`${VERSION}_${wallet}`);
-  } catch {
-    return false;
-  }
-}
-
-function markSeen(wallet: string) {
-  try {
-    localStorage.setItem(`${VERSION}_${wallet}`, "1");
-  } catch {}
+export function triggerCoinFlipAnnouncement(walletAddress?: string) {
+  const key = walletAddress ? `${VERSION}_${walletAddress}` : `${VERSION}_anon`;
+  if (localStorage.getItem(key)) return;
+  setTimeout(() => {
+    window.dispatchEvent(new CustomEvent("show-coinflip-announcement", { detail: { key } }));
+  }, 1000);
 }
 
 export function CoinFlipAnnouncement() {
   const [visible, setVisible] = useState(false);
-  const [shownFor, setShownFor] = useState<string | null>(null);
+  const [storageKey, setStorageKey] = useState(`${VERSION}_anon`);
   const [, navigate] = useLocation();
-  const { publicKey } = useWalletAdapter();
 
   useEffect(() => {
-    const wallet = publicKey?.toString();
-    if (!wallet) return;
-    if (wallet === shownFor) return;
-    if (hasSeen(wallet)) return;
-
-    setShownFor(wallet);
-    const t = setTimeout(() => setVisible(true), 800);
-    return () => clearTimeout(t);
-  }, [publicKey, shownFor]);
+    const handler = (e: Event) => {
+      const key = (e as CustomEvent).detail?.key || `${VERSION}_anon`;
+      if (localStorage.getItem(key)) return;
+      setStorageKey(key);
+      setVisible(true);
+    };
+    window.addEventListener("show-coinflip-announcement", handler);
+    return () => window.removeEventListener("show-coinflip-announcement", handler);
+  }, []);
 
   const dismiss = () => {
     setVisible(false);
-    const wallet = publicKey?.toString();
-    if (wallet) markSeen(wallet);
+    localStorage.setItem(storageKey, "1");
   };
 
   const tryIt = () => {
@@ -65,10 +56,8 @@ export function CoinFlipAnnouncement() {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Glow accent top */}
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-yellow-400 via-purple-400 to-yellow-400 opacity-80" />
 
-        {/* Close */}
         <button
           onClick={dismiss}
           className="absolute top-3 right-3 text-white/50 hover:text-white text-xl leading-none transition-colors"
@@ -78,7 +67,6 @@ export function CoinFlipAnnouncement() {
         </button>
 
         <div className="p-6 pt-7 text-center">
-          {/* Coin icon */}
           <div className="flex justify-center mb-3">
             <img
               src="/coin_icon.png"

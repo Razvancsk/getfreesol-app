@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { triggerFeedbackCard } from "@/components/FeedbackWidget";
+import { triggerCoinFlipAnnouncement } from "@/components/CoinFlipAnnouncement";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import bs58 from "bs58";
@@ -298,6 +299,13 @@ export default function SolRefund() {
   } = useWalletAdapter();
   
   const rpcConnection = connection;
+
+  // Trigger coin flip announcement once per wallet on connect
+  useEffect(() => {
+    if (publicKey) {
+      triggerCoinFlipAnnouncement(publicKey.toString());
+    }
+  }, [publicKey]);
 
   const pointsWalletAddress = publicKey?.toBase58();
 
