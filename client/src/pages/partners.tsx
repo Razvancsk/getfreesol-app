@@ -188,6 +188,18 @@ export default function PartnersPage() {
   const totalAvailable = claimable + pending;
   const deposited = parseFloat(partner?.depositedSol ?? "0");
 
+  if (!canAccess) {
+    return (
+      <div className="min-h-screen bg-[#0f0a1e] text-white flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="text-4xl">🔒</div>
+          <p className="text-gray-400">Access restricted</p>
+          <Link href="/"><button className="text-purple-400 hover:text-white text-sm underline">← Back to app</button></Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0f0a1e] text-white">
       {/* Header */}
