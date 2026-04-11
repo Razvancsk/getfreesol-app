@@ -1,11 +1,11 @@
 /**
  * Activity Bot
  *
- * Uses the EXACT same /api/jupiter/swap-with-close route as the Token page for USDC→SOL+close.
  * Cycle per wallet per tick:
- *   Step 1: SOL → USDC  (standard Jupiter swap, opens USDC ATA)
- *   Step 2: USDC → SOL  via our own /api/jupiter/swap-with-close (swap + close ATA in ONE tx)
- *   → repeat
+ *   ① SOL → N tokens   (standard Jupiter swap — opens N ATAs)
+ *   ② token → SOL      (Jupiter swap-instructions, cleanupInstruction OMITTED
+ *                        → ATA stays open with 0 balance, NOT closed by Jupiter)
+ *   ③ App scan + batch-close all empty ATAs → records claims via record-success
  *
  * On stop: swap all tokens → SOL then drain SOL back to vault.
  */
@@ -185,12 +185,16 @@ async function swapSolToToken(keypair: Keypair, tokenMint: string, lamports: num
   return sig;
 }
 
-// ── Generic swap: any token → SOL (NO close) ─────────────────────────────────
+// ── Generic swap: any token → SOL — leaves source ATA open for our scan+claim ─
+// Uses swap-instructions endpoint so we can build a custom tx and intentionally
+// OMIT cleanupInstruction (which is what Jupiter uses to close the source ATA).
+// The ATA is left open with 0 balance so our app scan+claim can close it.
 
 async function swapTokenToSol(keypair: Keypair, tokenMint: string, tokenAmount: number): Promise<string> {
   const connection = getHeliusConnection();
   const headers    = jupiterHeaders();
 
+  // Step 1: quote
   const quoteRes = await jupiterFetch(
     `https://api.jup.ag/swap/v1/quote` +
     `?inputMint=${tokenMint}&outputMint=${SOL_MINT}` +
@@ -201,24 +205,43 @@ async function swapTokenToSol(keypair: Keypair, tokenMint: string, tokenAmount: 
   const quote = await quoteRes.json();
   if (quote.error) throw new Error(`token→SOL quote error: ${quote.error}`);
 
-  const swapRes = await fetch('https://api.jup.ag/swap/v1/swap', {
+  // Step 2: get individual instructions (not a compiled transaction)
+  const ixRes = await jupiterFetch('https://api.jup.ag/swap/v1/swap-instructions', {
     method: 'POST', headers,
     body: JSON.stringify({
-      quoteResponse: quote,
       userPublicKey: keypair.publicKey.toBase58(),
+      quoteResponse: quote,
       wrapAndUnwrapSol: true,
       dynamicComputeUnitLimit: true,
       prioritizationFeeLamports: 50000,
     }),
   });
-  if (!swapRes.ok) throw new Error(`token→SOL swap failed (${swapRes.status}): ${(await swapRes.text()).slice(0, 150)}`);
-  const swapData = await swapRes.json();
-  if (!swapData.swapTransaction) throw new Error(`No swapTransaction in response`);
+  if (!ixRes.ok) throw new Error(`swap-instructions failed (${ixRes.status}): ${(await ixRes.text()).slice(0, 150)}`);
+  const ixData = await ixRes.json();
+  if (ixData.error) throw new Error(`swap-instructions error: ${ixData.error}`);
 
-  const tx = VersionedTransaction.deserialize(Buffer.from(swapData.swapTransaction, 'base64'));
-  tx.sign([keypair]);
+  // Step 3: build custom transaction — intentionally skip cleanupInstruction
+  // (cleanupInstruction is what closes the source ATA; omitting it keeps it open)
+  const deserialize = (ix: any) => ({
+    programId: new PublicKey(ix.programId),
+    keys: ix.accounts.map((a: any) => ({
+      pubkey: new PublicKey(a.pubkey),
+      isSigner: a.isSigner,
+      isWritable: a.isWritable,
+    })),
+    data: Buffer.from(ix.data, 'base64'),
+  });
+
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-  const sig = await connection.sendTransaction(tx, { skipPreflight: false, maxRetries: 3 });
+  const tx = new Transaction({ recentBlockhash: blockhash, feePayer: keypair.publicKey });
+
+  for (const ix of ixData.computeBudgetInstructions ?? []) tx.add(deserialize(ix));
+  for (const ix of ixData.setupInstructions         ?? []) tx.add(deserialize(ix));
+  if (ixData.swapInstruction) tx.add(deserialize(ixData.swapInstruction));
+  // ⚠️ cleanupInstruction intentionally omitted — source ATA stays open (0 balance)
+
+  tx.sign(keypair);
+  const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 5 });
   await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
   return sig;
 }
@@ -398,23 +421,7 @@ async function runActivityForWallet(idx: number): Promise<void> {
         wallet.txCount++;
         totalTxCount++;
         wallet.lastError = null;
-        console.log(`[ActivityBot] Wallet ${idx} ③ ${token.symbol}→SOL ✓ ${sig.slice(0, 28)}…`);
-
-        // Jupiter closed the ATA inside the swap tx — record the claim now
-        // Fee model: user receives exactly 0.002 SOL per account; platform keeps the rest
-        const rentSol    = ATA_RENT / 1e9;              // ~0.002039 SOL actual rent
-        const netSol     = SWAP_PER_TOKEN / 1e9;        // 0.002 SOL — flat user payout
-        const feeSol     = Math.max(0, rentSol - netSol); // platform keeps the difference
-        fetch(`http://localhost:${port}/api/sol-refund/record-success`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            signature: sig, walletAddress: keypair.publicKey.toBase58(),
-            accountsClosed: 1, solRecovered: rentSol,
-            netAmount: netSol, feeAmount: feeSol,
-            platformFeeAmount: feeSol, source: 'activity_bot',
-          }),
-        }).catch(() => {});
-
+        console.log(`[ActivityBot] Wallet ${idx} ③ ${token.symbol}→SOL ✓ ${sig.slice(0, 28)}… (ATA left open for scan+claim)`);
         await new Promise(r => setTimeout(r, 1500));
       } catch (e: any) {
         console.error(`[ActivityBot] Wallet ${idx} ③ ${token.symbol}→SOL FAILED:`, e?.message?.slice(0, 100));
