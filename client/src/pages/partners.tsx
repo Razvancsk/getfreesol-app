@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { ArrowLeft, TrendingUp, Users, Vault, Coins, ArrowDownToLine, ArrowUpFromLine, BadgeDollarSign, Clock, CheckCircle2, RefreshCw } from "lucide-react";
 
 
@@ -45,20 +45,16 @@ function txColor(type: string) {
 
 export default function PartnersPage() {
   const { connection } = useConnection();
-  const { publicKey, signTransaction, connecting, connected, autoConnect } = useWallet();
+  const { publicKey, signTransaction } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
-  const walletReady = !connecting && (connected ? true : !autoConnect);
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
   const [depositAmount, setDepositAmount] = useState("");
   const [depositLoading, setDepositLoading] = useState(false);
   const [distributeAmount, setDistributeAmount] = useState("");
   const [distributeLoading, setDistributeLoading] = useState(false);
   const PLATFORM_WALLET = "GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT";
-  const ALLOWED_WALLETS = [PLATFORM_WALLET, "6p7Zh4ptyVphDU5SfWjLEB8JfH7BhkK9PX4CRiMEHjbR"];
   const isAdmin = wallet === PLATFORM_WALLET;
-  const canAccess = ALLOWED_WALLETS.includes(wallet ?? "");
 
   const { data: depositAddressData } = useQuery<{ depositAddress: string }>({
     queryKey: ["/api/vault/deposit-address"],
@@ -189,15 +185,6 @@ export default function PartnersPage() {
   const pending = parseFloat(partnerData?.pendingFees ?? "0");
   const totalAvailable = claimable + pending;
   const deposited = parseFloat(partner?.depositedSol ?? "0");
-
-  if (connecting) {
-    return null;
-  }
-
-  if (!connecting && !canAccess) {
-    navigate("/");
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-[#0f0a1e] text-white">
