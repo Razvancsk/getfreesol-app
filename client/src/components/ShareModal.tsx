@@ -74,7 +74,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
                 className="flex-1 py-3 transition-colors rounded-bl-xl"
                 style={{ backgroundColor: '#2563eb' }}
               >
-                <span className="text-white font-mono font-bold text-sm whitespace-nowrap">Tweet It</span>
+                <span className="text-white font-mono font-bold text-xl whitespace-nowrap">Tweet It</span>
               </button>
               {onFlip && (
               <button 
@@ -82,7 +82,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
                 className="flex-1 py-3 transition-colors rounded-br-xl"
                 style={{ backgroundColor: '#4ade80' }}
               >
-                <span className="text-white font-mono font-bold text-sm whitespace-nowrap">🪙 Flip It</span>
+                <span className="text-white font-mono font-bold text-xl whitespace-nowrap">🪙 Flip It</span>
               </button>
               )}
             </div>
