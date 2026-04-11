@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import coinFlipIcon from "@assets/coinflip_icon.png";
 
 const STORAGE_KEY = "coin_flip_announcement_seen";
 
@@ -56,7 +57,9 @@ export function CoinFlipAnnouncement() {
 
         <div className="p-6 pt-7 text-center">
           {/* Coin icon */}
-          <div className="text-6xl mb-3">🪙</div>
+          <div className="flex justify-center mb-3">
+            <img src={coinFlipIcon} alt="Coin Flip" className="w-20 h-20 object-contain drop-shadow-lg" />
+          </div>
 
           <div className="inline-block bg-yellow-400/20 text-yellow-300 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3 border border-yellow-400/30">
             New Feature
