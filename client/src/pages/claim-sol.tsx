@@ -3556,13 +3556,11 @@ export default function SolRefund() {
               </div>
             ) : (
               <>
-                {/* Logo — left side, desktop only */}
-                <div className="hidden lg:flex items-center gap-2 shrink-0">
-                  <img src={logoImage} alt="GetFreeSol" className="h-[48px] w-[48px]" />
-                </div>
+                {/* Top row: Logo left + wallet right */}
+                <div className="flex items-center justify-between relative">
+                  {/* Logo — always visible on left */}
+                  <img src={logoImage} alt="GetFreeSol" className="h-[44px] w-[44px] shrink-0" />
 
-                {/* Top row: Mobile wallet on right */}
-                <div className="flex items-center justify-end relative">
                   {/* Mobile Wallet Connection */}
                   <div className="lg:hidden flex items-center space-x-2">
                 {isConnected && publicKey ? (
