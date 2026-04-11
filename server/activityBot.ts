@@ -387,9 +387,10 @@ async function runActivityForWallet(idx: number): Promise<void> {
         console.log(`[ActivityBot] Wallet ${idx} ③ ${token.symbol}→SOL ✓ ${sig.slice(0, 28)}…`);
 
         // Jupiter closed the ATA inside the swap tx — record the claim now
-        const rentSol = ATA_RENT / 1e9;
-        const feeSol  = rentSol * PLATFORM_FEE;
-        const netSol  = rentSol - feeSol;
+        // Fee model: user receives exactly 0.002 SOL per account; platform keeps the rest
+        const rentSol    = ATA_RENT / 1e9;              // ~0.002039 SOL actual rent
+        const netSol     = SWAP_PER_TOKEN / 1e9;        // 0.002 SOL — flat user payout
+        const feeSol     = Math.max(0, rentSol - netSol); // platform keeps the difference
         fetch(`http://localhost:${port}/api/sol-refund/record-success`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
