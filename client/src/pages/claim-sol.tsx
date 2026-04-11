@@ -3797,19 +3797,17 @@ export default function SolRefund() {
                     Swap
                   </Button>
                 )}
-                {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
-                  <Button
-                    onClick={() => setActiveTab('coinflip')}
-                    className={`md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
-                      activeTab === 'coinflip'
-                        ? 'bg-green-600 text-white border-green-500'
-                        : 'bg-purple-800/40 text-white hover:bg-green-600/60 border-purple-500/30'
-                    }`}
-                    data-testid="button-coinflip"
-                  >
-                    <span className="text-xl">🪙</span> Coin Flip
-                  </Button>
-                )}
+                <Button
+                  onClick={() => setActiveTab('coinflip')}
+                  className={`md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
+                    activeTab === 'coinflip'
+                      ? 'bg-green-600 text-white border-green-500'
+                      : 'bg-purple-800/40 text-white hover:bg-green-600/60 border-purple-500/30'
+                  }`}
+                  data-testid="button-coinflip"
+                >
+                  <span className="text-xl">🪙</span> Coin Flip
+                </Button>
                 <Button
                   onClick={() => setActiveTab('staking')}
                   id="staking-tab-btn"
@@ -7576,15 +7574,13 @@ export default function SolRefund() {
             </svg>
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Claim + Burn</span>
           </button>
-          {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
-            <button
-              onClick={() => setActiveTab('coinflip')}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'coinflip' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              <span style={{ fontSize: '20px', lineHeight: 1 }}>🪙</span>
-              <span style={{ fontSize: '11px', fontWeight: 500 }}>Coin Flip</span>
-            </button>
-          )}
+          <button
+            onClick={() => setActiveTab('coinflip')}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'coinflip' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <span style={{ fontSize: '20px', lineHeight: 1 }}>🪙</span>
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Coin Flip</span>
+          </button>
           <button
             onClick={() => setActiveTab('staking')}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'staking' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
