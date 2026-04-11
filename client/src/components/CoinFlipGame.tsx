@@ -423,9 +423,11 @@ export function CoinFlipGame() {
           className={`w-full py-4 rounded-xl font-black text-xl uppercase tracking-wider transition-all border-2 ${
             isFlipping
               ? 'bg-purple-600/50 text-white/50 border-purple-400/50 cursor-not-allowed'
-              : !connected || betAmount === null
-              ? 'bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed opacity-60'
-              : 'bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 hover:from-purple-500 hover:to-purple-400 hover:shadow-lg hover:shadow-purple-500/40 active:scale-[0.98]'
+              : betAmount === null
+              ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 opacity-40 cursor-not-allowed'
+              : connected
+              ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 hover:from-purple-500 hover:to-purple-400 hover:shadow-lg hover:shadow-purple-500/40 active:scale-[0.98]'
+              : 'bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed'
           }`}
         >
           {isFlipping ? (
@@ -434,8 +436,6 @@ export function CoinFlipGame() {
             </span>
           ) : !connected ? (
             'Connect Wallet'
-          ) : betAmount === null ? (
-            'Select a Bet Amount'
           ) : (
             'Double or Nothing'
           )}
