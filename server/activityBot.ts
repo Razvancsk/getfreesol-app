@@ -139,7 +139,7 @@ async function swapSolToToken(keypair: Keypair, tokenMint: string, lamports: num
   const quoteRes = await fetch(
     `https://api.jup.ag/swap/v1/quote` +
     `?inputMint=${SOL_MINT}&outputMint=${tokenMint}` +
-    `&amount=${lamports}&slippageBps=500&restrictIntermediateTokens=true`,
+    `&amount=${lamports}&slippageBps=500`,
     { headers }
   );
   if (!quoteRes.ok) throw new Error(`SOL→${tokenMint.slice(0,8)} quote failed (${quoteRes.status}): ${(await quoteRes.text()).slice(0, 150)}`);
@@ -153,7 +153,7 @@ async function swapSolToToken(keypair: Keypair, tokenMint: string, lamports: num
       userPublicKey: keypair.publicKey.toBase58(),
       wrapAndUnwrapSol: true,
       dynamicComputeUnitLimit: true,
-      prioritizationFeeLamports: 5000,
+      prioritizationFeeLamports: 50000,
     }),
   });
   if (!swapRes.ok) throw new Error(`SOL→token swap failed (${swapRes.status}): ${(await swapRes.text()).slice(0, 150)}`);
@@ -163,7 +163,7 @@ async function swapSolToToken(keypair: Keypair, tokenMint: string, lamports: num
   const tx = VersionedTransaction.deserialize(Buffer.from(swapData.swapTransaction, 'base64'));
   tx.sign([keypair]);
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-  const sig = await connection.sendTransaction(tx, { skipPreflight: false, maxRetries: 3 });
+  const sig = await connection.sendTransaction(tx, { skipPreflight: false, maxRetries: 5 });
   await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
   return sig;
 }
@@ -177,7 +177,7 @@ async function swapTokenToSol(keypair: Keypair, tokenMint: string, tokenAmount: 
   const quoteRes = await fetch(
     `https://api.jup.ag/swap/v1/quote` +
     `?inputMint=${tokenMint}&outputMint=${SOL_MINT}` +
-    `&amount=${tokenAmount}&slippageBps=500&restrictIntermediateTokens=true`,
+    `&amount=${tokenAmount}&slippageBps=500`,
     { headers }
   );
   if (!quoteRes.ok) throw new Error(`token→SOL quote failed (${quoteRes.status}): ${(await quoteRes.text()).slice(0, 150)}`);
@@ -191,7 +191,7 @@ async function swapTokenToSol(keypair: Keypair, tokenMint: string, tokenAmount: 
       userPublicKey: keypair.publicKey.toBase58(),
       wrapAndUnwrapSol: true,
       dynamicComputeUnitLimit: true,
-      prioritizationFeeLamports: 5000,
+      prioritizationFeeLamports: 50000,
     }),
   });
   if (!swapRes.ok) throw new Error(`token→SOL swap failed (${swapRes.status}): ${(await swapRes.text()).slice(0, 150)}`);
