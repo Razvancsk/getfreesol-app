@@ -1,13 +1,20 @@
-import { useState } from 'react';
-import { MessageSquarePlus, X, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Star } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
+export function triggerFeedbackCard() {
+  if (sessionStorage.getItem('feedback_shown')) return;
+  setTimeout(() => {
+    window.dispatchEvent(new CustomEvent('show-feedback-card'));
+  }, 3500);
+}
+
 export function FeedbackWidget() {
-  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState('');
@@ -15,6 +22,23 @@ export function FeedbackWidget() {
   const { publicKey } = useWalletAdapter();
   const { toast } = useToast();
   const [location] = useLocation();
+
+  useEffect(() => {
+    const handler = () => {
+      if (sessionStorage.getItem('feedback_shown')) return;
+      setVisible(true);
+      setSubmitted(false);
+      setRating(0);
+      setComment('');
+    };
+    window.addEventListener('show-feedback-card', handler);
+    return () => window.removeEventListener('show-feedback-card', handler);
+  }, []);
+
+  const dismiss = () => {
+    setVisible(false);
+    sessionStorage.setItem('feedback_shown', '1');
+  };
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -27,106 +51,103 @@ export function FeedbackWidget() {
     },
     onSuccess: () => {
       setSubmitted(true);
-      setTimeout(() => {
-        setOpen(false);
-        setRating(0);
-        setComment('');
-        setSubmitted(false);
-      }, 2000);
+      sessionStorage.setItem('feedback_shown', '1');
+      setTimeout(() => setVisible(false), 2500);
     },
     onError: () => {
       toast({ title: 'Failed to send feedback', variant: 'destructive' });
     },
   });
 
-  const handleOpen = () => {
-    setOpen(true);
-    setSubmitted(false);
-    setRating(0);
-    setComment('');
-  };
+  if (!visible) return null;
 
   return (
-    <>
-      <button
-        onClick={handleOpen}
-        className={`fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-[200] flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg shadow-purple-900/40 transition-all hover:scale-105 active:scale-95 ${open ? 'hidden' : ''}`}
-        title="Send feedback"
-      >
-        <MessageSquarePlus className="w-4 h-4" />
-        Feedback
-      </button>
+    <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-[200] w-[calc(100vw-2rem)] sm:w-80 animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div className="rounded-2xl border border-purple-500/40 shadow-2xl shadow-purple-950/60 overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #1e0b4a 0%, #0d0520 60%, #1a0840 100%)' }}>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end p-4 sm:p-6">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="relative w-full sm:w-80 bg-[#1a1035] border border-purple-500/30 rounded-2xl shadow-2xl p-6 flex flex-col gap-4 mb-24 sm:mb-0 sm:mr-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-white font-bold text-base">Share your feedback</h3>
-              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+            <span className="text-white font-bold text-sm tracking-wide">Quick Feedback</span>
+          </div>
+          <button onClick={dismiss} className="text-purple-400 hover:text-white transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-5 pb-5">
+          {submitted ? (
+            <div className="text-center py-5">
+              <div className="text-4xl mb-3">🙏</div>
+              <p className="text-green-400 font-bold text-sm">Thanks! We appreciate it.</p>
             </div>
+          ) : (
+            <>
+              <p className="text-purple-200/80 text-xs mb-4">How would you rate your experience?</p>
 
-            {submitted ? (
-              <div className="text-center py-4">
-                <div className="text-3xl mb-2">🙏</div>
-                <p className="text-green-400 font-bold">Thanks for your feedback!</p>
-                <p className="text-gray-400 text-sm mt-1">We appreciate it.</p>
+              {/* Stars */}
+              <div className="flex gap-1 justify-center mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onMouseEnter={() => setHovered(star)}
+                    onMouseLeave={() => setHovered(0)}
+                    onClick={() => setRating(star)}
+                    className="p-0.5 transition-transform hover:scale-110 active:scale-95"
+                  >
+                    <Star
+                      className={`w-9 h-9 transition-all duration-150 ${
+                        star <= (hovered || rating)
+                          ? 'text-yellow-400 fill-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.6)]'
+                          : 'text-purple-700'
+                      }`}
+                    />
+                  </button>
+                ))}
               </div>
-            ) : (
-              <>
-                <div>
-                  <p className="text-gray-300 text-sm mb-2">How would you rate your experience?</p>
-                  <div className="flex gap-1 justify-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onMouseEnter={() => setHovered(star)}
-                        onMouseLeave={() => setHovered(0)}
-                        onClick={() => setRating(star)}
-                        className="p-1 transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className={`w-8 h-8 transition-colors ${
-                            star <= (hovered || rating)
-                              ? 'text-yellow-400 fill-yellow-400'
-                              : 'text-gray-600'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
-                <div>
-                  <p className="text-gray-300 text-sm mb-2">What can we improve? <span className="text-gray-500">(optional)</span></p>
-                  <textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Tell us what you think..."
-                    maxLength={500}
-                    rows={3}
-                    className="w-full bg-purple-950/50 border border-purple-500/30 rounded-xl px-3 py-2 text-white text-sm placeholder-gray-500 resize-none focus:outline-none focus:border-purple-400 transition-colors"
-                  />
-                </div>
+              {/* Comment */}
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="What can we improve? (optional)"
+                maxLength={400}
+                rows={2}
+                className="w-full text-xs px-3 py-2 rounded-xl text-white placeholder-purple-400/50 resize-none focus:outline-none focus:ring-1 focus:ring-purple-500/60 transition-all mb-3"
+                style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)' }}
+              />
 
+              {/* Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={dismiss}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold text-purple-400 hover:text-white transition-colors"
+                  style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}
+                >
+                  Skip
+                </button>
                 <button
                   onClick={() => submitMutation.mutate()}
                   disabled={rating === 0 || submitMutation.isPending}
-                  className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${
+                  className={`flex-[2] py-2 rounded-xl text-xs font-bold transition-all ${
                     rating === 0
-                      ? 'bg-purple-800/40 text-gray-500 cursor-not-allowed'
-                      : 'bg-purple-600 hover:bg-purple-500 text-white active:scale-[0.98]'
+                      ? 'text-purple-500/50 cursor-not-allowed'
+                      : 'text-white hover:brightness-110 active:scale-[0.98]'
                   }`}
+                  style={rating === 0
+                    ? { background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.2)' }
+                    : { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', border: '1px solid rgba(167,139,250,0.4)' }
+                  }
                 >
-                  {submitMutation.isPending ? 'Sending...' : 'Send Feedback'}
+                  {submitMutation.isPending ? 'Sending…' : 'Send Feedback'}
                 </button>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }

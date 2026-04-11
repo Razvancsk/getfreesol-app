@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { triggerFeedbackCard } from '@/components/FeedbackWidget';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -223,6 +224,7 @@ export function CoinFlipGame() {
         }
         setFlipResult(result);
         setShowResult(true);
+        triggerFeedbackCard();
       }, 800);
     } catch (err: any) {
       console.error('Coin flip error:', err);

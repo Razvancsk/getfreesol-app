@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { triggerFeedbackCard } from "@/components/FeedbackWidget";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import bs58 from "bs58";
@@ -1303,6 +1304,7 @@ export default function SolRefund() {
       // Show share modal
       setShareData({ solClaimed: totalRecovered, accountsClosed: 1, claimType: 'tokens' });
       setIsShareModalOpen(true);
+      triggerFeedbackCard();
       
       // Refresh token list
       if (publicKey) {
@@ -1498,6 +1500,7 @@ export default function SolRefund() {
       // Show share modal
       setShareData({ solClaimed: totalRecovered, accountsClosed: result.tokensProcessed, claimType: 'tokens' });
       setIsShareModalOpen(true);
+      triggerFeedbackCard();
       
       // Clear selections and refresh
       setSelectedTokens(new Set());
@@ -1694,6 +1697,7 @@ export default function SolRefund() {
       // Show share modal
       setShareData({ solClaimed: result.totalSolReceived, accountsClosed: result.tokensSwapped, claimType: 'tokens' });
       setIsShareModalOpen(true);
+      triggerFeedbackCard();
       
       // Clear selections and refresh
       setSelectedTokens(new Set());
@@ -3084,6 +3088,7 @@ export default function SolRefund() {
         // Show share modal
         setShareData({ solClaimed: totalSolRecovered, accountsClosed: totalNfts, claimType: 'nfts' });
         setIsShareModalOpen(true);
+      triggerFeedbackCard();
       }
 
       // Clear selection but don't refresh immediately - let optimistic update handle UI state
@@ -3312,6 +3317,7 @@ export default function SolRefund() {
         const closedCount = result.accountsClosed || selectedAccounts.length;
         setShareData({ solClaimed: totalWithRebate, accountsClosed: closedCount, claimType: 'accounts' });
         setIsShareModalOpen(true);
+      triggerFeedbackCard();
         
         // Reset form and immediately refresh statistics and transaction history
         setScanResult(null);
@@ -3454,6 +3460,7 @@ export default function SolRefund() {
       // Show share modal with total results
       setShareData({ solClaimed: totalSolRecovered, accountsClosed: totalAccountsClosed, claimType: 'accounts' });
       setIsShareModalOpen(true);
+      triggerFeedbackCard();
       
       // Reset scan and refresh data
       setScanResult(null);
