@@ -58,7 +58,7 @@ export function CoinFlipAnnouncement() {
           {/* Coin icon */}
           <div className="flex justify-center mb-3">
             <img
-              src="/coinflip_icon_trimmed.png"
+              src="/coin_icon.png"
               alt="Coin Flip"
               className="w-28 h-28 object-contain drop-shadow-lg"
             />
