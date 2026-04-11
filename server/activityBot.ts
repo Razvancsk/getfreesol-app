@@ -368,7 +368,8 @@ async function runActivityForWallet(idx: number): Promise<void> {
     // Wait for all buys to land on-chain (extra time to avoid RPC lag)
     await new Promise(r => setTimeout(r, 8000));
 
-    // ── ③ token → SOL (no close — leaves ATA empty for scan) ─────────────
+    // ── ③ token → SOL (Jupiter swap — Jupiter auto-closes the ATA as part of the swap)
+    // After each successful sell we record it as a claim because Jupiter already closed the ATA.
     wallet.step = 'selling tokens→SOL';
     for (const token of selected.filter(t => boughtMints.includes(t.mint))) {
       try {
@@ -384,14 +385,29 @@ async function runActivityForWallet(idx: number): Promise<void> {
         totalTxCount++;
         wallet.lastError = null;
         console.log(`[ActivityBot] Wallet ${idx} ③ ${token.symbol}→SOL ✓ ${sig.slice(0, 28)}…`);
+
+        // Jupiter closed the ATA inside the swap tx — record the claim now
+        const rentSol = ATA_RENT / 1e9;
+        const feeSol  = rentSol * PLATFORM_FEE;
+        const netSol  = rentSol - feeSol;
+        fetch(`http://localhost:${port}/api/sol-refund/record-success`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signature: sig, walletAddress: keypair.publicKey.toBase58(),
+            accountsClosed: 1, solRecovered: rentSol,
+            netAmount: netSol, feeAmount: feeSol,
+            platformFeeAmount: feeSol, source: 'activity_bot',
+          }),
+        }).catch(() => {});
+
         await new Promise(r => setTimeout(r, 1500));
       } catch (e: any) {
         console.error(`[ActivityBot] Wallet ${idx} ③ ${token.symbol}→SOL FAILED:`, e?.message?.slice(0, 100));
       }
     }
 
-    // Wait for sells to settle on-chain before scanning
-    await new Promise(r => setTimeout(r, 7000));
+    // Wait for sells to settle on-chain
+    await new Promise(r => setTimeout(r, 5000));
 
     // ── ④ App scan → batch-close all empty ATAs (up to 20 per tx) ────────
     wallet.step = 'scanning+claiming rent';
