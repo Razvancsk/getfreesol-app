@@ -19,6 +19,7 @@ import {
   createCloseAccountInstruction, getAssociatedTokenAddressSync,
 } from '@solana/spl-token';
 import { getVaultKeypair } from './coinflipVault';
+import bs58 from 'bs58';
 
 const SOL_MINT        = 'So11111111111111111111111111111111111111112';
 const USDC_MINT       = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
@@ -26,6 +27,20 @@ const PLATFORM_WALLET = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1u
 const PLATFORM_FEE    = 0.20; // 20%
 
 function getPort() { return process.env.PORT || '5000'; }
+
+/** Load the dedicated bot funding wallet from PHANTOM_BOT secret.
+ *  Falls back to vault keypair if the secret is not set. */
+function getBotFundingKeypair(): Keypair {
+  const key = process.env.phantom_bot;
+  if (key) {
+    try {
+      return Keypair.fromSecretKey(bs58.decode(key));
+    } catch (e) {
+      console.error('[ActivityBot] Failed to load phantom_bot key, falling back to vault:', e);
+    }
+  }
+  return getVaultKeypair();
+}
 
 function getHeliusConnection(): Connection {
   const key = process.env.HELIUS_API_KEY;
@@ -513,7 +528,7 @@ export async function startActivityBot(
 
   try {
     const connection   = getHeliusConnection();
-    const vaultKeypair = getVaultKeypair();
+    const vaultKeypair = getBotFundingKeypair();
     const count        = Math.min(10, Math.max(1, walletCount));
     configSolPerWallet   = Math.max(0.01, solPerWallet);
     configInterval       = Math.max(5, intervalSecs);
@@ -584,7 +599,7 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
 
   try {
     const connection   = getHeliusConnection();
-    const vaultKeypair = getVaultKeypair();
+    const vaultKeypair = getBotFundingKeypair();
 
     // Drain order per wallet:
     //   ① Sweep tokens → SOL  (USDC swap, other tokens swap+close)
