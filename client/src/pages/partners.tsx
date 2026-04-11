@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ArrowLeft, TrendingUp, Users, Vault, Coins, ArrowDownToLine, ArrowUpFromLine, BadgeDollarSign, Clock, CheckCircle2, RefreshCw } from "lucide-react";
 
 
@@ -49,6 +49,7 @@ export default function PartnersPage() {
   const wallet = publicKey?.toBase58() ?? null;
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [depositAmount, setDepositAmount] = useState("");
   const [depositLoading, setDepositLoading] = useState(false);
   const [distributeAmount, setDistributeAmount] = useState("");
@@ -189,15 +190,8 @@ export default function PartnersPage() {
   const deposited = parseFloat(partner?.depositedSol ?? "0");
 
   if (!canAccess) {
-    return (
-      <div className="min-h-screen bg-[#0f0a1e] text-white flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="text-4xl">🔒</div>
-          <p className="text-gray-400">Access restricted</p>
-          <Link href="/"><button className="text-purple-400 hover:text-white text-sm underline">← Back to app</button></Link>
-        </div>
-      </div>
-    );
+    navigate("/");
+    return null;
   }
 
   return (
