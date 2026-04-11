@@ -45,8 +45,9 @@ function txColor(type: string) {
 
 export default function PartnersPage() {
   const { connection } = useConnection();
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey, signTransaction, connecting, connected, autoConnect } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
+  const walletReady = !connecting && (connected ? true : !autoConnect);
   const qc = useQueryClient();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -189,7 +190,11 @@ export default function PartnersPage() {
   const totalAvailable = claimable + pending;
   const deposited = parseFloat(partner?.depositedSol ?? "0");
 
-  if (!canAccess) {
+  if (connecting) {
+    return null;
+  }
+
+  if (!connecting && !canAccess) {
     navigate("/");
     return null;
   }
