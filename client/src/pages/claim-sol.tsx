@@ -3841,7 +3841,7 @@ export default function SolRefund() {
 
 
           {/* Mobile-only: Claim + Burn 3-way sub-tabs */}
-          {(activeTab === 'reclaim' || activeTab === 'burnTokens') && (
+          {isConnected && (activeTab === 'reclaim' || activeTab === 'burnTokens') && (
             <div className="md:hidden flex items-center pb-2">
               <div className="flex items-center bg-purple-900/40 rounded-xl p-1 gap-1 w-full">
                 <button
@@ -3878,7 +3878,7 @@ export default function SolRefund() {
           )}
 
           {/* Burn sub-nav: Token / NFT pill toggle — desktop only */}
-          {activeTab === 'burnTokens' && (
+          {isConnected && activeTab === 'burnTokens' && (
             <div className="hidden md:flex items-center justify-center pb-2">
               <div className={`flex items-center gap-2`}>
                 <button
