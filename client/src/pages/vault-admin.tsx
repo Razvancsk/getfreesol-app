@@ -58,6 +58,7 @@ export default function VaultAdmin() {
     },
     enabled: authenticated && !!adminSecret,
     refetchInterval: authenticated ? 15000 : false,
+    staleTime: 0,
   });
 
   const vaultData = vaultQuery.data as any;
@@ -549,7 +550,7 @@ export default function VaultAdmin() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="bg-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                       <p className="text-4xl font-bold text-white">
-                        {botWalletQuery.data?.balance !== undefined ? Number(botWalletQuery.data.balance).toFixed(4) : '...'}
+                        {botWalletQuery.isLoading ? '...' : Number(botWalletQuery.data?.balance ?? 0).toFixed(4)}
                       </p>
                       <p className="text-sm text-gray-300 uppercase tracking-wider mt-1">SOL Balance</p>
                       <Button

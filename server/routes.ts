@@ -10720,13 +10720,20 @@ Claimer: ${walletAddress}`;
       return res.status(403).json({ error: 'Unauthorized' });
     }
     try {
-      const { Connection, PublicKey } = await import('@solana/web3.js');
       const address = '4YhdLvaRZxHgEFGpN9Jq5duMQtAx4qXTCZTAAdCiKVxR';
-      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`);
-      const balanceLamports = await connection.getBalance(new PublicKey(address));
-      const balance = balanceLamports / 1e9;
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
+      const rpcRes = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getBalance', params: [address] }),
+      });
+      const rpcData = await rpcRes.json();
+      const lamports = rpcData?.result?.value ?? 0;
+      const balance = lamports / 1e9;
+      console.log(`[BotWallet] address=${address} lamports=${lamports} balance=${balance}`);
       res.json({ success: true, address, balance });
     } catch (e: any) {
+      console.error('[BotWallet] error:', e?.message);
       res.status(500).json({ error: e?.message || 'Failed to load bot wallet' });
     }
   });
