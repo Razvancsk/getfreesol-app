@@ -237,7 +237,7 @@ export default function PartnersPage() {
             <div className="text-xs text-gray-400 mb-1 flex items-center justify-center gap-1">
               <TrendingUp className="w-3 h-3" /> Fee Share
             </div>
-            <div className="text-xl font-bold text-green-400">20% Daily</div>
+            <div className="text-xl font-bold text-green-400">70% Daily</div>
           </div>
         </div>
 
