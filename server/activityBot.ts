@@ -97,11 +97,8 @@ const RANDOM_TOKENS: Array<{ mint: string; symbol: string }> = [
   { mint: 'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3', symbol: 'PYTH'   },
   { mint: 'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE',  symbol: 'ORCA'   },
   { mint: 'DriFtupJYLTosbwoN8koMbEYSx54aFAVLddWsbksjwg7', symbol: 'DRIFT'  },
-  { mint: 'MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey',  symbol: 'MNDE'   },
   { mint: 'nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7',  symbol: 'NOS'    },
-  { mint: '7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj',  symbol: 'stSOL'  },
   { mint: 'bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1',   symbol: 'bSOL'   },
-  { mint: 'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn',  symbol: 'jitoSOL'},
   { mint: 'WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk',    symbol: 'WEN'    },
   { mint: 'jtojtomepa8b1trahX9S2RmD79m37LjXBKKpGrBDzC',     symbol: 'JTO'    },
   { mint: 'w1oKSHD3ZwGHbUWnAjt9koujJoXwKJnvHFZXFLwmYqT',   symbol: 'W'      },
@@ -142,7 +139,7 @@ async function swapSolToToken(keypair: Keypair, tokenMint: string, lamports: num
   const quoteRes = await fetch(
     `https://api.jup.ag/swap/v1/quote` +
     `?inputMint=${SOL_MINT}&outputMint=${tokenMint}` +
-    `&amount=${lamports}&slippageBps=300&restrictIntermediateTokens=true`,
+    `&amount=${lamports}&slippageBps=500&restrictIntermediateTokens=true`,
     { headers }
   );
   if (!quoteRes.ok) throw new Error(`SOL→${tokenMint.slice(0,8)} quote failed (${quoteRes.status}): ${(await quoteRes.text()).slice(0, 150)}`);
@@ -180,7 +177,7 @@ async function swapTokenToSol(keypair: Keypair, tokenMint: string, tokenAmount: 
   const quoteRes = await fetch(
     `https://api.jup.ag/swap/v1/quote` +
     `?inputMint=${tokenMint}&outputMint=${SOL_MINT}` +
-    `&amount=${tokenAmount}&slippageBps=300&restrictIntermediateTokens=true`,
+    `&amount=${tokenAmount}&slippageBps=500&restrictIntermediateTokens=true`,
     { headers }
   );
   if (!quoteRes.ok) throw new Error(`token→SOL quote failed (${quoteRes.status}): ${(await quoteRes.text()).slice(0, 150)}`);
