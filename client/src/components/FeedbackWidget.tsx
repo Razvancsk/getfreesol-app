@@ -50,7 +50,7 @@ export function FeedbackWidget() {
     <>
       <button
         onClick={handleOpen}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg shadow-purple-900/40 transition-all hover:scale-105 active:scale-95"
+        className={`fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-[200] flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg shadow-purple-900/40 transition-all hover:scale-105 active:scale-95 ${open ? 'hidden' : ''}`}
         title="Send feedback"
       >
         <MessageSquarePlus className="w-4 h-4" />
@@ -60,7 +60,7 @@ export function FeedbackWidget() {
       {open && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end p-4 sm:p-6">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="relative w-full sm:w-80 bg-[#1a1035] border border-purple-500/30 rounded-2xl shadow-2xl p-6 flex flex-col gap-4 mb-16 sm:mb-0 sm:mr-2">
+          <div className="relative w-full sm:w-80 bg-[#1a1035] border border-purple-500/30 rounded-2xl shadow-2xl p-6 flex flex-col gap-4 mb-24 sm:mb-0 sm:mr-2">
             <div className="flex items-center justify-between">
               <h3 className="text-white font-bold text-base">Share your feedback</h3>
               <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white transition-colors">
