@@ -3807,7 +3807,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-coinflip"
                 >
-                  <img src={coinFlipIcon} alt="Coin Flip" className="w-9 h-9 object-contain" /> Coin Flip
+                  <img src={coinFlipIcon} alt="Coin Flip" className="h-5 w-5 object-contain shrink-0" /> Coin Flip
                 </Button>
                 <Button
                   onClick={() => setActiveTab('staking')}
@@ -7579,7 +7579,7 @@ export default function SolRefund() {
             onClick={() => setActiveTab('coinflip')}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'coinflip' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            <img src={coinFlipIcon} alt="Coin Flip" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+            <img src={coinFlipIcon} alt="Coin Flip" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Coin Flip</span>
           </button>
           <button
