@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,15 +18,13 @@ interface UserStats {
 }
 
 interface LeaderboardEntry {
-  rank: number;
   walletAddress: string;
-  totalSolRecovered: string;
+  totalPoints: number;
 }
 
 export default function ProfilePage() {
   const { publicKey } = useWalletAdapter();
   const { toast } = useToast();
-  const [leaderboardPeriod, setLeaderboardPeriod] = useState<'weekly' | 'all'>('all');
 
   const { data: stats, isLoading } = useQuery<UserStats>({
     queryKey: ['/api/user/stats', publicKey?.toString()],
@@ -40,10 +37,9 @@ export default function ProfilePage() {
   });
 
   const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useQuery<{ success: boolean; leaderboard: LeaderboardEntry[] }>({
-    queryKey: ['/api/statistics/leaderboard', leaderboardPeriod],
+    queryKey: ['/api/statistics/xp-leaderboard'],
     queryFn: async () => {
-      const period = leaderboardPeriod === 'weekly' ? 'weekly' : 'all';
-      const response = await fetch(`/api/statistics/leaderboard?period=${period}&limit=10`);
+      const response = await fetch(`/api/statistics/xp-leaderboard?limit=10`);
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       return response.json();
     },
@@ -202,27 +198,11 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-white font-semibold text-lg flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-yellow-400" />
-                Top 10 Leaders
+                🏆 Top 10 Leaders
               </h3>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  className={leaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-transparent border border-purple-500 text-purple-200 hover:bg-purple-700/50'}
-                  onClick={() => setLeaderboardPeriod('weekly')}
-                >
-                  7 Days
-                </Button>
-                <Button
-                  size="sm"
-                  className={leaderboardPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-transparent border border-purple-500 text-purple-200 hover:bg-purple-700/50'}
-                  onClick={() => setLeaderboardPeriod('all')}
-                >
-                  All Time
-                </Button>
-              </div>
             </div>
             <p className="text-purple-300 text-sm mb-4">
-              {leaderboardPeriod === 'weekly' ? 'Top SOL claimers in the last 7 days' : 'Top 10 users with the most SOL recovered'}
+              Top 10 users with the most XP points earned
             </p>
             
             {isLoadingLeaderboard ? (
@@ -234,7 +214,7 @@ export default function ProfilePage() {
                     <tr className="border-b border-purple-500/30">
                       <th className="text-left py-3 px-2 text-purple-300 text-sm font-medium">Rank</th>
                       <th className="text-left py-3 px-2 text-purple-300 text-sm font-medium">Wallet</th>
-                      <th className="text-right py-3 px-2 text-purple-300 text-sm font-medium">SOL Recovered</th>
+                      <th className="text-right py-3 px-2 text-purple-300 text-sm font-medium">Points</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -264,8 +244,8 @@ export default function ProfilePage() {
                             </span>
                           </td>
                           <td className="py-3 px-2 text-right">
-                            <span className="text-green-400 font-medium">
-                              {parseFloat(entry.totalSolRecovered || '0').toFixed(4)} SOL
+                            <span className="text-yellow-400 font-medium">
+                              {Math.round(entry.totalPoints).toLocaleString()} XP
                             </span>
                           </td>
                         </tr>
