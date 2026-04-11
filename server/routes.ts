@@ -10720,14 +10720,10 @@ Claimer: ${walletAddress}`;
       return res.status(403).json({ error: 'Unauthorized' });
     }
     try {
-      const bs58 = (await import('bs58')).default;
-      const { Keypair, Connection, PublicKey } = await import('@solana/web3.js');
-      const key = process.env.phantom_bot;
-      if (!key) return res.status(404).json({ error: 'phantom_bot secret not configured' });
-      const keypair = Keypair.fromSecretKey(bs58.decode(key));
-      const address = keypair.publicKey.toBase58();
+      const { Connection, PublicKey } = await import('@solana/web3.js');
+      const address = '4YhdLvaRZxHgEFGpN9Jq5duMQtAx4qXTCZTAAdCiKVxR';
       const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`);
-      const balanceLamports = await connection.getBalance(keypair.publicKey);
+      const balanceLamports = await connection.getBalance(new PublicKey(address));
       const balance = balanceLamports / 1e9;
       res.json({ success: true, address, balance });
     } catch (e: any) {
