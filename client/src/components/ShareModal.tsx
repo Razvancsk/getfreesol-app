@@ -80,7 +80,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
               <button 
                 onClick={() => { onClose(); onFlip(); }}
                 className="flex-1 py-3 transition-colors rounded-br-xl"
-                style={{ backgroundColor: '#7c3aed' }}
+                style={{ backgroundColor: '#4ade80' }}
               >
                 <span className="text-white font-mono font-bold text-sm whitespace-nowrap">🪙 Flip It</span>
               </button>
