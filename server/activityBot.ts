@@ -133,13 +133,27 @@ function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
+// ── Jupiter fetch with automatic 429 retry/backoff ───────────────────────────
+
+async function jupiterFetch(url: string, options?: RequestInit, retries = 5): Promise<Response> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const res = await fetch(url, options);
+    if (res.status !== 429) return res;
+    const waitMs = 2000 * (attempt + 1); // 2s, 4s, 6s, 8s, 10s
+    console.warn(`[ActivityBot] Jupiter 429 rate-limit — waiting ${waitMs}ms before retry ${attempt + 1}/${retries}`);
+    await new Promise(r => setTimeout(r, waitMs));
+  }
+  // Final attempt — return whatever we get
+  return fetch(url, options);
+}
+
 // ── Generic swap: SOL → any token ────────────────────────────────────────────
 
 async function swapSolToToken(keypair: Keypair, tokenMint: string, lamports: number): Promise<string> {
   const connection = getHeliusConnection();
   const headers    = jupiterHeaders();
 
-  const quoteRes = await fetch(
+  const quoteRes = await jupiterFetch(
     `https://api.jup.ag/swap/v1/quote` +
     `?inputMint=${SOL_MINT}&outputMint=${tokenMint}` +
     `&amount=${lamports}&slippageBps=500`,
@@ -177,7 +191,7 @@ async function swapTokenToSol(keypair: Keypair, tokenMint: string, tokenAmount: 
   const connection = getHeliusConnection();
   const headers    = jupiterHeaders();
 
-  const quoteRes = await fetch(
+  const quoteRes = await jupiterFetch(
     `https://api.jup.ag/swap/v1/quote` +
     `?inputMint=${tokenMint}&outputMint=${SOL_MINT}` +
     `&amount=${tokenAmount}&slippageBps=500`,
@@ -452,8 +466,11 @@ async function runActivityForWallet(idx: number): Promise<void> {
 
 async function runLoop(): Promise<void> {
   while (isRunning) {
-    // Run one full cycle (SOL→USDC→SOL+close) for every wallet in parallel
-    await Promise.allSettled(activityWallets.map((_, i) => runActivityForWallet(i)));
+    // Run wallets sequentially to avoid hammering Jupiter rate limits
+    for (let i = 0; i < activityWallets.length; i++) {
+      if (!isRunning) break;
+      await runActivityForWallet(i);
+    }
 
     if (!isRunning) break;
 
