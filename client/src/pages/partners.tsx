@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useWalletAdapter } from "@/hooks/useWalletAdapter";
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,8 +43,7 @@ function txColor(type: string) {
 }
 
 export default function PartnersPage() {
-  const { connection } = useConnection();
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey, signTransaction, connection, setVisible, select } = useWalletAdapter();
   const wallet = publicKey?.toBase58() ?? null;
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -314,7 +312,9 @@ export default function PartnersPage() {
             <Vault className="w-10 h-10 text-purple-400 mx-auto" />
             <p className="text-gray-300 font-medium">Connect your wallet to join the partner vault</p>
             <div className="flex justify-center">
-              <WalletMultiButton style={{ background: "linear-gradient(135deg, #7c3aed, #9d4edd)", borderRadius: "12px", fontSize: "14px" }} />
+              <Button onClick={() => { select(null); setVisible(true); }} className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-6 py-2 text-sm font-medium">
+                Select Wallet
+              </Button>
             </div>
           </div>
         )}
