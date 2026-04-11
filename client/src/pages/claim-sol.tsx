@@ -116,7 +116,6 @@ export default function SolRefund() {
   const [showDevAccountModal, setShowDevAccountModal] = useState(false);
   const [devProjectName, setDevProjectName] = useState('');
   const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'developer-api'>('overview');
-  const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [mobileWalletMenuOpen, setMobileWalletMenuOpen] = useState(false);
   const [desktopWalletMenuOpen, setDesktopWalletMenuOpen] = useState(false);
@@ -232,10 +231,10 @@ export default function SolRefund() {
     enabled: activeTab === 'statistics',
   });
 
-  const { data: leaderboardData } = useQuery<{ success: boolean; period: string; leaderboard: Array<{ walletAddress: string; totalSolRecovered: string }> }>({
-    queryKey: ['/api/statistics/leaderboard', selectedLeaderboardPeriod],
+  const { data: leaderboardData } = useQuery<{ success: boolean; leaderboard: Array<{ walletAddress: string; totalPoints: number }> }>({
+    queryKey: ['/api/statistics/xp-leaderboard'],
     queryFn: async () => {
-      const response = await fetch(`/api/statistics/leaderboard?period=${selectedLeaderboardPeriod}&limit=10`);
+      const response = await fetch(`/api/statistics/xp-leaderboard?limit=10`);
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       return response.json();
     },
@@ -5435,54 +5434,11 @@ export default function SolRefund() {
                     <div className="flex items-center justify-between mb-2">
                       <CardTitle className="flex items-center gap-2 text-white">
                         <TrendingUp className="w-6 h-6 text-yellow-400" />
-                        Top Addresses Leaderboard
+                        🏆 Top 10 Leaders
                       </CardTitle>
-                      {/* Filter buttons inside card */}
-                      <div className="flex gap-2">
-                        <Button
-                          data-testid="leaderboard-filter-24h"
-                          size="sm"
-                          onClick={() => setSelectedLeaderboardPeriod('24h')}
-                          className={selectedLeaderboardPeriod === '24h' 
-                            ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
-                            : 'bg-transparent border border-purple-400 text-white hover:bg-purple-800/50'}
-                        >
-                          Daily
-                        </Button>
-                        <Button
-                          data-testid="leaderboard-filter-weekly"
-                          size="sm"
-                          onClick={() => setSelectedLeaderboardPeriod('weekly')}
-                          className={selectedLeaderboardPeriod === 'weekly' 
-                            ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
-                            : 'bg-transparent border border-purple-400 text-white hover:bg-purple-800/50'}
-                        >
-                          Weekly
-                        </Button>
-                        <Button
-                          data-testid="leaderboard-filter-monthly"
-                          size="sm"
-                          onClick={() => setSelectedLeaderboardPeriod('monthly')}
-                          className={selectedLeaderboardPeriod === 'monthly' 
-                            ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
-                            : 'bg-transparent border border-purple-400 text-white hover:bg-purple-800/50'}
-                        >
-                          Monthly
-                        </Button>
-                        <Button
-                          data-testid="leaderboard-filter-all"
-                          size="sm"
-                          onClick={() => setSelectedLeaderboardPeriod('all')}
-                          className={selectedLeaderboardPeriod === 'all' 
-                            ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
-                            : 'bg-transparent border border-purple-400 text-white hover:bg-purple-800/50'}
-                        >
-                          All Time
-                        </Button>
-                      </div>
                     </div>
                     <CardDescription className="text-white">
-                      Addresses that recovered the most rent ({selectedLeaderboardPeriod === '24h' ? 'last 24 hours' : selectedLeaderboardPeriod === 'weekly' ? 'last 7 days' : selectedLeaderboardPeriod === 'monthly' ? 'last 30 days' : 'all time'})
+                      Top 10 users with the most XP points earned
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -5497,21 +5453,23 @@ export default function SolRefund() {
                             <div className="flex items-center gap-4">
                               {index === 0 && (
                                 <Badge className="bg-yellow-500 text-black hover:bg-yellow-600">
-                                  🥇 1st
+                                  🥇 #1
                                 </Badge>
                               )}
                               {index === 1 && (
                                 <Badge className="bg-gray-400 text-black hover:bg-gray-500">
-                                  🥈 2nd
+                                  🥈 #2
                                 </Badge>
                               )}
                               {index === 2 && (
                                 <Badge className="bg-orange-600 text-white hover:bg-orange-700">
-                                  🥉 3rd
+                                  🥉 #3
                                 </Badge>
                               )}
                               {index > 2 && (
-                                <span className="text-white font-medium ml-2">#{index + 1}</span>
+                                <Badge className="bg-purple-700 text-white hover:bg-purple-800">
+                                  #{index + 1}
+                                </Badge>
                               )}
                               {isPlatformWallet ? (
                                 <button
@@ -5533,15 +5491,15 @@ export default function SolRefund() {
                                 </a>
                               )}
                             </div>
-                            <div className="text-right font-bold text-green-400" data-testid={`amount-${index}`}>
-                              {formatSol(entry.totalSolRecovered)} SOL
+                            <div className="text-right font-bold text-yellow-400" data-testid={`amount-${index}`}>
+                              {Math.round(entry.totalPoints).toLocaleString()} XP
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-white">
-                        No data available for this time period
+                        No data available yet
                       </div>
                     )}
                   </CardContent>

@@ -7054,6 +7054,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // XP Points Leaderboard - top users by accumulated XP
+  app.get("/api/statistics/xp-leaderboard", async (req, res) => {
+    try {
+      const { limit = '10' } = req.query;
+      const limitNum = Math.min(parseInt(limit as string, 10) || 10, 100);
+      const PLATFORM_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+
+      const results = await db
+        .select({
+          walletAddress: userPoints.walletAddress,
+          totalPoints: userPoints.points,
+        })
+        .from(userPoints)
+        .where(sql`${userPoints.walletAddress} != ${PLATFORM_WALLET} AND ${userPoints.points} > 0`)
+        .orderBy(sql`${userPoints.points} DESC`)
+        .limit(limitNum);
+
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.json({ success: true, leaderboard: results });
+    } catch (error) {
+      console.error("Get XP leaderboard error:", error);
+      res.status(500).json({ error: "Failed to get XP leaderboard" });
+    }
+  });
+
   // Mass Transfer - Record a transfer transaction
   app.post("/api/mass-transfer/record", async (req, res) => {
     try {
