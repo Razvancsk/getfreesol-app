@@ -224,7 +224,7 @@ export function CoinFlipGame() {
         }
         setFlipResult(result);
         setShowResult(true);
-        triggerFeedbackCard();
+        triggerFeedbackCard(publicKey?.toString());
       }, 800);
     } catch (err: any) {
       console.error('Coin flip error:', err);

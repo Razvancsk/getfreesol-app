@@ -6,15 +6,17 @@ import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
-export function triggerFeedbackCard() {
-  if (sessionStorage.getItem('feedback_shown')) return;
+export function triggerFeedbackCard(walletAddress?: string) {
+  const key = walletAddress ? `feedback_shown_${walletAddress}` : 'feedback_shown_anon';
+  if (localStorage.getItem(key)) return;
   setTimeout(() => {
-    window.dispatchEvent(new CustomEvent('show-feedback-card'));
+    window.dispatchEvent(new CustomEvent('show-feedback-card', { detail: { key } }));
   }, 3500);
 }
 
 export function FeedbackWidget() {
   const [visible, setVisible] = useState(false);
+  const [storageKey, setStorageKey] = useState('feedback_shown_anon');
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState('');
@@ -24,8 +26,10 @@ export function FeedbackWidget() {
   const [location] = useLocation();
 
   useEffect(() => {
-    const handler = () => {
-      if (sessionStorage.getItem('feedback_shown')) return;
+    const handler = (e: Event) => {
+      const key = (e as CustomEvent).detail?.key || 'feedback_shown_anon';
+      if (localStorage.getItem(key)) return;
+      setStorageKey(key);
       setVisible(true);
       setSubmitted(false);
       setRating(0);
@@ -37,7 +41,7 @@ export function FeedbackWidget() {
 
   const dismiss = () => {
     setVisible(false);
-    sessionStorage.setItem('feedback_shown', '1');
+    localStorage.setItem(storageKey, '1');
   };
 
   const submitMutation = useMutation({
