@@ -58,7 +58,7 @@ export function CoinFlipAnnouncement() {
         <div className="p-6 pt-7 text-center">
           {/* Coin icon */}
           <div className="flex justify-center mb-3">
-            <img src={coinFlipIcon} alt="Coin Flip" className="w-20 h-20 object-contain drop-shadow-lg" />
+            <img src={coinFlipIcon} alt="Coin Flip" className="w-36 h-36 object-contain drop-shadow-lg" />
           </div>
 
           <div className="inline-block bg-yellow-400/20 text-yellow-300 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3 border border-yellow-400/30">
