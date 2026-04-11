@@ -1,30 +1,44 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useWalletAdapter } from "@/hooks/useWalletAdapter";
 
+const VERSION = "coin_flip_v4";
+
+function hasSeen(wallet: string) {
+  try {
+    return !!localStorage.getItem(`${VERSION}_${wallet}`);
+  } catch {
+    return false;
+  }
+}
+
+function markSeen(wallet: string) {
+  try {
+    localStorage.setItem(`${VERSION}_${wallet}`, "1");
+  } catch {}
+}
+
 export function CoinFlipAnnouncement() {
   const [visible, setVisible] = useState(false);
+  const [shownFor, setShownFor] = useState<string | null>(null);
   const [, navigate] = useLocation();
   const { publicKey } = useWalletAdapter();
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!publicKey) return;
+    const wallet = publicKey?.toString();
+    if (!wallet) return;
+    if (wallet === shownFor) return;
+    if (hasSeen(wallet)) return;
 
-    const storageKey = `coin_flip_v3_${publicKey.toString()}`;
-    if (localStorage.getItem(storageKey)) return;
-
-    timerRef.current = setTimeout(() => setVisible(true), 1500);
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [publicKey]);
+    setShownFor(wallet);
+    const t = setTimeout(() => setVisible(true), 800);
+    return () => clearTimeout(t);
+  }, [publicKey, shownFor]);
 
   const dismiss = () => {
     setVisible(false);
-    if (publicKey) {
-      localStorage.setItem(`coin_flip_v3_${publicKey.toString()}`, "1");
-    }
+    const wallet = publicKey?.toString();
+    if (wallet) markSeen(wallet);
   };
 
   const tryIt = () => {
