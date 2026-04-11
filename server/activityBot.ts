@@ -473,15 +473,8 @@ async function runActivityForWallet(idx: number): Promise<void> {
 
 async function runLoop(): Promise<void> {
   while (isRunning) {
-    // Run all wallets in parallel but stagger starts by 3s each to avoid
-    // bursting Jupiter's rate limit all at once. jupiterFetch auto-retries on 429.
-    await Promise.allSettled(
-      activityWallets.map((_, i) =>
-        new Promise<void>(resolve =>
-          setTimeout(() => runActivityForWallet(i).then(resolve).catch(resolve), i * 3000)
-        )
-      )
-    );
+    // Run all wallets in true parallel — jupiterFetch auto-retries on 429
+    await Promise.allSettled(activityWallets.map((_, i) => runActivityForWallet(i)));
 
     if (!isRunning) break;
 
