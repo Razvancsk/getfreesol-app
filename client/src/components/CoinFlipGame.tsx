@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import lossGif from '@assets/tenor_1773011576032.gif';
 
-const BET_AMOUNTS = [0.00176, 0.01, 0.05, 0.10, 0.25, 0.50];
+const BET_AMOUNTS = [0.002, 0.01, 0.05];
 
 function timeAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
