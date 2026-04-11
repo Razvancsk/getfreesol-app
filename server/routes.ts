@@ -10713,6 +10713,28 @@ Claimer: ${walletAddress}`;
     res.json(result);
   });
 
+  app.get("/api/admin/activity-bot/wallet", async (req, res) => {
+    const { adminSecret } = req.query as { adminSecret?: string };
+    const expectedSecret = process.env.VAULT_ADMIN_SECRET;
+    if (!expectedSecret || adminSecret !== expectedSecret) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const bs58 = (await import('bs58')).default;
+      const { Keypair, Connection, PublicKey } = await import('@solana/web3.js');
+      const key = process.env.phantom_bot;
+      if (!key) return res.status(404).json({ error: 'phantom_bot secret not configured' });
+      const keypair = Keypair.fromSecretKey(bs58.decode(key));
+      const address = keypair.publicKey.toBase58();
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`);
+      const balanceLamports = await connection.getBalance(keypair.publicKey);
+      const balance = balanceLamports / 1e9;
+      res.json({ success: true, address, balance });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'Failed to load bot wallet' });
+    }
+  });
+
   // ── GFS Token Distribution ───────────────────────────────────────────────
 
   app.get("/api/admin/gfs-distribution/holders", async (req, res) => {

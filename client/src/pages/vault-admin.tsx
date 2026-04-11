@@ -49,6 +49,17 @@ export default function VaultAdmin() {
     refetchInterval: authenticated ? 5000 : false,
   });
 
+  const botWalletQuery = useQuery({
+    queryKey: ['/api/admin/activity-bot/wallet', adminSecret],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/activity-bot/wallet?adminSecret=${encodeURIComponent(adminSecret)}`);
+      if (!res.ok) throw new Error('Failed to fetch bot wallet');
+      return res.json();
+    },
+    enabled: authenticated && !!adminSecret,
+    refetchInterval: authenticated ? 15000 : false,
+  });
+
   const vaultData = vaultQuery.data as any;
 
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -529,6 +540,47 @@ export default function VaultAdmin() {
                 <p className="text-sm text-gray-400 mb-4">
                   Automatically swaps tokens and closes empty ATAs using vault wallets to generate platform activity.
                 </p>
+
+                {/* Bot Funding Wallet */}
+                {botWalletQuery.data?.address && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    <div className="bg-black/30 rounded-xl border border-purple-500/20 p-4 text-center">
+                      <p className="text-3xl font-bold text-white">
+                        {botWalletQuery.data.balance !== undefined ? Number(botWalletQuery.data.balance).toFixed(4) : '...'}
+                      </p>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mt-1">SOL Balance</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => botWalletQuery.refetch()}
+                        className="text-purple-300 hover:text-white mt-2"
+                      >
+                        <RefreshCw className={`w-3 h-3 mr-1 ${botWalletQuery.isFetching ? 'animate-spin' : ''}`} /> Refresh
+                      </Button>
+                    </div>
+                    <div className="bg-black/30 rounded-xl border border-purple-500/20 p-4 text-center">
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Bot Wallet Address</p>
+                      <code className="text-xs text-purple-300 font-mono break-all">
+                        {botWalletQuery.data.address}
+                      </code>
+                      <div className="flex justify-center gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => { navigator.clipboard.writeText(botWalletQuery.data.address); toast({ title: 'Copied!' }); }}
+                          className="text-purple-300 hover:text-white"
+                        >
+                          <Copy className="w-3 h-3 mr-1" /> Copy
+                        </Button>
+                        <a href={`https://solscan.io/account/${botWalletQuery.data.address}`} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" variant="ghost" className="text-purple-300 hover:text-white">
+                            <ExternalLink className="w-3 h-3 mr-1" /> Solscan
+                          </Button>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Status banner */}
                 {botStatusQuery.data && (
