@@ -56,7 +56,6 @@ import tokenLogo from '@assets/image_1757882056840_1772656509435.png';
 import gfsBanner from '@assets/image_1772667495108.png';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
-import coinFlipIcon from '@assets/coinflip_icon.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -3821,9 +3820,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-coinflip"
                 >
-                  <span className="shrink-0 overflow-hidden" style={{ width: '20px', height: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={coinFlipIcon} alt="Coin Flip" style={{ width: '200%', height: '200%', objectFit: 'contain', maxWidth: 'none' }} />
-                  </span> Coin Flip
+                  <img src="/coinflip_icon_trimmed.png" alt="Coin Flip" className="h-5 w-5 object-contain shrink-0" /> Coin Flip
                 </Button>
                 <Button
                   onClick={() => setActiveTab('staking')}
@@ -7594,9 +7591,7 @@ export default function SolRefund() {
             onClick={() => setActiveTab('coinflip')}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'coinflip' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            <span style={{ width: '20px', height: '20px', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <img src={coinFlipIcon} alt="Coin Flip" style={{ width: '200%', height: '200%', objectFit: 'contain', maxWidth: 'none' }} />
-            </span>
+            <img src="/coinflip_icon_trimmed.png" alt="Coin Flip" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Coin Flip</span>
           </button>
           <button
