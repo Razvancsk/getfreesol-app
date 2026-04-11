@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletAdapter } from "@/hooks/useWalletAdapter";
 
 export function CoinFlipAnnouncement() {
   const [visible, setVisible] = useState(false);
   const [, navigate] = useLocation();
-  const { publicKey } = useWallet();
+  const { publicKey } = useWalletAdapter();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
