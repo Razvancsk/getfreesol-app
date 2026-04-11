@@ -54,7 +54,9 @@ export default function PartnersPage() {
   const [distributeAmount, setDistributeAmount] = useState("");
   const [distributeLoading, setDistributeLoading] = useState(false);
   const PLATFORM_WALLET = "GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT";
+  const ALLOWED_WALLETS = [PLATFORM_WALLET, "6p7Zh4ptyVphDU5SfWjLEB8JfH7BhkK9PX4CRiMEHjbR"];
   const isAdmin = wallet === PLATFORM_WALLET;
+  const canAccess = ALLOWED_WALLETS.includes(wallet ?? "");
 
   const { data: depositAddressData } = useQuery<{ depositAddress: string }>({
     queryKey: ["/api/vault/deposit-address"],

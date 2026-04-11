@@ -444,6 +444,7 @@ export default function SolRefund() {
 
   // Check if platform wallet
   const isPlatformWallet = publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT';
+  const canViewPartners = publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' || publicKey?.toString() === '6p7Zh4ptyVphDU5SfWjLEB8JfH7BhkK9PX4CRiMEHjbR';
   const canFlip = isPlatformWallet || publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
   // Query for user profile stats (platform wallet viewing other users)
@@ -3613,7 +3614,7 @@ export default function SolRefund() {
                               </Link>
                             </>
                           )}
-                          {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+                          {canViewPartners && (
                             <Link href="/partners" onClick={() => setMobileWalletMenuOpen(false)}>
                               <div className="px-2 py-2 text-yellow-300 hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate">🤝 Partners</div>
                             </Link>
@@ -3689,7 +3690,7 @@ export default function SolRefund() {
                             </Link>
                           </>
                         )}
-                        {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+                        {canViewPartners && (
                           <Link href="/partners" onClick={() => setDesktopWalletMenuOpen(false)}>
                             <div className="px-3 py-2 text-yellow-300 hover:bg-purple-600/40 cursor-pointer text-sm text-center truncate">🤝 Partners</div>
                           </Link>
@@ -3820,7 +3821,7 @@ export default function SolRefund() {
                 >
                   <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
                 </Button>
-                {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+                {canViewPartners && (
                   <Link href="/partners">
                     <Button
                       className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-yellow-600/20 text-yellow-300 hover:bg-yellow-600/40 border-yellow-500/40"
@@ -7591,7 +7592,7 @@ export default function SolRefund() {
             <FaSackDollar style={{ width: '20px', height: '20px' }} />
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
           </button>
-          {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+          {canViewPartners && (
             <Link href="/partners" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#fde68a', textDecoration: 'none', cursor: 'pointer' }}>
               <span style={{ fontSize: '20px', lineHeight: 1 }}>🤝</span>
               <span style={{ fontSize: '11px', fontWeight: 500 }}>Partners</span>
