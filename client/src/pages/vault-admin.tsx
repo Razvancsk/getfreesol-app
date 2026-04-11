@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { Link } from 'wouter';
-import { Eye, EyeOff, Copy, Send, RefreshCw, Lock, Unlock, Wallet, ExternalLink, ArrowLeft, Zap } from 'lucide-react';
+import { Eye, EyeOff, Copy, Send, RefreshCw, Lock, Unlock, Wallet, ExternalLink, ArrowLeft, Zap, Star, MessageSquare } from 'lucide-react';
 import logoImage from '@assets/image_1757882056840.png';
 
 export default function VaultAdmin() {
@@ -58,6 +58,17 @@ export default function VaultAdmin() {
     },
     enabled: authenticated && !!adminSecret,
     refetchInterval: authenticated ? 15000 : false,
+    staleTime: 0,
+  });
+
+  const feedbackQuery = useQuery({
+    queryKey: ['/api/admin/feedback', adminSecret],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/feedback?adminSecret=${encodeURIComponent(adminSecret)}`);
+      if (!res.ok) throw new Error('Failed to fetch feedback');
+      return res.json();
+    },
+    enabled: authenticated && !!adminSecret,
     staleTime: 0,
   });
 
@@ -672,6 +683,46 @@ export default function VaultAdmin() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </div>
+
+              {/* User Feedback */}
+              <div className="bg-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-purple-400" /> User Feedback
+                  </h2>
+                  <Button size="sm" variant="ghost" onClick={() => feedbackQuery.refetch()} className="text-purple-300 hover:text-white">
+                    <RefreshCw className={`w-3 h-3 mr-1 ${feedbackQuery.isFetching ? 'animate-spin' : ''}`} /> Refresh
+                  </Button>
+                </div>
+
+                {feedbackQuery.isLoading ? (
+                  <p className="text-gray-400 text-sm">Loading feedback...</p>
+                ) : !feedbackQuery.data?.feedback?.length ? (
+                  <p className="text-gray-400 text-sm">No feedback yet.</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                    {feedbackQuery.data.feedback.map((item: any) => (
+                      <div key={item.id} className="bg-black/30 rounded-xl p-4 border border-purple-500/10">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-0.5">
+                            {[1,2,3,4,5].map(s => (
+                              <Star key={s} className={`w-4 h-4 ${s <= item.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />
+                            ))}
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs text-gray-500">{item.page || '/'}</span>
+                            <span className="text-xs text-gray-600 ml-2">{new Date(item.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        {item.comment && <p className="text-sm text-gray-200 mt-1">{item.comment}</p>}
+                        {item.walletAddress && (
+                          <p className="text-xs text-purple-400 mt-1 font-mono">{item.walletAddress.slice(0,8)}…{item.walletAddress.slice(-6)}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

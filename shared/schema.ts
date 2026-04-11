@@ -1064,3 +1064,16 @@ export type InsertVaultPartner = z.infer<typeof insertVaultPartnerSchema>;
 export const insertPartnerTransactionSchema = createInsertSchema(partnerTransactions).omit({ id: true, createdAt: true });
 export type PartnerTransaction = typeof partnerTransactions.$inferSelect;
 export type InsertPartnerTransaction = z.infer<typeof insertPartnerTransactionSchema>;
+
+export const feedback = pgTable("feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address"),
+  rating: integer("rating").notNull(),
+  comment: text("comment"),
+  page: text("page"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({ id: true, createdAt: true });
+export type Feedback = typeof feedback.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;

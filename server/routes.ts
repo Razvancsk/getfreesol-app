@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { eq, sql, and, gte, notInArray, inArray, isNotNull } from 'drizzle-orm';
-import { transactionLedger, userPoints } from '@shared/schema';
+import { transactionLedger, userPoints, feedback, insertFeedbackSchema } from '@shared/schema';
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
 import axios from 'axios';
@@ -10735,6 +10735,33 @@ Claimer: ${walletAddress}`;
     } catch (e: any) {
       console.error('[BotWallet] error:', e?.message);
       res.status(500).json({ error: e?.message || 'Failed to load bot wallet' });
+    }
+  });
+
+  // ── User Feedback ────────────────────────────────────────────────────────
+
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      const parsed = insertFeedbackSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: 'Invalid feedback data' });
+      await db.insert(feedback).values(parsed.data);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'Failed to save feedback' });
+    }
+  });
+
+  app.get("/api/admin/feedback", async (req, res) => {
+    const { adminSecret } = req.query as { adminSecret?: string };
+    if (!process.env.VAULT_ADMIN_SECRET || adminSecret !== process.env.VAULT_ADMIN_SECRET) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const { desc: descFn } = await import('drizzle-orm');
+      const rows = await db.select().from(feedback).orderBy(descFn(feedback.createdAt)).limit(100);
+      res.json({ success: true, feedback: rows });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'Failed to fetch feedback' });
     }
   });
 

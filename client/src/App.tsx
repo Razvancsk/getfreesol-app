@@ -23,6 +23,7 @@ import TermsConditions from "@/pages/terms-conditions";
 import PartnersPage from "@/pages/partners";
 import NotFound from "@/pages/not-found";
 import GsolWelcomeModal from "@/components/GsolWelcomeModal";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 
 function Router() {
   return (
@@ -59,6 +60,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <GsolWelcomeModal />
+            <FeedbackWidget />
             <Router />
           </TooltipProvider>
         </ReownProvider>
