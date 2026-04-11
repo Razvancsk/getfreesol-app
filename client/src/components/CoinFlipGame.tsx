@@ -83,7 +83,7 @@ export function CoinFlipGame() {
   const { publicKey, signTransaction, connected, connection } = useWalletAdapter();
   const { toast } = useToast();
   const [choice, setChoice] = useState<'heads' | 'tails'>('heads');
-  const [betAmount, setBetAmount] = useState(0.00176);
+  const [betAmount, setBetAmount] = useState<number | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipResult, setFlipResult] = useState<{ result: string; won: boolean; payoutAmount: number } | null>(null);
   const [coinRotation, setCoinRotation] = useState(0);
@@ -126,6 +126,11 @@ export function CoinFlipGame() {
 
     if (!vaultAddress) {
       toast({ title: 'Game vault loading, please wait...', variant: 'destructive' });
+      return;
+    }
+
+    if (betAmount === null) {
+      toast({ title: 'Select a bet amount first', variant: 'destructive' });
       return;
     }
 
@@ -348,7 +353,7 @@ export function CoinFlipGame() {
               {flipResult.won ? 'YOU WON' : 'YOU LOST'}
             </div>
             <div className={`text-xl font-bold ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
-              {flipResult.won ? `${flipResult.payoutAmount.toFixed(4)} SOL` : `-${(betAmount * 1.035).toFixed(6)} SOL`}
+              {flipResult.won ? `${flipResult.payoutAmount.toFixed(4)} SOL` : `-${((betAmount ?? 0) * 1.035).toFixed(6)} SOL`}
             </div>
           </div>
         )}
@@ -414,23 +419,25 @@ export function CoinFlipGame() {
       <div className="pt-2">
         <button
           onClick={handleFlip}
-          disabled={isFlipping || !connected}
+          disabled={isFlipping || !connected || betAmount === null}
           className={`w-full py-4 rounded-xl font-black text-xl uppercase tracking-wider transition-all border-2 ${
             isFlipping
               ? 'bg-purple-600/50 text-white/50 border-purple-400/50 cursor-not-allowed'
-              : connected
-              ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 hover:from-purple-500 hover:to-purple-400 hover:shadow-lg hover:shadow-purple-500/40 active:scale-[0.98]'
-              : 'bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed'
+              : !connected || betAmount === null
+              ? 'bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed opacity-60'
+              : 'bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 hover:from-purple-500 hover:to-purple-400 hover:shadow-lg hover:shadow-purple-500/40 active:scale-[0.98]'
           }`}
         >
           {isFlipping ? (
             <span className="flex items-center justify-center gap-2">
               <Loader2 className="h-6 w-6 animate-spin" /> Flipping...
             </span>
-          ) : connected ? (
-            'Double or Nothing'
-          ) : (
+          ) : !connected ? (
             'Connect Wallet'
+          ) : betAmount === null ? (
+            'Select a Bet Amount'
+          ) : (
+            'Double or Nothing'
           )}
         </button>
       </div>
