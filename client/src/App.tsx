@@ -24,6 +24,7 @@ import PartnersPage from "@/pages/partners";
 import NotFound from "@/pages/not-found";
 import GsolWelcomeModal from "@/components/GsolWelcomeModal";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
+import { CoinFlipAnnouncement } from "@/components/CoinFlipAnnouncement";
 
 function Router() {
   return (
@@ -61,6 +62,7 @@ function App() {
             <Toaster />
             <GsolWelcomeModal />
             <FeedbackWidget />
+            <CoinFlipAnnouncement />
             <Router />
           </TooltipProvider>
         </ReownProvider>

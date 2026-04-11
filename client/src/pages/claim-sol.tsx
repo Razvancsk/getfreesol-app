@@ -249,6 +249,13 @@ export default function SolRefund() {
     }
   }, [activeTab]);
 
+  // Navigate to coin flip tab when announcement CTA is clicked
+  useEffect(() => {
+    const handler = () => setActiveTab('coinflip');
+    window.addEventListener('navigate-to-coinflip', handler);
+    return () => window.removeEventListener('navigate-to-coinflip', handler);
+  }, []);
+
   // Clean up stale selections when token list changes
   useEffect(() => {
     if (tokenList.length === 0) {
