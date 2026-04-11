@@ -55,7 +55,7 @@ import tokenLogo from '@assets/image_1757882056840_1772656509435.png';
 import gfsBanner from '@assets/image_1772667495108.png';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
-import coinFlipIcon from '@assets/image_1775926379936.png';
+import coinFlipIcon from '@assets/coinflip_icon.png';
 
 interface EmptyTokenAccount {
   id: number;
