@@ -11,7 +11,7 @@ export function CoinFlipAnnouncement() {
   useEffect(() => {
     if (!publicKey) return;
 
-    const storageKey = `coin_flip_v2_${publicKey.toString()}`;
+    const storageKey = `coin_flip_v3_${publicKey.toString()}`;
     if (localStorage.getItem(storageKey)) return;
 
     timerRef.current = setTimeout(() => setVisible(true), 1500);
@@ -23,7 +23,7 @@ export function CoinFlipAnnouncement() {
   const dismiss = () => {
     setVisible(false);
     if (publicKey) {
-      localStorage.setItem(`coin_flip_v2_${publicKey.toString()}`, "1");
+      localStorage.setItem(`coin_flip_v3_${publicKey.toString()}`, "1");
     }
   };
 
