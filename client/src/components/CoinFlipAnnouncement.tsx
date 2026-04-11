@@ -74,8 +74,8 @@ export function CoinFlipAnnouncement() {
 
           <h2 className="text-white text-2xl font-bold mb-2">Coin Flip is Live!</h2>
           <p className="text-white text-sm leading-relaxed mb-5">
-            Feeling lucky? Bet SOL on a coin flip — choose Green or Red, pick your
-            stake, and double your SOL in seconds. Powered on-chain with instant payouts.
+            Feeling lucky? Bet SOL on a coin flip — 50/50 odds, choose Green or Red,
+            pick your stake, and double your SOL in seconds. Powered on-chain with instant payouts.
           </p>
 
           <div className="flex flex-col gap-2">
