@@ -11,7 +11,7 @@ export function triggerFeedbackCard(walletAddress?: string) {
   if (localStorage.getItem(key)) return;
   setTimeout(() => {
     window.dispatchEvent(new CustomEvent('show-feedback-card', { detail: { key } }));
-  }, 3500);
+  }, 1000);
 }
 
 export function FeedbackWidget() {
