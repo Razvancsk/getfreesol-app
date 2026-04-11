@@ -1,21 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-
-const STORAGE_KEY = "coin_flip_announcement_seen";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 export function CoinFlipAnnouncement() {
   const [visible, setVisible] = useState(false);
   const [, navigate] = useLocation();
+  const { publicKey } = useWallet();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return;
-    const timer = setTimeout(() => setVisible(true), 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!publicKey) return;
+
+    const storageKey = `coin_flip_seen_${publicKey.toString()}`;
+    if (localStorage.getItem(storageKey)) return;
+
+    timerRef.current = setTimeout(() => setVisible(true), 1500);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [publicKey]);
 
   const dismiss = () => {
     setVisible(false);
-    localStorage.setItem(STORAGE_KEY, "1");
+    if (publicKey) {
+      localStorage.setItem(`coin_flip_seen_${publicKey.toString()}`, "1");
+    }
   };
 
   const tryIt = () => {
