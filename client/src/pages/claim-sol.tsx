@@ -7283,23 +7283,23 @@ export default function SolRefund() {
 
       {/* Footer */}
       <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm mt-auto">
-        <div className="container mx-auto px-4 py-6 max-w-6xl">
-          <div className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 md:gap-0">
-            <div className="flex flex-col items-center md:items-start">
-              <div className="flex items-center space-x-3">
+        <div className="container mx-auto px-3 md:px-4 py-4 md:py-6 max-w-6xl">
+          <div className="flex flex-row items-center justify-between gap-3">
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center space-x-2 md:space-x-3">
                 <img 
                   src={logoImage}
                   alt="Get Free Sol"
-                  className="h-8 w-8"
+                  className="h-6 w-6 md:h-8 md:w-8 shrink-0"
                 />
-                <div className="text-white font-semibold text-lg">Get Free Sol</div>
+                <div className="text-white font-semibold text-base md:text-lg">Get Free Sol</div>
               </div>
-              <div className="text-white text-xs md:text-sm mt-1 text-center md:text-left">
+              <div className="text-white text-[11px] md:text-sm mt-1">
                 2026 All rights reserved · <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms & Conditions</Link>
               </div>
             </div>
             {/* Social Links */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5 md:space-x-2 shrink-0">
               <Link href="/docs">
                 <BookOpen className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
               </Link>
