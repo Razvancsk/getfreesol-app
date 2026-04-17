@@ -7282,10 +7282,10 @@ export default function SolRefund() {
       </div>
 
       {/* Footer */}
-      <div className="hidden md:block border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm mt-auto">
+      <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm mt-auto">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
+          <div className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 md:gap-0">
+            <div className="flex flex-col items-center md:items-start">
               <div className="flex items-center space-x-3">
                 <img 
                   src={logoImage}
@@ -7294,7 +7294,7 @@ export default function SolRefund() {
                 />
                 <div className="text-white font-semibold text-lg">Get Free Sol</div>
               </div>
-              <div className="text-white text-sm mt-1">
+              <div className="text-white text-xs md:text-sm mt-1 text-center md:text-left">
                 2026 All rights reserved · <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms & Conditions</Link>
               </div>
             </div>
@@ -7580,45 +7580,6 @@ export default function SolRefund() {
           animation: spin-slow 10s linear infinite;
         }
       `}</style>
-
-      {/* Mobile footer — compact, sits above bottom nav */}
-      <div className="md:hidden shrink-0 px-4 py-3" style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(100,116,139,0.2)' }}>
-        <div className="flex items-center justify-center gap-4 mb-2">
-          <Link href="/docs">
-            <BookOpen className="h-5 w-5 text-purple-400 hover:text-purple-300 transition-colors" />
-          </Link>
-          <a
-            href="https://x.com/getfreesol_xyz"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center hover:opacity-70 transition-opacity"
-            title="Follow us on X"
-          >
-            <SiX className="h-5 w-5 text-purple-400" />
-          </a>
-          <a
-            href="https://t.me/GetFreeSolXyzbot"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center hover:opacity-70 transition-opacity"
-            title="Telegram Bot"
-          >
-            <SiTelegram className="h-5 w-5 text-purple-400" />
-          </a>
-          <a
-            href="https://discord.gg/tSBMgYcZaK"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center hover:opacity-70 transition-opacity"
-            title="Discord"
-          >
-            <SiDiscord className="h-5 w-5 text-purple-400" />
-          </a>
-        </div>
-        <div className="text-center text-[11px] text-gray-400">
-          2026 Get Free Sol · <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms</Link>
-        </div>
-      </div>
 
       {/* Mobile bottom nav — flex child of the h-screen container, no fixed/portal needed */}
       {isConnected && (
