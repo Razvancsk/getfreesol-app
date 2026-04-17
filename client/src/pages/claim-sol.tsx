@@ -7581,6 +7581,45 @@ export default function SolRefund() {
         }
       `}</style>
 
+      {/* Mobile footer — compact, sits above bottom nav */}
+      <div className="md:hidden shrink-0 px-4 py-3" style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(100,116,139,0.2)' }}>
+        <div className="flex items-center justify-center gap-4 mb-2">
+          <Link href="/docs">
+            <BookOpen className="h-5 w-5 text-purple-400 hover:text-purple-300 transition-colors" />
+          </Link>
+          <a
+            href="https://x.com/getfreesol_xyz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center hover:opacity-70 transition-opacity"
+            title="Follow us on X"
+          >
+            <SiX className="h-5 w-5 text-purple-400" />
+          </a>
+          <a
+            href="https://t.me/GetFreeSolXyzbot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center hover:opacity-70 transition-opacity"
+            title="Telegram Bot"
+          >
+            <SiTelegram className="h-5 w-5 text-purple-400" />
+          </a>
+          <a
+            href="https://discord.gg/tSBMgYcZaK"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center hover:opacity-70 transition-opacity"
+            title="Discord"
+          >
+            <SiDiscord className="h-5 w-5 text-purple-400" />
+          </a>
+        </div>
+        <div className="text-center text-[11px] text-gray-400">
+          2026 Get Free Sol · <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms</Link>
+        </div>
+      </div>
+
       {/* Mobile bottom nav — flex child of the h-screen container, no fixed/portal needed */}
       {isConnected && (
         <div className="md:hidden shrink-0 flex items-center py-3 relative z-[60]" style={{ backgroundColor: '#0f172a', borderTop: '1px solid rgba(100,116,139,0.3)' }}>
