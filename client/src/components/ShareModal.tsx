@@ -1,6 +1,6 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
-import logoImage from "@assets/logo-ELKtyS9R_1776448181410.png";
+import logoImage from "@assets/image_1757882056840.png";
 import { Confetti } from "@/components/Confetti";
 
 interface ShareModalProps {

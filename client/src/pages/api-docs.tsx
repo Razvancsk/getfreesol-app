@@ -20,7 +20,7 @@ import {
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import logoImage from '@assets/logo-ELKtyS9R_1776448181410.png';
+import logoImage from '@assets/image_1757882056840.png';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Loader2 } from 'lucide-react';
 import bs58 from 'bs58';

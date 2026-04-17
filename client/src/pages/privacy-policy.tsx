@@ -1,6 +1,6 @@
 import { Link } from 'wouter';
 import { ArrowLeft } from 'lucide-react';
-import logoPath from '@assets/logo-ELKtyS9R_1776448181410.png';
+import logoPath from '@assets/image_1757882056840.png';
 
 export default function PrivacyPolicy() {
   return (

@@ -90,7 +90,7 @@ const FUNNY_TEMPLATES = [
   "you: wondering where your SOL went\n\nyour empty accounts: holding your rent hostage 👀\n\ngetfreesol.xyz\n\n#Solana",
 ];
 
-import logoImage from '@assets/logo-ELKtyS9R_1776448181410.png';
+import logoImage from '@assets/image_1757882056840.png';
 
 function CardDesigner() {
   const [solAmount, setSolAmount] = useState('0.0350');

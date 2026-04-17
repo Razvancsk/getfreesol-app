@@ -51,7 +51,8 @@ import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import { CoinFlipGame } from '@/components/CoinFlipGame';
-import logoImage from '@assets/logo-ELKtyS9R_1776448181410.png';
+import logoImage from '@assets/image_1757882056840.png';
+import footerLogo from '@assets/logo-ELKtyS9R_1776448181410.png';
 import greenCandleBanner from '@assets/resizeplus_5cb60dea-180d-454a-86fd-c1035242cd90_(1)_1774229059979.png';
 import tokenLogo from '@assets/image_1757882056840_1772656509435.png';
 import gfsBanner from '@assets/image_1772667495108.png';
@@ -7286,7 +7287,7 @@ export default function SolRefund() {
                 <div className="flex flex-col min-w-0 shrink-0">
                   <div className="flex items-center space-x-2">
                     <img 
-                      src={logoImage}
+                      src={footerLogo}
                       alt="Get Free Sol"
                       className="h-6 w-6 md:h-8 md:w-8 shrink-0"
                     />

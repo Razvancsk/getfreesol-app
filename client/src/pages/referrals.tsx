@@ -8,7 +8,7 @@ import { Copy, Users, Globe, ArrowLeft } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useWalletAdapter } from "@/hooks/useWalletAdapter";
-import logoPath from "@assets/logo-ELKtyS9R_1776448181410.png";
+import logoPath from "@assets/image_1757882056840.png";
 
 type ReferralCode = {
   id: string;
