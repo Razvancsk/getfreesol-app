@@ -7291,14 +7291,14 @@ export default function SolRefund() {
                       className="h-6 w-6 md:h-8 md:w-8 shrink-0"
                     />
                     <div className="text-white font-semibold text-base md:text-lg">Get Free Sol</div>
+                    <div className="text-white/70 text-[11px] md:text-sm whitespace-nowrap">2026 All rights reserved</div>
                   </div>
                   <div className="text-[11px] md:text-sm mt-0.5 ml-8 md:ml-10">
                     <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms & Conditions</Link>
                   </div>
                 </div>
-                {/* Copyright + Social Links stacked */}
+                {/* Social Links */}
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <div className="text-white/70 text-[11px] md:text-sm">2026 All rights reserved</div>
                   <div className="flex items-center space-x-1.5 md:space-x-2">
                   <Link href="/docs">
                     <BookOpen className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
