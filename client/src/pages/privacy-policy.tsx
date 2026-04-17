@@ -37,8 +37,11 @@ export default function PrivacyPolicy() {
             <p className="mb-3">
               GetFreeSol uses Reown, a trusted and safe wallet connection provider. When you connect your wallet, we only collect your public wallet address and record transaction data (account closures, burns, swaps, referral activities, and staking positions). All blockchain transactions are publicly visible on the Solana network.
             </p>
-            <p>
+            <p className="mb-3">
               For the GSOL staking feature we additionally store: the amount of GSOL you hold, the date your staking position was opened (to calculate loyalty multipliers), your cumulative staking points balance, and whether your one-time welcome bonus has been awarded. No private keys or sensitive personal information are ever collected.
+            </p>
+            <p>
+              For the Coin Flip game we store: your public wallet address, the outcome of each flip (win or loss), the wager amount in SOL, and the on-chain transaction signature. This data is used solely to display your game history and calculate any associated XP rewards. No personally identifiable information beyond your wallet address is collected.
             </p>
           </section>
 

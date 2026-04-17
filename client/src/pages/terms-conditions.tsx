@@ -64,6 +64,26 @@ export default function TermsConditions() {
           </section>
 
           <section>
+            <h2 className="text-xl font-bold text-white mb-3">2b. Coin Flip Game</h2>
+            <p className="mb-3">
+              GetFreeSol offers a Coin Flip game where you wager SOL on a 50/50 outcome. By playing, you acknowledge and accept the following:
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-2">
+              <li><strong className="text-white">No Guarantee of Winnings:</strong> Each flip is independent with a 50% chance of winning. Past results do not influence future outcomes.</li>
+              <li><strong className="text-white">Wager Limits:</strong> Minimum and maximum wager amounts may be set by the platform and are subject to change at any time.</li>
+              <li><strong className="text-white">Transaction Finality:</strong> All wagers and payouts are executed on-chain and are irreversible once confirmed. Verify your wager before signing.</li>
+              <li><strong className="text-white">XP Rewards:</strong> Playing Coin Flip may award XP points regardless of the outcome. Points have no guaranteed monetary value.</li>
+              <li><strong className="text-white">Platform Fee:</strong> A platform fee is deducted from each wager. The exact fee percentage is displayed in the game interface before you confirm.</li>
+              <li><strong className="text-white">No Refunds:</strong> Lost wagers cannot be refunded. Do not wager more than you can afford to lose.</li>
+              <li><strong className="text-white">Age Restriction:</strong> You must be of legal age in your jurisdiction to participate in games of chance. By playing, you confirm that you meet this requirement.</li>
+              <li><strong className="text-white">Jurisdiction:</strong> It is your responsibility to ensure that participating in games of chance is legal in your jurisdiction. GetFreeSol makes no representation as to the legality of the Coin Flip game in any specific jurisdiction.</li>
+            </ul>
+            <p className="mt-3">
+              GetFreeSol is not liable for any financial losses incurred through the Coin Flip game. Play responsibly.
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-xl font-bold text-white mb-3">3. Wallet Security</h2>
             <p>
               GetFreeSol uses Reown, a trusted and safe wallet connection provider, to connect your Solana wallet. You are responsible for reviewing all transactions before signing.
