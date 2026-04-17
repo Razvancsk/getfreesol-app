@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { X } from "lucide-react";
 
 const STORAGE_KEY = "gsol_welcome_seen_v9";
@@ -8,14 +9,16 @@ const GSOL_IMAGES = [
 ];
 
 export default function GsolWelcomeModal() {
+  const [location] = useLocation();
   const [open, setOpen] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
   const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
+    if (location !== "/") return;
     const seen = localStorage.getItem(STORAGE_KEY);
     if (!seen) setOpen(true);
-  }, []);
+  }, [location]);
 
   function handleClose() {
     localStorage.setItem(STORAGE_KEY, "1");
