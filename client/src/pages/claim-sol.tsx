@@ -7278,63 +7278,63 @@ export default function SolRefund() {
             </div>
           )}
 
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm mt-auto">
-        <div className="container mx-auto px-3 md:px-4 py-4 md:py-6 max-w-6xl">
-          <div className="flex flex-row items-center justify-between gap-3">
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center space-x-2 md:space-x-3">
-                <img 
-                  src={logoImage}
-                  alt="Get Free Sol"
-                  className="h-6 w-6 md:h-8 md:w-8 shrink-0"
-                />
-                <div className="text-white font-semibold text-base md:text-lg">Get Free Sol</div>
+          {/* Footer */}
+          <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm rounded-xl mt-4">
+            <div className="px-3 md:px-4 py-4 md:py-6">
+              <div className="flex flex-row items-center justify-between gap-3">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center space-x-2 md:space-x-3">
+                    <img 
+                      src={logoImage}
+                      alt="Get Free Sol"
+                      className="h-6 w-6 md:h-8 md:w-8 shrink-0"
+                    />
+                    <div className="text-white font-semibold text-base md:text-lg">Get Free Sol</div>
+                  </div>
+                  <div className="text-white text-[11px] md:text-sm mt-1">
+                    2026 All rights reserved · <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms & Conditions</Link>
+                  </div>
+                </div>
+                {/* Social Links */}
+                <div className="flex items-center space-x-1.5 md:space-x-2 shrink-0">
+                  <Link href="/docs">
+                    <BookOpen className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
+                  </Link>
+                  <a
+                    href="https://x.com/getfreesol_xyz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-footer-x"
+                    className="flex items-center justify-center hover:opacity-70 transition-opacity"
+                    title="Follow us on X (Twitter)"
+                  >
+                    <SiX className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
+                  </a>
+                  <a
+                    href="https://t.me/GetFreeSolXyzbot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-footer-telegram"
+                    className="flex items-center justify-center hover:opacity-70 transition-opacity"
+                    title="Open Telegram Bot — auto-claim SOL 24/7"
+                  >
+                    <SiTelegram className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
+                  </a>
+                  <a
+                    href="https://discord.gg/tSBMgYcZaK"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-footer-discord"
+                    className="flex items-center justify-center hover:opacity-70 transition-opacity"
+                    title="Join our Discord community"
+                  >
+                    <SiDiscord className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
+                  </a>
+                </div>
               </div>
-              <div className="text-white text-[11px] md:text-sm mt-1">
-                2026 All rights reserved · <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms & Conditions</Link>
-              </div>
-            </div>
-            {/* Social Links */}
-            <div className="flex items-center space-x-1.5 md:space-x-2 shrink-0">
-              <Link href="/docs">
-                <BookOpen className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
-              </Link>
-              <a
-                href="https://x.com/getfreesol_xyz"
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="button-footer-x"
-                className="flex items-center justify-center hover:opacity-70 transition-opacity"
-                title="Follow us on X (Twitter)"
-              >
-                <SiX className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
-              </a>
-              <a
-                href="https://t.me/GetFreeSolXyzbot"
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="button-footer-telegram"
-                className="flex items-center justify-center hover:opacity-70 transition-opacity"
-                title="Open Telegram Bot — auto-claim SOL 24/7"
-              >
-                <SiTelegram className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
-              </a>
-              <a
-                href="https://discord.gg/tSBMgYcZaK"
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="button-footer-discord"
-                className="flex items-center justify-center hover:opacity-70 transition-opacity"
-                title="Join our Discord community"
-              >
-                <SiDiscord className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
-              </a>
             </div>
           </div>
+
         </div>
       </div>
 
