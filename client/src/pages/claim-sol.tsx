@@ -7296,10 +7296,10 @@ export default function SolRefund() {
                     <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms & Conditions</Link>
                   </div>
                 </div>
-                {/* Copyright — centered */}
-                <div className="text-white/70 text-[11px] md:text-sm text-center shrink-0">2026 All rights reserved</div>
-                {/* Social Links */}
-                <div className="flex items-center space-x-1.5 md:space-x-2 shrink-0">
+                {/* Copyright + Social Links stacked */}
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <div className="text-white/70 text-[11px] md:text-sm">2026 All rights reserved</div>
+                  <div className="flex items-center space-x-1.5 md:space-x-2">
                   <Link href="/docs">
                     <BookOpen className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
                   </Link>
@@ -7333,6 +7333,7 @@ export default function SolRefund() {
                   >
                     <SiDiscord className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
                   </a>
+                </div>
                 </div>
               </div>
             </div>
