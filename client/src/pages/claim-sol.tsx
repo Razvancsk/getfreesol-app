@@ -7291,17 +7291,17 @@ export default function SolRefund() {
                       className="h-6 w-6 md:h-8 md:w-8 shrink-0"
                     />
                     <div className="text-white font-semibold text-base md:text-lg">Get Free Sol</div>
-                    <div className="text-white/70 text-[11px] md:text-sm whitespace-nowrap">2026 All rights reserved</div>
+                    <div className="text-white text-[11px] md:text-sm whitespace-nowrap">2026 All rights reserved</div>
                   </div>
                   <div className="text-[11px] md:text-sm mt-0.5 ml-8 md:ml-10">
-                    <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms & Conditions</Link>
+                    <Link href="/privacy" className="text-white hover:text-white/70 underline">Privacy Policy</Link> · <Link href="/terms" className="text-white hover:text-white/70 underline">Terms & Conditions</Link>
                   </div>
                 </div>
                 {/* Social Links */}
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
                   <div className="flex items-center space-x-1.5 md:space-x-2">
                   <Link href="/docs">
-                    <BookOpen className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
+                    <BookOpen className="h-6 w-6 text-white hover:text-white/70 transition-colors" />
                   </Link>
                   <a
                     href="https://x.com/getfreesol_xyz"
@@ -7311,7 +7311,7 @@ export default function SolRefund() {
                     className="flex items-center justify-center hover:opacity-70 transition-opacity"
                     title="Follow us on X (Twitter)"
                   >
-                    <SiX className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
+                    <SiX className="h-6 w-6 text-white transition-colors" />
                   </a>
                   <a
                     href="https://t.me/GetFreeSolXyzbot"
@@ -7321,7 +7321,7 @@ export default function SolRefund() {
                     className="flex items-center justify-center hover:opacity-70 transition-opacity"
                     title="Open Telegram Bot — auto-claim SOL 24/7"
                   >
-                    <SiTelegram className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
+                    <SiTelegram className="h-6 w-6 text-white transition-colors" />
                   </a>
                   <a
                     href="https://discord.gg/tSBMgYcZaK"
@@ -7331,7 +7331,7 @@ export default function SolRefund() {
                     className="flex items-center justify-center hover:opacity-70 transition-opacity"
                     title="Join our Discord community"
                   >
-                    <SiDiscord className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
+                    <SiDiscord className="h-6 w-6 text-white transition-colors" />
                   </a>
                 </div>
                 </div>
