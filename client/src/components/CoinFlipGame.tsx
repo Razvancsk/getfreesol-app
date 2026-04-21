@@ -95,6 +95,11 @@ export function CoinFlipGame() {
     refetchInterval: 30000,
   });
 
+  const topQuery = useQuery<{ success: boolean; top: { walletAddress: string; totalDoubled: string; wins: number }[] }>({
+    queryKey: ['/api/coinflip/top'],
+    refetchInterval: 30000,
+  });
+
   const recentQuery = useQuery<{ success: boolean; flips: any[] }>({
     queryKey: ['/api/coinflip/recent'],
     refetchInterval: 10000,
@@ -458,6 +463,46 @@ export function CoinFlipGame() {
           </svg>
         </div>
         <p className="text-center text-xs text-white mt-2">50/50 odds · Win = 2x your bet · 3.5% fee charged upfront</p>
+      </div>
+
+      {/* Top Doublers */}
+      <div className="mt-6 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm rounded-xl p-6">
+        <h3 className="text-xl font-bold text-white text-center mb-6">TOP DOUBLERS</h3>
+        <div className="overflow-x-auto">
+          <div className="min-w-full">
+            <div className="grid grid-cols-12 gap-2 mb-4 pb-3 border-b border-purple-500/30">
+              <div className="col-span-1 text-sm font-semibold uppercase tracking-wider text-purple-200">#</div>
+              <div className="col-span-6 text-sm font-semibold uppercase tracking-wider text-purple-200">WALLET</div>
+              <div className="col-span-3 text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">DOUBLED</div>
+              <div className="col-span-2 text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">WINS</div>
+            </div>
+            {topQuery.isLoading && (
+              <div className="text-center text-purple-300 py-8">Loading...</div>
+            )}
+            {!topQuery.isLoading && (topQuery.data?.top ?? []).length === 0 && (
+              <div className="text-center text-purple-300 py-8">No doublers yet — be the first!</div>
+            )}
+            {(topQuery.data?.top ?? []).map((u, i) => (
+              <div key={u.walletAddress}>
+                <div className="grid grid-cols-12 gap-2 py-3 items-center">
+                  <div className="col-span-1 text-white font-bold text-sm">
+                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                  </div>
+                  <div className="col-span-6 text-white font-mono text-sm truncate" title={u.walletAddress}>
+                    {u.walletAddress.slice(0, 8)}...{u.walletAddress.slice(-6)}
+                  </div>
+                  <div className="col-span-3 text-green-400 text-center text-sm font-bold">
+                    {parseFloat(u.totalDoubled).toFixed(4)} SOL
+                  </div>
+                  <div className="col-span-2 text-white text-center text-sm">
+                    {u.wins}
+                  </div>
+                </div>
+                <div className="border-b border-purple-500/10" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Recent Plays Ledger */}

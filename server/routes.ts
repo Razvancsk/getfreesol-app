@@ -11138,6 +11138,31 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  app.get("/api/coinflip/top", async (_req, res) => {
+    try {
+      const { coinFlips } = await import('@shared/schema');
+      const all = await db.select().from(coinFlips);
+      const wins = all.filter((f: any) => f.won);
+      const map = new Map<string, { walletAddress: string; totalDoubled: number; wins: number }>();
+      for (const f of wins as any[]) {
+        const w = f.walletAddress;
+        const bet = parseFloat(f.betAmount || '0');
+        const e = map.get(w) || { walletAddress: w, totalDoubled: 0, wins: 0 };
+        e.totalDoubled += bet;
+        e.wins += 1;
+        map.set(w, e);
+      }
+      const top = Array.from(map.values())
+        .sort((a, b) => b.totalDoubled - a.totalDoubled)
+        .slice(0, 10)
+        .map(e => ({ ...e, totalDoubled: e.totalDoubled.toFixed(4) }));
+      res.json({ success: true, top });
+    } catch (error: any) {
+      console.error('Error fetching top doublers:', error);
+      res.status(500).json({ error: 'Failed to fetch top doublers' });
+    }
+  });
+
   app.get("/api/coinflip/stats", async (req, res) => {
     try {
       const { coinFlips } = await import('@shared/schema');
