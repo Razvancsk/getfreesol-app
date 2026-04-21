@@ -7273,7 +7273,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">You receive 0.002 SOL per account — platform keeps the rest</span>
+                  <span className="text-sm">You receive 0.002 SOL per account</span>
                 </div>
               </div>
             </div>
