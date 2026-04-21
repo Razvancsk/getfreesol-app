@@ -11157,7 +11157,7 @@ Claimer: ${walletAddress}`;
         map.set(w, e);
       }
       const top = Array.from(map.values())
-        .sort((a, b) => b.totalDoubled - a.totalDoubled)
+        .sort((a, b) => b.wins - a.wins || b.totalDoubled - a.totalDoubled)
         .slice(0, 10)
         .map(e => ({ ...e, totalDoubled: e.totalDoubled.toFixed(4) }));
       res.json({ success: true, top });
