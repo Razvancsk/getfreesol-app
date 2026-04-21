@@ -98,12 +98,12 @@ export function CoinFlipGame() {
 
   const topQuery = useQuery<{ success: boolean; top: { walletAddress: string; totalDoubled: string; wins: number }[] }>({
     queryKey: ['/api/coinflip/top'],
-    refetchInterval: 30000,
+    refetchInterval: 5000,
   });
 
   const recentQuery = useQuery<{ success: boolean; flips: any[] }>({
     queryKey: ['/api/coinflip/recent'],
-    refetchInterval: 10000,
+    refetchInterval: 5000,
   });
 
   const vaultAddress = (vaultQuery.data as any)?.address || '';
@@ -122,6 +122,8 @@ export function CoinFlipGame() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/coinflip/recent'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/coinflip/top'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/coinflip/vault'] });
     },
   });
 
