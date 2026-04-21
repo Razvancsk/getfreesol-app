@@ -11141,8 +11141,12 @@ Claimer: ${walletAddress}`;
   app.get("/api/coinflip/top", async (_req, res) => {
     try {
       const { coinFlips } = await import('@shared/schema');
+      const EXCLUDED_WALLETS = new Set([
+        'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS',
+        'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
+      ]);
       const all = await db.select().from(coinFlips);
-      const wins = all.filter((f: any) => f.won);
+      const wins = all.filter((f: any) => f.won && !EXCLUDED_WALLETS.has(f.walletAddress));
       const map = new Map<string, { walletAddress: string; totalDoubled: number; wins: number }>();
       for (const f of wins as any[]) {
         const w = f.walletAddress;
