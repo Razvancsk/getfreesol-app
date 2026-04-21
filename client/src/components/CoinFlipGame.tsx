@@ -89,6 +89,7 @@ export function CoinFlipGame() {
   const [flipResult, setFlipResult] = useState<{ result: string; won: boolean; payoutAmount: number } | null>(null);
   const [coinRotation, setCoinRotation] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const [ledgerTab, setLedgerTab] = useState<'recent' | 'top'>('recent');
 
   const vaultQuery = useQuery<{ success: boolean; address: string; balance: number }>({
     queryKey: ['/api/coinflip/vault'],
@@ -465,92 +466,110 @@ export function CoinFlipGame() {
         <p className="text-center text-xs text-white mt-2">50/50 odds · Win = 2x your bet · 3.5% fee charged upfront</p>
       </div>
 
-      {/* Top Doublers */}
+      {/* Plays Ledger with Tabs */}
       <div className="mt-6 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm rounded-xl p-6">
-        <h3 className="text-xl font-bold text-white text-center mb-6">TOP DOUBLERS</h3>
-        <div className="overflow-x-auto">
-          <div className="min-w-full">
-            <div className="grid grid-cols-12 gap-2 mb-4 pb-3 border-b border-purple-500/30">
-              <div className="col-span-1 text-sm font-semibold uppercase tracking-wider text-purple-200">#</div>
-              <div className="col-span-6 text-sm font-semibold uppercase tracking-wider text-purple-200">WALLET</div>
-              <div className="col-span-3 text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">DOUBLED</div>
-              <div className="col-span-2 text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">WINS</div>
-            </div>
-            {topQuery.isLoading && (
-              <div className="text-center text-purple-300 py-8">Loading...</div>
-            )}
-            {!topQuery.isLoading && (topQuery.data?.top ?? []).length === 0 && (
-              <div className="text-center text-purple-300 py-8">No doublers yet — be the first!</div>
-            )}
-            {(topQuery.data?.top ?? []).map((u, i) => (
-              <div key={u.walletAddress}>
-                <div className="grid grid-cols-12 gap-2 py-3 items-center">
-                  <div className="col-span-1 text-white font-bold text-sm">
-                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
-                  </div>
-                  <div className="col-span-6 text-white font-mono text-sm truncate" title={u.walletAddress}>
-                    {u.walletAddress.slice(0, 8)}...{u.walletAddress.slice(-6)}
-                  </div>
-                  <div className="col-span-3 text-green-400 text-center text-sm font-bold">
-                    {parseFloat(u.totalDoubled).toFixed(4)} SOL
-                  </div>
-                  <div className="col-span-2 text-white text-center text-sm">
-                    {u.wins}
-                  </div>
-                </div>
-                <div className="border-b border-purple-500/10" />
-              </div>
-            ))}
-          </div>
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setLedgerTab('recent')}
+            className={`flex-1 py-2 px-4 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors ${
+              ledgerTab === 'recent'
+                ? 'bg-purple-600 text-white'
+                : 'bg-purple-900/40 text-purple-300 hover:bg-purple-800/40'
+            }`}
+            data-testid="button-tab-recent"
+          >
+            Recent Plays
+          </button>
+          <button
+            onClick={() => setLedgerTab('top')}
+            className={`flex-1 py-2 px-4 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors ${
+              ledgerTab === 'top'
+                ? 'bg-purple-600 text-white'
+                : 'bg-purple-900/40 text-purple-300 hover:bg-purple-800/40'
+            }`}
+            data-testid="button-tab-top"
+          >
+            Top
+          </button>
         </div>
-      </div>
 
-      {/* Recent Plays Ledger */}
-      <div className="mt-6 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm rounded-xl p-6">
-        <h3 className="text-xl font-bold text-white text-center mb-6">RECENT PLAYS</h3>
-
-        <div className="overflow-x-auto">
-          <div className="min-w-full">
-            {/* Header */}
-            <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
-              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200">WALLET/TX</div>
-              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">BET</div>
-              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">RESULT</div>
-              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">AGE</div>
-            </div>
-
-            {/* Rows */}
-            {recentQuery.isLoading && (
-              <div className="text-center text-purple-300 py-8">Loading...</div>
-            )}
-            {!recentQuery.isLoading && (recentQuery.data?.flips ?? []).length === 0 && (
-              <div className="text-center text-purple-300 py-8">No flips yet — be the first!</div>
-            )}
-            {(recentQuery.data?.flips ?? []).slice(0, 10).map((flip: any) => (
-              <div key={flip.id}>
-                <div
-                  className="grid grid-cols-4 gap-4 py-3 transition-colors cursor-pointer hover:bg-purple-800/20 rounded-lg border border-transparent hover:border-purple-500/30"
-                  onClick={() => flip.betTxSignature && window.open(`https://solscan.io/tx/${flip.betTxSignature}`, '_blank')}
-                  title="Click to view on Solscan"
-                >
-                  <div className="text-white font-mono text-sm truncate" title={flip.walletAddress}>
-                    {flip.walletAddress.slice(0, 8)}...{flip.walletAddress.slice(-8)}
-                  </div>
-                  <div className="text-white text-center text-sm font-semibold">
-                    {parseFloat(flip.betAmount).toFixed(4)} SOL
-                  </div>
-                  <div className={`text-center text-sm font-bold ${flip.won ? 'text-green-400' : 'text-red-400'}`}>
-                    {flip.won ? 'Doubled' : 'Rugged'}
-                  </div>
-                  <div className="text-white text-center text-sm">
-                    {timeAgo(flip.createdAt)}
-                  </div>
-                </div>
-                <div className="border-b border-purple-500/10" />
+        {ledgerTab === 'recent' ? (
+          <div className="overflow-x-auto">
+            <div className="min-w-full">
+              <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
+                <div className="text-sm font-semibold uppercase tracking-wider text-purple-200">WALLET/TX</div>
+                <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">BET</div>
+                <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">RESULT</div>
+                <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">AGE</div>
               </div>
-            ))}
+              {recentQuery.isLoading && (
+                <div className="text-center text-purple-300 py-8">Loading...</div>
+              )}
+              {!recentQuery.isLoading && (recentQuery.data?.flips ?? []).length === 0 && (
+                <div className="text-center text-purple-300 py-8">No flips yet — be the first!</div>
+              )}
+              {(recentQuery.data?.flips ?? []).slice(0, 10).map((flip: any) => (
+                <div key={flip.id}>
+                  <div
+                    className="grid grid-cols-4 gap-4 py-3 transition-colors cursor-pointer hover:bg-purple-800/20 rounded-lg border border-transparent hover:border-purple-500/30"
+                    onClick={() => flip.betTxSignature && window.open(`https://solscan.io/tx/${flip.betTxSignature}`, '_blank')}
+                    title="Click to view on Solscan"
+                  >
+                    <div className="text-white font-mono text-sm truncate" title={flip.walletAddress}>
+                      {flip.walletAddress.slice(0, 8)}...{flip.walletAddress.slice(-8)}
+                    </div>
+                    <div className="text-white text-center text-sm font-semibold">
+                      {parseFloat(flip.betAmount).toFixed(4)} SOL
+                    </div>
+                    <div className={`text-center text-sm font-bold ${flip.won ? 'text-green-400' : 'text-red-400'}`}>
+                      {flip.won ? 'Doubled' : 'Rugged'}
+                    </div>
+                    <div className="text-white text-center text-sm">
+                      {timeAgo(flip.createdAt)}
+                    </div>
+                  </div>
+                  <div className="border-b border-purple-500/10" />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <div className="min-w-full">
+              <div className="grid grid-cols-12 gap-2 mb-4 pb-3 border-b border-purple-500/30">
+                <div className="col-span-1 text-sm font-semibold uppercase tracking-wider text-purple-200">#</div>
+                <div className="col-span-6 text-sm font-semibold uppercase tracking-wider text-purple-200">WALLET</div>
+                <div className="col-span-3 text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">DOUBLED</div>
+                <div className="col-span-2 text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">WINS</div>
+              </div>
+              {topQuery.isLoading && (
+                <div className="text-center text-purple-300 py-8">Loading...</div>
+              )}
+              {!topQuery.isLoading && (topQuery.data?.top ?? []).length === 0 && (
+                <div className="text-center text-purple-300 py-8">No doublers yet — be the first!</div>
+              )}
+              {(topQuery.data?.top ?? []).map((u, i) => (
+                <div key={u.walletAddress}>
+                  <div className="grid grid-cols-12 gap-2 py-3 items-center">
+                    <div className="col-span-1 text-white font-bold text-sm">
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                    </div>
+                    <div className="col-span-6 text-white font-mono text-sm truncate" title={u.walletAddress}>
+                      {u.walletAddress.slice(0, 8)}...{u.walletAddress.slice(-6)}
+                    </div>
+                    <div className="col-span-3 text-green-400 text-center text-sm font-bold">
+                      {parseFloat(u.totalDoubled).toFixed(4)} SOL
+                    </div>
+                    <div className="col-span-2 text-white text-center text-sm">
+                      {u.wins}
+                    </div>
+                  </div>
+                  <div className="border-b border-purple-500/10" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
     </div>
