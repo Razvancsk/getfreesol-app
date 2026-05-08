@@ -12197,22 +12197,37 @@ Claimer: ${walletAddress}`;
   });
 
   // POST /api/vault/withdraw — bot sends deposited SOL back to partner
+  // For platform admin wallet: withdraws full vault on-chain balance (minus a small fee reserve)
   app.post('/api/vault/withdraw', async (req, res) => {
     try {
       const { walletAddress } = req.body;
       if (!walletAddress) return res.status(400).json({ error: 'Missing walletAddress' });
-      const partner = await storage.getVaultPartner(walletAddress);
-      if (!partner) return res.status(404).json({ error: 'No partner record found' });
-      const depositedAmount = parseFloat(partner.depositedSol);
-      if (depositedAmount <= 0) return res.status(400).json({ error: 'No deposit to withdraw' });
 
       const relayerKey = process.env.RELAYER_PRIVATE_KEY;
       if (!relayerKey) return res.status(500).json({ error: 'RELAYER_PRIVATE_KEY not set' });
 
-      const { Connection: C2, Keypair: KP2, PublicKey: PK2, Transaction: TX2, SystemProgram: SP2, LAMPORTS_PER_SOL: LPS2 } = await import('@solana/web3.js');
+      const { Keypair: KP2, PublicKey: PK2, Transaction: TX2, SystemProgram: SP2 } = await import('@solana/web3.js');
       const connection = getHeliusConnection('confirmed');
       const senderKeypair = KP2.fromSecretKey(bs58.decode(relayerKey));
-      const lamports = BigInt(Math.floor(depositedAmount * 1e9));
+
+      const isAdmin = walletAddress === PLATFORM_WALLET;
+      let depositedAmount = 0;
+      let lamports: bigint;
+
+      if (isAdmin) {
+        const balanceLamports = await connection.getBalance(senderKeypair.publicKey);
+        const RESERVE_LAMPORTS = 5_000_000n; // 0.005 SOL kept for tx fees
+        const available = BigInt(balanceLamports) - RESERVE_LAMPORTS;
+        if (available <= 0n) return res.status(400).json({ error: 'Vault balance too low to withdraw' });
+        lamports = available;
+        depositedAmount = Number(available) / 1e9;
+      } else {
+        const partner = await storage.getVaultPartner(walletAddress);
+        if (!partner) return res.status(404).json({ error: 'No partner record found' });
+        depositedAmount = parseFloat(partner.depositedSol);
+        if (depositedAmount <= 0) return res.status(400).json({ error: 'No deposit to withdraw' });
+        lamports = BigInt(Math.floor(depositedAmount * 1e9));
+      }
 
       const transaction = new TX2();
       transaction.add(SP2.transfer({ fromPubkey: senderKeypair.publicKey, toPubkey: new PK2(walletAddress), lamports }));
@@ -12223,7 +12238,9 @@ Claimer: ${walletAddress}`;
       const sig = await connection.sendRawTransaction(transaction.serialize());
       await connection.confirmTransaction(sig, 'confirmed');
 
-      await storage.removePartnerDeposit(walletAddress, depositedAmount.toString());
+      if (!isAdmin) {
+        await storage.removePartnerDeposit(walletAddress, depositedAmount.toString());
+      }
       res.json({ success: true, signature: sig, amountSol: depositedAmount });
     } catch (e: any) {
       console.error('[Vault Withdraw]', e.message);

@@ -347,14 +347,14 @@ export default function PartnersPage() {
                   <ArrowUpFromLine className="w-4 h-4 text-red-400" />
                   Withdraw Deposit
                 </h3>
-                <p className="text-xs text-gray-400">Withdraw your full deposited amount back to your wallet at any time.</p>
+                <p className="text-xs text-gray-400">{isAdmin ? "Withdraw the full available vault balance to your wallet." : "Withdraw your full deposited amount back to your wallet at any time."}</p>
                 <div className="bg-black/30 rounded-lg p-3 text-center">
                   <div className="text-xs text-gray-500 mb-0.5">Available</div>
-                  <div className="font-bold text-white">{fmt(partner?.depositedSol ?? "0", 4)} SOL</div>
+                  <div className="font-bold text-white">{fmt(isAdmin ? (stats?.totalDeposited ?? "0") : (partner?.depositedSol ?? "0"), 4)} SOL</div>
                 </div>
                 <Button
                   onClick={() => withdrawMutation.mutate()}
-                  disabled={withdrawMutation.isPending || deposited <= 0}
+                  disabled={withdrawMutation.isPending || (!isAdmin && deposited <= 0)}
                   className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl"
                 >
                   {withdrawMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : "Withdraw All"}
