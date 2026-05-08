@@ -384,7 +384,7 @@ export default function PartnersPage() {
                       disabled={withdrawMutation.isPending}
                       className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl"
                     >
-                      {withdrawMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : "Withdraw"}
+                      Withdraw
                     </Button>
                   )}
                   <Button
@@ -392,7 +392,7 @@ export default function PartnersPage() {
                     disabled={withdrawMutation.isPending || (!isAdmin && deposited <= 0)}
                     className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl"
                   >
-                    {withdrawMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : "Withdraw All"}
+                    Withdraw All
                   </Button>
                 </div>
               </div>
