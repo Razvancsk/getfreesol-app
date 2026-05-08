@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -5,6 +6,9 @@ interface Props {
   tvl: number | null;
   holders: number | null;
   solValue: number;
+  gsolBalance?: number;
+  gsolApy?: number | null;
+  connected?: boolean;
 }
 
 interface RateHistory {
@@ -24,7 +28,9 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function GsolRateHistoryCard({ tvl, holders, solValue }: Props) {
+export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalance = 0, gsolApy = null, connected = false }: Props) {
+  const [view, setView] = useState<'overview' | 'position'>('overview');
+
   const { data, isLoading } = useQuery<RateHistory>({
     queryKey: ['/api/staking/rate-history'],
     refetchInterval: 60 * 60 * 1000,
@@ -49,103 +55,159 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue }: Props) {
     return (Math.pow(ratio, 365.25 / days) - 1) * 100;
   })();
 
+  const displayApy = gsolApy ?? apyApprox;
+  const solEquivalent = gsolBalance * currentRate;
+  const yearlyEarnings = displayApy && gsolBalance > 0 ? (solEquivalent * displayApy) / 100 : 0;
+
   return (
     <div className="w-full rounded-2xl bg-purple-900/20 border border-white/20 backdrop-blur-sm overflow-hidden mt-6">
       <div className="p-5">
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-4 gap-3">
           <div>
             <h2 className="text-green-400 font-black text-3xl">
-              {apyApprox !== null ? `${apyApprox.toFixed(2)}%` : '—'}
+              {displayApy !== null ? `${displayApy.toFixed(2)}%` : '—'}
             </h2>
-            <p className="text-sm mt-0.5 text-white/80">
-              GSOL/SOL exchange rate · real on-chain snapshots per epoch
-            </p>
+            {view === 'overview' && (
+              <p className="text-sm mt-0.5 text-white/80">
+                GSOL/SOL exchange rate · real on-chain snapshots per epoch
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 bg-purple-900/30 rounded-lg p-1 border border-white/20 shrink-0">
+            <button
+              onClick={() => setView('overview')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                view === 'overview' ? 'bg-purple-600 text-white' : 'text-white/70 hover:text-white'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setView('position')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                view === 'position' ? 'bg-purple-600 text-white' : 'text-white/70 hover:text-white'
+              }`}
+            >
+              My Position
+            </button>
           </div>
         </div>
 
-        <div className="h-[200px] w-full">
-          {isLoading ? (
-            <div className="h-full flex items-center justify-center text-white/60 text-sm">Loading chart…</div>
-          ) : last25.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-white/60 text-sm">No data yet</div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={last25} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
-                <YAxis
-                  type="number"
-                  domain={[minRate * 0.999, maxRate * 1.001]}
-                  ticks={[minRate, midRate, maxRate]}
-                  tickFormatter={(v) => v.toFixed(4)}
-                  tick={{ fill: '#ffffffaa', fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={55}
-                />
-                <XAxis
-                  dataKey="epoch"
-                  tick={({ x, y, payload, index }: any) => {
-                    if (index % 2 !== 0 && index !== last25.length - 1) return <g />;
-                    const ep = last25[index];
-                    return (
-                      <g transform={`translate(${x},${y})`}>
-                        <text x={0} y={0} dy={12} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
-                          Ep {payload.value}
-                        </text>
-                        <text x={0} y={0} dy={26} textAnchor="middle" fill="#ffffff99" fontSize={10}>
-                          {formatDate(ep.date)}
-                        </text>
-                      </g>
-                    );
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval={0}
-                />
-                <Tooltip
-                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                  contentStyle={{
-                    backgroundColor: 'rgba(20,5,40,0.95)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    fontSize: '12px',
-                  }}
-                  formatter={(v: any) => [`${Number(v).toFixed(6)} SOL`, '1 GSOL']}
-                  labelFormatter={(label: any, payload: any) => {
-                    const item = payload?.[0]?.payload;
-                    return `Epoch ${label}${item ? ` · ${formatDate(item.date)}` : ''}`;
-                  }}
-                />
-                <Bar
-                  dataKey="rate"
-                  radius={[3, 3, 0, 0]}
-                  fill="#16a34a"
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 mt-3">
-          <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
-            <div className="text-white/60 text-xs">Total Staked</div>
-            <div className="text-white font-bold text-base mt-1">{formatTvl(tvl)}</div>
-          </div>
-          <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
-            <div className="text-white/60 text-xs">Holders</div>
-            <div className="text-white font-bold text-base mt-1">
-              {holders !== null ? holders.toLocaleString() : '—'}
+        {view === 'overview' ? (
+          <>
+            <div className="h-[200px] w-full">
+              {isLoading ? (
+                <div className="h-full flex items-center justify-center text-white/60 text-sm">Loading chart…</div>
+              ) : last25.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-white/60 text-sm">No data yet</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={last25} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
+                    <YAxis
+                      type="number"
+                      domain={[minRate * 0.999, maxRate * 1.001]}
+                      ticks={[minRate, midRate, maxRate]}
+                      tickFormatter={(v) => v.toFixed(4)}
+                      tick={{ fill: '#ffffffaa', fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={55}
+                    />
+                    <XAxis
+                      dataKey="epoch"
+                      tick={({ x, y, payload, index }: any) => {
+                        if (index % 2 !== 0 && index !== last25.length - 1) return <g />;
+                        const ep = last25[index];
+                        return (
+                          <g transform={`translate(${x},${y})`}>
+                            <text x={0} y={0} dy={12} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
+                              Ep {payload.value}
+                            </text>
+                            <text x={0} y={0} dy={26} textAnchor="middle" fill="#ffffff99" fontSize={10}>
+                              {formatDate(ep.date)}
+                            </text>
+                          </g>
+                        );
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      contentStyle={{
+                        backgroundColor: 'rgba(20,5,40,0.95)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontSize: '12px',
+                      }}
+                      formatter={(v: any) => [`${Number(v).toFixed(6)} SOL`, '1 GSOL']}
+                      labelFormatter={(label: any, payload: any) => {
+                        const item = payload?.[0]?.payload;
+                        return `Epoch ${label}${item ? ` · ${formatDate(item.date)}` : ''}`;
+                      }}
+                    />
+                    <Bar dataKey="rate" radius={[3, 3, 0, 0]} fill="#16a34a" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
-          </div>
-          <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
-            <div className="text-white/60 text-xs">1 GSOL =</div>
-            <div className="text-white font-bold text-base mt-1">{currentRate.toFixed(6)} SOL</div>
-          </div>
-        </div>
 
-        <p className="text-center text-white/40 text-xs mt-3">
-          Data refreshed once per Solana epoch (~2 days) · {epochs.length} epochs recorded
-        </p>
+            <div className="grid grid-cols-3 gap-3 mt-3">
+              <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
+                <div className="text-white/60 text-xs">Total Staked</div>
+                <div className="text-white font-bold text-base mt-1">{formatTvl(tvl)}</div>
+              </div>
+              <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
+                <div className="text-white/60 text-xs">Holders</div>
+                <div className="text-white font-bold text-base mt-1">
+                  {holders !== null ? holders.toLocaleString() : '—'}
+                </div>
+              </div>
+              <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
+                <div className="text-white/60 text-xs">1 GSOL =</div>
+                <div className="text-white font-bold text-base mt-1">{currentRate.toFixed(6)} SOL</div>
+              </div>
+            </div>
+
+            <p className="text-center text-white/40 text-xs mt-3">
+              Data refreshed once per Solana epoch (~2 days) · {epochs.length} epochs recorded
+            </p>
+          </>
+        ) : (
+          <div className="space-y-3">
+            {!connected ? (
+              <div className="bg-purple-900/20 border border-white/20 rounded-xl p-6 text-center text-white/60 text-sm">
+                Connect your wallet to view your position
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
+                    <div className="text-white/60 text-sm">Your GSOL Balance</div>
+                    <div className="text-white font-bold text-2xl mt-1">{gsolBalance.toFixed(4)}</div>
+                    <div className="text-white/50 text-xs mt-0.5">GSOL</div>
+                  </div>
+                  <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
+                    <div className="text-white/60 text-sm">SOL Value</div>
+                    <div className="text-white font-bold text-2xl mt-1">{solEquivalent.toFixed(4)}</div>
+                    <div className="text-white/50 text-xs mt-0.5">SOL</div>
+                  </div>
+                </div>
+                <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
+                  <div className="text-white/60 text-sm">Estimated Yearly Earnings</div>
+                  <div className="text-green-400 font-black text-2xl mt-1">
+                    +{yearlyEarnings.toFixed(4)} SOL
+                  </div>
+                  <div className="text-white/50 text-xs mt-1">
+                    At current {displayApy !== null ? displayApy.toFixed(1) : '—'}% APY
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
