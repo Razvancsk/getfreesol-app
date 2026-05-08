@@ -11200,6 +11200,61 @@ Claimer: ${walletAddress}`;
   let _stakingInfoCache: { apy: string; solValue: string; tvl: string; holders: number; source: string; cachedAt: number } | null = null;
   const STAKING_INFO_CACHE_MS = 5 * 60 * 1000;
 
+  // ── /api/staking/rate-history — per-epoch GSOL/SOL exchange rate ──
+  let _rateHistoryCache: { epochs: any[]; currentRate: number; cachedAt: number } | null = null;
+  const RATE_HISTORY_CACHE_MS = 60 * 60 * 1000; // 1 hour
+  app.get('/api/staking/rate-history', async (_req, res) => {
+    try {
+      if (_rateHistoryCache && Date.now() - _rateHistoryCache.cachedAt < RATE_HISTORY_CACHE_MS) {
+        return res.json(_rateHistoryCache);
+      }
+      const heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
+      const GSOL_STAKE_ACCT = 'HwzMUGq3C7STPuHgD9UGPKDhqpcmXyN4JzKigwNqavej';
+      const GSOL_CREATION_EPOCH = 941;
+
+      const epochJ = await fetch(heliusUrl, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getEpochInfo', params: [] })
+      }).then(r => r.json());
+      const currentEpoch: number = epochJ.result?.epoch ?? 0;
+      const slotsPerEpoch: number = epochJ.result?.slotsInEpoch ?? 432000;
+      const epochDurationMs = slotsPerEpoch * 400; // 400 ms per slot
+      const nowMs = Date.now();
+
+      const epochs: { epoch: number; rate: number; date: string }[] = [];
+      let compound = 1.0;
+      // Seed with creation epoch
+      const creationDate = new Date(nowMs - (currentEpoch - GSOL_CREATION_EPOCH) * epochDurationMs);
+      epochs.push({ epoch: GSOL_CREATION_EPOCH, rate: 1.0, date: creationDate.toISOString() });
+
+      for (let epoch = GSOL_CREATION_EPOCH; epoch < currentEpoch; epoch++) {
+        try {
+          const rewJ = await fetch(heliusUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0', id: 2, method: 'getInflationReward',
+              params: [[GSOL_STAKE_ACCT], { epoch }]
+            })
+          }).then(r => r.json());
+          const rew = (rewJ.result ?? [])[0];
+          if (rew && rew.amount > 0) {
+            const pre = rew.postBalance - rew.amount;
+            if (pre > 0) compound *= (1 + rew.amount / pre);
+          }
+        } catch (_) {}
+        const ep = epoch + 1;
+        const date = new Date(nowMs - (currentEpoch - ep) * epochDurationMs);
+        epochs.push({ epoch: ep, rate: parseFloat(compound.toFixed(6)), date: date.toISOString() });
+      }
+
+      const result = { epochs, currentRate: compound, cachedAt: Date.now() };
+      _rateHistoryCache = result;
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ error: (e as Error).message });
+    }
+  });
+
   app.get('/api/staking/info', async (_req, res) => {
     try {
       // Serve from cache if fresh
