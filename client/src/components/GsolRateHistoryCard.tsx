@@ -75,7 +75,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
             </h2>
             {view === 'overview' && (
               <p className="text-sm mt-0.5 text-white">
-                GSOL/SOL exchange rate · real on-chain snapshots per epoch
+                Last Epoch's APY
               </p>
             )}
           </div>
