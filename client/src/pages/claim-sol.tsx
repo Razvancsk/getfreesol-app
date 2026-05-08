@@ -5305,6 +5305,15 @@ export default function SolRefund() {
               </div>
 
 
+              <GsolRateHistoryCard
+                tvl={gsolTvl}
+                holders={gsolHolders}
+                solValue={gsolSolValue}
+                gsolBalance={gsolBalance}
+                gsolApy={gsolApy}
+                connected={!!publicKey && isConnected}
+              />
+
               {/* GSOL FAQ Accordion */}
               <div className="space-y-3">
                 {([
@@ -5343,15 +5352,6 @@ export default function SolRefund() {
                   </details>
                 ))}
               </div>
-
-              <GsolRateHistoryCard
-                tvl={gsolTvl}
-                holders={gsolHolders}
-                solValue={gsolSolValue}
-                gsolBalance={gsolBalance}
-                gsolApy={gsolApy}
-                connected={!!publicKey && isConnected}
-              />
             </div>
           )}
 
