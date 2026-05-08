@@ -225,7 +225,7 @@ export default function PartnersPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-purple-900/20 border border-purple-700/30 rounded-xl p-4 text-center">
             <div className="text-xs text-gray-400 mb-1 flex items-center justify-center gap-1">
-              <Vault className="w-3 h-3" /> {isAdmin ? "Total Vault" : "Your Deposit"}
+              <Vault className="w-3 h-3" /> {isAdmin ? "Total Deposit" : "Your Deposit"}
             </div>
             <div className="text-xl font-bold text-white">
               {isAdmin
