@@ -12241,8 +12241,15 @@ Claimer: ${walletAddress}`;
       } else {
         const partner = await storage.getVaultPartner(walletAddress);
         if (!partner) return res.status(404).json({ error: 'No partner record found' });
-        depositedAmount = parseFloat(partner.depositedSol);
-        if (depositedAmount <= 0) return res.status(400).json({ error: 'No deposit to withdraw' });
+        const fullDeposit = parseFloat(partner.depositedSol);
+        if (fullDeposit <= 0) return res.status(400).json({ error: 'No deposit to withdraw' });
+        if (amountSol && parseFloat(amountSol) > 0) {
+          const requested = parseFloat(amountSol);
+          if (requested > fullDeposit) return res.status(400).json({ error: `Requested amount exceeds your deposit (${fullDeposit.toFixed(6)} SOL)` });
+          depositedAmount = requested;
+        } else {
+          depositedAmount = fullDeposit;
+        }
         lamports = BigInt(Math.floor(depositedAmount * 1e9));
       }
 

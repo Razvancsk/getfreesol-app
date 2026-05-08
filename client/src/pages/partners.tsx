@@ -360,33 +360,29 @@ export default function PartnersPage() {
                   <div className="text-xs text-gray-500 mb-0.5">Available</div>
                   <div className="font-bold text-white">{fmt(isAdmin ? (stats?.vaultOnChainBalance ?? stats?.totalDeposited ?? "0") : (partner?.depositedSol ?? "0"), 4)} SOL</div>
                 </div>
-                {isAdmin && (
-                  <Input
-                    type="number"
-                    step="0.0001"
-                    min="0"
-                    placeholder="Amount in SOL (optional)"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    className="bg-black/30 border-purple-700/40 text-white"
-                  />
-                )}
-                <div className={isAdmin ? "grid grid-cols-2 gap-2" : ""}>
-                  {isAdmin && (
-                    <Button
-                      onClick={() => {
-                        if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
-                          toast({ title: "Enter an amount", description: "Type a SOL amount above first", variant: "destructive" });
-                          return;
-                        }
-                        withdrawMutation.mutate(withdrawAmount);
-                      }}
-                      disabled={withdrawMutation.isPending}
-                      className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl"
-                    >
-                      Withdraw
-                    </Button>
-                  )}
+                <Input
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  placeholder="Amount in SOL (optional)"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="bg-black/30 border-purple-700/40 text-white"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => {
+                      if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+                        toast({ title: "Enter an amount", description: "Type a SOL amount above first", variant: "destructive" });
+                        return;
+                      }
+                      withdrawMutation.mutate(withdrawAmount);
+                    }}
+                    disabled={withdrawMutation.isPending || (!isAdmin && deposited <= 0)}
+                    className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl"
+                  >
+                    Withdraw
+                  </Button>
                   <Button
                     onClick={() => withdrawMutation.mutate(undefined)}
                     disabled={withdrawMutation.isPending || (!isAdmin && deposited <= 0)}
