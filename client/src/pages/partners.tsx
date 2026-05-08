@@ -59,7 +59,7 @@ export default function PartnersPage() {
   });
   const vaultDepositAddress = depositAddressData?.depositAddress ?? null;
 
-  const { data: stats, isLoading: statsLoading } = useQuery<{ totalDeposited: string; partnerCount: number }>({
+  const { data: stats, isLoading: statsLoading } = useQuery<{ totalDeposited: string; partnerCount: number; vaultOnChainBalance?: string }>({
     queryKey: ["/api/vault/stats"],
     refetchInterval: 30000,
   });
@@ -350,7 +350,7 @@ export default function PartnersPage() {
                 <p className="text-xs text-gray-400">{isAdmin ? "Withdraw the full available vault balance to your wallet." : "Withdraw your full deposited amount back to your wallet at any time."}</p>
                 <div className="bg-black/30 rounded-lg p-3 text-center">
                   <div className="text-xs text-gray-500 mb-0.5">Available</div>
-                  <div className="font-bold text-white">{fmt(isAdmin ? (stats?.totalDeposited ?? "0") : (partner?.depositedSol ?? "0"), 4)} SOL</div>
+                  <div className="font-bold text-white">{fmt(isAdmin ? (stats?.vaultOnChainBalance ?? stats?.totalDeposited ?? "0") : (partner?.depositedSol ?? "0"), 4)} SOL</div>
                 </div>
                 <Button
                   onClick={() => withdrawMutation.mutate()}

@@ -12137,11 +12137,22 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // GET /api/vault/stats — public vault totals
+  // GET /api/vault/stats — public vault totals (+ on-chain vault balance for admin)
   app.get('/api/vault/stats', async (_req, res) => {
     try {
       const stats = await storage.getVaultStats();
-      res.json(stats);
+      let vaultOnChainBalance = '0';
+      try {
+        const relayerKey = process.env.RELAYER_PRIVATE_KEY;
+        if (relayerKey) {
+          const { Keypair: KP } = await import('@solana/web3.js');
+          const conn = getHeliusConnection('confirmed');
+          const kp = KP.fromSecretKey(bs58.decode(relayerKey));
+          const bal = await conn.getBalance(kp.publicKey);
+          vaultOnChainBalance = (bal / 1e9).toFixed(9);
+        }
+      } catch {}
+      res.json({ ...stats, vaultOnChainBalance });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
