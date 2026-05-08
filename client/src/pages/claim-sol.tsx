@@ -5350,7 +5350,7 @@ export default function SolRefund() {
                 solValue={gsolSolValue}
                 gsolBalance={gsolBalance}
                 gsolApy={gsolApy}
-                connected={!!publicKey && connected}
+                connected={!!publicKey && isConnected}
               />
             </div>
           )}
