@@ -68,7 +68,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               {displayApy !== null ? `${displayApy.toFixed(2)}%` : '—'}
             </h2>
             {view === 'overview' && (
-              <p className="text-sm mt-0.5 text-white/80">
+              <p className="text-sm mt-0.5 text-white">
                 GSOL/SOL exchange rate · real on-chain snapshots per epoch
               </p>
             )}
@@ -77,7 +77,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
             <button
               onClick={() => setView('overview')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                view === 'overview' ? 'bg-purple-600 text-white' : 'text-white/70 hover:text-white'
+                view === 'overview' ? 'bg-purple-600 text-white' : 'text-white hover:text-white'
               }`}
             >
               Overview
@@ -85,7 +85,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
             <button
               onClick={() => setView('position')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                view === 'position' ? 'bg-purple-600 text-white' : 'text-white/70 hover:text-white'
+                view === 'position' ? 'bg-purple-600 text-white' : 'text-white hover:text-white'
               }`}
             >
               My Position
@@ -97,9 +97,9 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
           <>
             <div className="h-[200px] w-full">
               {isLoading ? (
-                <div className="h-full flex items-center justify-center text-white/60 text-sm">Loading chart…</div>
+                <div className="h-full flex items-center justify-center text-white text-sm">Loading chart…</div>
               ) : last25.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-white/60 text-sm">No data yet</div>
+                <div className="h-full flex items-center justify-center text-white text-sm">No data yet</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={last25} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
@@ -156,51 +156,51 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
 
             <div className="grid grid-cols-3 gap-3 mt-3">
               <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
-                <div className="text-white/60 text-xs">Total Staked</div>
+                <div className="text-white text-xs">Total Staked</div>
                 <div className="text-white font-bold text-base mt-1">{formatTvl(tvl)}</div>
               </div>
               <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
-                <div className="text-white/60 text-xs">Holders</div>
+                <div className="text-white text-xs">Holders</div>
                 <div className="text-white font-bold text-base mt-1">
                   {holders !== null ? holders.toLocaleString() : '—'}
                 </div>
               </div>
               <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
-                <div className="text-white/60 text-xs">1 GSOL =</div>
+                <div className="text-white text-xs">1 GSOL =</div>
                 <div className="text-white font-bold text-base mt-1">{currentRate.toFixed(6)} SOL</div>
               </div>
             </div>
 
-            <p className="text-center text-white/40 text-xs mt-3">
+            <p className="text-center text-white text-xs mt-3">
               Data refreshed once per Solana epoch (~2 days) · {epochs.length} epochs recorded
             </p>
           </>
         ) : (
           <div className="space-y-3">
             {!connected ? (
-              <div className="bg-purple-900/20 border border-white/20 rounded-xl p-6 text-center text-white/60 text-sm">
+              <div className="bg-purple-900/20 border border-white/20 rounded-xl p-6 text-center text-white text-sm">
                 Connect your wallet to view your position
               </div>
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
-                    <div className="text-white/60 text-sm">Your GSOL Balance</div>
+                    <div className="text-white text-sm">Your GSOL Balance</div>
                     <div className="text-white font-bold text-2xl mt-1">{gsolBalance.toFixed(4)}</div>
-                    <div className="text-white/50 text-xs mt-0.5">GSOL</div>
+                    <div className="text-white text-xs mt-0.5">GSOL</div>
                   </div>
                   <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
-                    <div className="text-white/60 text-sm">SOL Value</div>
+                    <div className="text-white text-sm">SOL Value</div>
                     <div className="text-white font-bold text-2xl mt-1">{solEquivalent.toFixed(4)}</div>
-                    <div className="text-white/50 text-xs mt-0.5">SOL</div>
+                    <div className="text-white text-xs mt-0.5">SOL</div>
                   </div>
                 </div>
                 <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
-                  <div className="text-white/60 text-sm">Estimated Yearly Earnings</div>
+                  <div className="text-white text-sm">Estimated Yearly Earnings</div>
                   <div className="text-green-400 font-black text-2xl mt-1">
                     +{yearlyEarnings.toFixed(4)} SOL
                   </div>
-                  <div className="text-white/50 text-xs mt-1">
+                  <div className="text-white text-xs mt-1">
                     At current {displayApy !== null ? displayApy.toFixed(1) : '—'}% APY
                   </div>
                 </div>
