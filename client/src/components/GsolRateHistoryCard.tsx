@@ -116,7 +116,8 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                     <XAxis
                       dataKey="epoch"
                       tick={({ x, y, payload, index }: any) => {
-                        if (index % 2 !== 0 && index !== last25.length - 1) return <g />;
+                        const step = Math.max(1, Math.ceil(last25.length / 6));
+                        if (index % step !== 0 && index !== last25.length - 1) return <g />;
                         const ep = last25[index];
                         return (
                           <g transform={`translate(${x},${y})`}>
