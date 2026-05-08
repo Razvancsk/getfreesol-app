@@ -30,7 +30,7 @@ function formatDate(iso: string): string {
 
 export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalance = 0, gsolApy = null, connected = false }: Props) {
   const [view, setView] = useState<'overview' | 'position'>('overview');
-  const [period, setPeriod] = useState<'7d' | '30d' | 'all'>('30d');
+  const [period, setPeriod] = useState<'30d' | 'all'>('30d');
 
   const { data, isLoading } = useQuery<RateHistory>({
     queryKey: ['/api/staking/rate-history'],
@@ -40,7 +40,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
 
   const epochs = data?.epochs ?? [];
   const nowMs = Date.now();
-  const periodMs = period === '7d' ? 7 * 86400000 : period === '30d' ? 30 * 86400000 : Infinity;
+  const periodMs = period === '30d' ? 30 * 86400000 : Infinity;
   const filtered = period === 'all'
     ? epochs
     : epochs.filter(e => nowMs - new Date(e.date).getTime() <= periodMs);
@@ -102,7 +102,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
         {view === 'overview' ? (
           <>
             <div className="flex items-center gap-1 mb-3 bg-purple-900/30 rounded-lg p-1 border border-white/20 w-fit">
-              {(['7d', '30d', 'all'] as const).map(p => (
+              {(['30d', 'all'] as const).map(p => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
@@ -110,7 +110,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                     period === p ? 'bg-purple-600 text-white' : 'text-white hover:text-white'
                   }`}
                 >
-                  {p === '7d' ? 'Last 7 days' : p === '30d' ? 'Last 30 days' : 'All time'}
+                  {p === '30d' ? 'Last 30 days' : 'All time'}
                 </button>
               ))}
             </div>
