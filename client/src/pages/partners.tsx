@@ -374,8 +374,14 @@ export default function PartnersPage() {
                 <div className={isAdmin ? "grid grid-cols-2 gap-2" : ""}>
                   {isAdmin && (
                     <Button
-                      onClick={() => withdrawMutation.mutate(withdrawAmount)}
-                      disabled={withdrawMutation.isPending || !withdrawAmount || parseFloat(withdrawAmount) <= 0}
+                      onClick={() => {
+                        if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+                          toast({ title: "Enter an amount", description: "Type a SOL amount above first", variant: "destructive" });
+                          return;
+                        }
+                        withdrawMutation.mutate(withdrawAmount);
+                      }}
+                      disabled={withdrawMutation.isPending}
                       className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl"
                     >
                       {withdrawMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : "Withdraw"}
