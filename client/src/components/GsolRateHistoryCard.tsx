@@ -108,7 +108,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                       domain={[minRate * 0.999, maxRate * 1.001]}
                       ticks={[minRate, midRate, maxRate]}
                       tickFormatter={(v) => v.toFixed(4)}
-                      tick={{ fill: '#ffffffaa', fontSize: 11 }}
+                      tick={{ fill: '#ffffff', fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
                       width={55}
@@ -123,7 +123,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                             <text x={0} y={0} dy={12} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
                               Ep {payload.value}
                             </text>
-                            <text x={0} y={0} dy={26} textAnchor="middle" fill="#ffffff99" fontSize={10}>
+                            <text x={0} y={0} dy={26} textAnchor="middle" fill="#ffffff" fontSize={10}>
                               {formatDate(ep.date)}
                             </text>
                           </g>
