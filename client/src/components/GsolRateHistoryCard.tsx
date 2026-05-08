@@ -70,7 +70,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
       <div className="p-5">
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
-            <h2 className="font-black text-3xl" style={{ color: '#14F195' }}>
+            <h2 className="text-green-400 font-black text-3xl">
               {displayApy !== null ? `${displayApy.toFixed(2)}%` : '—'}
             </h2>
             {view === 'overview' && (
@@ -168,7 +168,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                         return `Epoch ${label}${item ? ` · ${formatDate(item.date)}` : ''}`;
                       }}
                     />
-                    <Bar dataKey="rate" radius={[3, 3, 0, 0]} fill="#14F195" />
+                    <Bar dataKey="rate" radius={[3, 3, 0, 0]} fill="#16a34a" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -217,7 +217,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 </div>
                 <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
                   <div className="text-white text-sm">Estimated Yearly Earnings</div>
-                  <div className="font-black text-2xl mt-1" style={{ color: '#14F195' }}>
+                  <div className="text-green-400 font-black text-2xl mt-1">
                     +{yearlyEarnings.toFixed(4)} SOL
                   </div>
                   <div className="text-white text-xs mt-1">
