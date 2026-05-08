@@ -367,7 +367,7 @@ export default function PartnersPage() {
                   placeholder="Amount in SOL (optional)"
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="bg-black/30 border-purple-700/40 text-white"
+                  className="bg-black/30 border-purple-700/40 text-white focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <Button
