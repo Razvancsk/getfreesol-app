@@ -12211,7 +12211,7 @@ Claimer: ${walletAddress}`;
   // For platform admin wallet: withdraws full vault on-chain balance (minus a small fee reserve)
   app.post('/api/vault/withdraw', async (req, res) => {
     try {
-      const { walletAddress } = req.body;
+      const { walletAddress, amountSol } = req.body;
       if (!walletAddress) return res.status(400).json({ error: 'Missing walletAddress' });
 
       const relayerKey = process.env.RELAYER_PRIVATE_KEY;
@@ -12228,10 +12228,16 @@ Claimer: ${walletAddress}`;
       if (isAdmin) {
         const balanceLamports = await connection.getBalance(senderKeypair.publicKey);
         const RESERVE_LAMPORTS = 5_000_000n; // 0.005 SOL kept for tx fees
-        const available = BigInt(balanceLamports) - RESERVE_LAMPORTS;
-        if (available <= 0n) return res.status(400).json({ error: 'Vault balance too low to withdraw' });
-        lamports = available;
-        depositedAmount = Number(available) / 1e9;
+        const maxAvailable = BigInt(balanceLamports) - RESERVE_LAMPORTS;
+        if (maxAvailable <= 0n) return res.status(400).json({ error: 'Vault balance too low to withdraw' });
+        if (amountSol && parseFloat(amountSol) > 0) {
+          const requested = BigInt(Math.floor(parseFloat(amountSol) * 1e9));
+          if (requested > maxAvailable) return res.status(400).json({ error: `Requested amount exceeds available balance (${(Number(maxAvailable) / 1e9).toFixed(6)} SOL)` });
+          lamports = requested;
+        } else {
+          lamports = maxAvailable;
+        }
+        depositedAmount = Number(lamports) / 1e9;
       } else {
         const partner = await storage.getVaultPartner(walletAddress);
         if (!partner) return res.status(404).json({ error: 'No partner record found' });

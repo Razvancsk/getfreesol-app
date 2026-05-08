@@ -117,10 +117,16 @@ export default function PartnersPage() {
     }
   }
 
+  const [withdrawAmount, setWithdrawAmount] = useState<string>("");
   const withdrawMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/vault/withdraw", { walletAddress: wallet }).then(r => r.json()),
+    mutationFn: (amount?: string) =>
+      apiRequest("POST", "/api/vault/withdraw", {
+        walletAddress: wallet,
+        ...(amount && parseFloat(amount) > 0 ? { amountSol: amount } : {}),
+      }).then(r => r.json()),
     onSuccess: (data: any) => {
       toast({ title: "Withdrawal successful", description: `${fmt(data.amountSol)} SOL sent to your wallet` });
+      setWithdrawAmount("");
       qc.invalidateQueries({ queryKey: ["/api/vault/partner", wallet] });
       qc.invalidateQueries({ queryKey: ["/api/vault/stats"] });
       qc.invalidateQueries({ queryKey: ["/api/vault/transactions", wallet] });
@@ -347,18 +353,40 @@ export default function PartnersPage() {
                   <ArrowUpFromLine className="w-4 h-4 text-red-400" />
                   Withdraw Deposit
                 </h3>
-                <p className="text-xs text-gray-400">{isAdmin ? "Withdraw the full available vault balance to your wallet." : "Withdraw your full deposited amount back to your wallet at any time."}</p>
+                <p className="text-xs text-gray-400">{isAdmin ? "Withdraw a custom amount or the full available vault balance." : "Withdraw your full deposited amount back to your wallet at any time."}</p>
                 <div className="bg-black/30 rounded-lg p-3 text-center">
                   <div className="text-xs text-gray-500 mb-0.5">Available</div>
                   <div className="font-bold text-white">{fmt(isAdmin ? (stats?.vaultOnChainBalance ?? stats?.totalDeposited ?? "0") : (partner?.depositedSol ?? "0"), 4)} SOL</div>
                 </div>
-                <Button
-                  onClick={() => withdrawMutation.mutate()}
-                  disabled={withdrawMutation.isPending || (!isAdmin && deposited <= 0)}
-                  className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl"
-                >
-                  {withdrawMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : "Withdraw All"}
-                </Button>
+                {isAdmin && (
+                  <Input
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    placeholder="Amount in SOL (optional)"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    className="bg-black/30 border-purple-700/40 text-white"
+                  />
+                )}
+                <div className={isAdmin ? "grid grid-cols-2 gap-2" : ""}>
+                  {isAdmin && (
+                    <Button
+                      onClick={() => withdrawMutation.mutate(withdrawAmount)}
+                      disabled={withdrawMutation.isPending || !withdrawAmount || parseFloat(withdrawAmount) <= 0}
+                      className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl"
+                    >
+                      {withdrawMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : "Withdraw"}
+                    </Button>
+                  )}
+                  <Button
+                    onClick={() => withdrawMutation.mutate(undefined)}
+                    disabled={withdrawMutation.isPending || (!isAdmin && deposited <= 0)}
+                    className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl"
+                  >
+                    {withdrawMutation.isPending ? <><RefreshCw className="w-3 h-3 animate-spin mr-1" /> Processing…</> : "Withdraw All"}
+                  </Button>
+                </div>
               </div>
 
               {/* Auto-Pay Status */}
