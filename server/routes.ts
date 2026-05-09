@@ -12763,22 +12763,30 @@ Claimer: ${walletAddress}`;
       });
       if (!r.ok) return res.status(r.status).json({ error: `jupiter ${r.status}` });
       const arr: any[] = await r.json();
-      const tokens = (Array.isArray(arr) ? arr : []).map((m: any) => ({
-        mint: m.id,
-        name: m.name || '',
-        symbol: m.symbol || '',
-        imageUri: m.icon || '',
-        pool: '',
-        bondingPct: undefined,
-        marketCapUsd: m.mcap ?? m.fdv ?? undefined,
-        priceUsd: m.usdPrice ?? undefined,
-        liquidityUsd: m.liquidity ?? undefined,
-        solVolume: undefined,
-        buys: m?.stats24h?.numBuys ?? 0,
-        sells: m?.stats24h?.numSells ?? 0,
-        createdAt: m.firstPool?.createdAt ? Date.parse(m.firstPool.createdAt) : undefined,
-        migrated: false,
-      }));
+      const tokens = (Array.isArray(arr) ? arr : []).map((m: any) => {
+        const s = m?.stats24h || {};
+        const buyVol = Number(s.buyVolume) || 0;
+        const sellVol = Number(s.sellVolume) || 0;
+        const volumeUsd = (buyVol + sellVol) || (Number(s.volume) || undefined);
+        return {
+          mint: m.id,
+          name: m.name || '',
+          symbol: m.symbol || '',
+          imageUri: m.icon || '',
+          pool: '',
+          bondingPct: undefined,
+          marketCapUsd: m.mcap ?? m.fdv ?? undefined,
+          priceUsd: m.usdPrice ?? undefined,
+          liquidityUsd: m.liquidity ?? undefined,
+          volumeUsd,
+          pctChange: typeof s.priceChange === 'number' ? s.priceChange : undefined,
+          solVolume: undefined,
+          buys: s.numBuys ?? 0,
+          sells: s.numSells ?? 0,
+          createdAt: m.firstPool?.createdAt ? Date.parse(m.firstPool.createdAt) : undefined,
+          migrated: false,
+        };
+      });
       res.json({ tokens });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'search failed' });
