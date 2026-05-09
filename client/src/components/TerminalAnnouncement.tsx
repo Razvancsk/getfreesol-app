@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import helmetImg from "@/assets/trenches_helmet.png";
 
-const VERSION = "terminal_v6";
+const VERSION = "terminal_v7";
 
 export function triggerTerminalAnnouncement(walletAddress?: string) {
   const key = walletAddress ? `${VERSION}_${walletAddress}` : `${VERSION}_anon`;
