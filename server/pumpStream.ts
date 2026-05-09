@@ -132,16 +132,72 @@ function evictIfNeeded() {
   }
 }
 
+// Resolve a token-metadata URI (typically IPFS JSON) into a direct image URL.
+// pumpapi only provides `uri` pointing to the metadata JSON for most tokens, so
+// we fetch it once and cache the result. Failed lookups are negative-cached.
+const metaCache = new Map<string, string | null>();
+const metaInflight = new Map<string, Promise<void>>();
+function ipfsToHttp(u: string): string {
+  if (u.startsWith('ipfs://')) return `https://ipfs.io/ipfs/${u.slice(7)}`;
+  return u;
+}
+function looksLikeImage(u: string): boolean {
+  return /\.(png|jpe?g|gif|webp|svg|avif)(\?|$)/i.test(u);
+}
+async function resolveImageFromUri(mint: string, uri: string) {
+  if (metaCache.has(uri)) {
+    const img = metaCache.get(uri);
+    if (img) {
+      const t = tokens.get(mint);
+      if (t) t.imageUri = img;
+    }
+    return;
+  }
+  if (metaInflight.has(uri)) return;
+  const p = (async () => {
+    try {
+      const url = ipfsToHttp(uri);
+      if (looksLikeImage(url)) {
+        metaCache.set(uri, url);
+        const t = tokens.get(mint);
+        if (t) t.imageUri = url;
+        return;
+      }
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 5000);
+      const r = await fetch(url, { signal: ctl.signal });
+      clearTimeout(to);
+      if (!r.ok) { metaCache.set(uri, null); return; }
+      const j: any = await r.json().catch(() => null);
+      const img = j && (j.image || j.image_url || j.imageUrl || j.imageUri);
+      if (typeof img === 'string' && img) {
+        const resolved = ipfsToHttp(img);
+        metaCache.set(uri, resolved);
+        const t = tokens.get(mint);
+        if (t) t.imageUri = resolved;
+      } else {
+        metaCache.set(uri, null);
+      }
+    } catch {
+      metaCache.set(uri, null);
+    } finally {
+      metaInflight.delete(uri);
+    }
+  })();
+  metaInflight.set(uri, p);
+}
+
 function handleEvent(ev: Event) {
   if (!ev || !ev.mint) return;
   lastEventAt = Date.now();
   const ts = (ev.timestamp ? Number(ev.timestamp) : 0) || Date.now();
 
   if (ev.txType === 'create') {
+    const directImg = ev.imageUri && looksLikeImage(ev.imageUri) ? ipfsToHttp(ev.imageUri) : ev.imageUri;
     upsert(ev.mint, {
       name: ev.name,
       symbol: ev.symbol,
-      imageUri: ev.imageUri || ev.uri,
+      imageUri: directImg,
       pool: ev.pool,
       vSolInBondingCurve: ev.vSolInBondingCurve,
       vTokensInBondingCurve: ev.vTokensInBondingCurve,
@@ -149,6 +205,12 @@ function handleEvent(ev: Event) {
       bondingPct: bondingPctFor(ev.pool, ev.vSolInBondingCurve),
       createdAt: ts,
     });
+    // If we only have a metadata URI (or no image at all), resolve it in the
+    // background so the UI gets a real image once the JSON is fetched.
+    const metaUri = ev.uri || (!directImg ? ev.imageUri : undefined);
+    if (metaUri && (!directImg || !looksLikeImage(directImg))) {
+      resolveImageFromUri(ev.mint, metaUri).catch(() => {});
+    }
     // Surface ALL launchpad mints in "New" — pump.fun, LetsBonk, Meteora, Bags,
     // Moonshot, etc. (the pumpapi.io stream covers every supported launchpad).
     newOrder.unshift(ev.mint);
