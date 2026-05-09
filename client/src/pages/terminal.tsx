@@ -481,7 +481,7 @@ export function TokenPage() {
   const shortAddr = publicKey ? `${publicKey.toString().slice(0, 4)}…${publicKey.toString().slice(-4)}` : '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
       <div className="container mx-auto max-w-4xl px-4 pt-3 pb-6 flex-1">
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-2" data-testid="link-home">
