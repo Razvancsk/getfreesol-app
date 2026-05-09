@@ -27,7 +27,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
   useEffect(() => {
     if (isOpen) {
       const baseUrl = window.location.origin;
-      const formattedSol = solClaimed.toFixed(4);
+      const formattedSol = solClaimed.toFixed(6);
       const lamports = Math.floor(solClaimed * 1e9);
       
       // Share URL with params for OG image generation (timestamp for cache busting)
@@ -64,7 +64,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
               CLAIMED
             </p>
             <p className="text-4xl md:text-5xl font-black text-white mt-2 z-10">
-              + {solClaimed.toFixed(4)} SOL
+              + {solClaimed.toFixed(6)} SOL
             </p>
             <p className="text-green-400 text-base mt-3 z-10 font-mono">{getClaimText()}</p>
             
