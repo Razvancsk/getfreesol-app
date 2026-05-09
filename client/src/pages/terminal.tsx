@@ -129,7 +129,7 @@ export function TerminalView() {
       if (!r.ok) throw new Error('feed failed');
       return r.json();
     },
-    refetchInterval: 3000,
+    refetchInterval: 1500,
   });
 
   const tokens = useMemo(() => {
@@ -222,14 +222,18 @@ export function TerminalView() {
                       const stroke = isMigrated ? '#10b981' : pct >= 60 ? '#f97316' : '#a855f7';
                       return (
                         <div className="relative flex-shrink-0" style={{ width: 60, height: 60 }}>
-                          <svg className="absolute inset-0 -rotate-90" width={60} height={60} viewBox="0 0 60 60" fill="none">
+                          <svg className="absolute inset-0 -rotate-90 overflow-visible" width={60} height={60} viewBox="0 0 60 60" fill="none">
                             <rect x="3" y="3" width="54" height="54" rx="12" stroke="rgba(255,255,255,0.12)" strokeWidth="3" />
                             <rect
                               x="3" y="3" width="54" height="54" rx="12"
                               stroke={stroke} strokeWidth="3" strokeLinecap="round"
                               pathLength={100}
                               strokeDasharray={`${pct} 100`}
-                              style={{ transition: 'stroke-dasharray 400ms ease' }}
+                              style={{
+                                transition: 'stroke-dasharray 1200ms cubic-bezier(0.4,0,0.2,1)',
+                                filter: `drop-shadow(0 0 4px ${stroke})`,
+                                animation: isMigrated ? 'none' : 'pulse-stroke 2s ease-in-out infinite',
+                              }}
                             />
                           </svg>
                           <div className="absolute inset-[6px] rounded-[10px] bg-purple-700/40 overflow-hidden flex items-center justify-center ring-1 ring-white/10">
