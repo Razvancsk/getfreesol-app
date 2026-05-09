@@ -603,6 +603,10 @@ export async function buildTradeTx(opts: {
   partnerAddress?: string;
   partnerFeeRatio?: number;
   pool?: string;
+  maxQuoteAmountIn?: number;
+  minBaseAmountOut?: number;
+  maxBaseAmountIn?: number;
+  minQuoteAmountOut?: number;
 }): Promise<string> {
   const body: any = {
     publicKey: opts.publicKey,
@@ -616,6 +620,10 @@ export async function buildTradeTx(opts: {
   if (opts.partnerAddress) body.partnerAddress = opts.partnerAddress;
   if (opts.partnerFeeRatio !== undefined) body.partnerFeeRatio = opts.partnerFeeRatio;
   if (opts.pool) body.pool = opts.pool;
+  if (opts.maxQuoteAmountIn !== undefined) body.maxQuoteAmountIn = opts.maxQuoteAmountIn;
+  if (opts.minBaseAmountOut !== undefined) body.minBaseAmountOut = opts.minBaseAmountOut;
+  if (opts.maxBaseAmountIn !== undefined) body.maxBaseAmountIn = opts.maxBaseAmountIn;
+  if (opts.minQuoteAmountOut !== undefined) body.minQuoteAmountOut = opts.minQuoteAmountOut;
 
   const r = await fetch('https://api.pumpapi.io', {
     method: 'POST',
