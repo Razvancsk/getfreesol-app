@@ -809,7 +809,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               </div>
               <button onClick={() => setMobileSwapOpen(false)} className="text-white/60 hover:text-white text-xl px-2">×</button>
             </div>
-            <SwapCard token={tokenForTrade} />
+            <SwapCard token={tokenForTrade} flat />
           </div>
         </div>
       )}
@@ -877,7 +877,7 @@ function InfoTextRow({ label, value, isLast }: { label: string; value?: React.Re
   );
 }
 
-function SwapCard({ token }: { token: Token }) {
+function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
   const { publicKey, signTransaction } = useWallet();
   const { toast } = useToast();
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
@@ -949,7 +949,7 @@ function SwapCard({ token }: { token: Token }) {
   }
 
   return (
-    <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 space-y-3">
+    <div className={flat ? 'space-y-3' : 'bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 space-y-3'}>
       <div className="grid grid-cols-2 bg-black/30 rounded-lg p-1">
         <button
           onClick={() => { setSide('buy'); setAmount(''); }}
