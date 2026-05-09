@@ -124,7 +124,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                       domain={[0, 24]}
                       ticks={[0, 4, 8, 12, 16, 20, 24]}
                       tickFormatter={(v) => `${v}%`}
-                      tick={{ fill: '#ffffff', fontSize: 11 }}
+                      tick={{ fill: '#ffffff', fontSize: 11, dx: 8 }}
                       axisLine={false}
                       tickLine={false}
                       width={36}
