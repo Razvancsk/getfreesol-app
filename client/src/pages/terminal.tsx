@@ -118,9 +118,7 @@ function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: numb
             onError={() => setFailed(true)}
           />
         ) : (
-          <div className={`${color} w-full h-full text-xl rounded-xl flex items-center justify-center text-white font-bold`}>
-            {initials}
-          </div>
+          <div className="w-full h-full rounded-xl bg-white/5" />
         )}
       </div>
       {pct > 0 && (
