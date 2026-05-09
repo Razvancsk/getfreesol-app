@@ -9,7 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, RefreshCw, Search, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
 
 type FeedType = 'new' | 'bonding' | 'migrated';
 
@@ -185,7 +185,7 @@ export function TerminalView() {
   const [search, setSearch] = useState('');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
 
-  const { data, refetch, isFetching } = useQuery<{ tokens: Token[]; status: any }>({
+  const { data, isFetching } = useQuery<{ tokens: Token[]; status: any }>({
     queryKey: ['/api/terminal/feed', tab],
     queryFn: async () => {
       const r = await fetch(`/api/terminal/feed?type=${tab}&limit=80`);
@@ -219,9 +219,6 @@ export function TerminalView() {
             }`}>
               {status?.connected ? 'LIVE' : 'CONNECTING…'}
             </span>
-            <Button size="sm" variant="ghost" onClick={() => refetch()} disabled={isFetching}>
-              <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-            </Button>
           </div>
         </div>
 
