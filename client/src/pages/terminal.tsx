@@ -277,11 +277,26 @@ export function TerminalView() {
                 {/* Bonding progress bar */}
                 {tab !== 'migrated' && (t.bondingPct ?? 0) > 0 && (
                   <div className="mb-3">
+                    <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
+                      <span>Bonding curve → Migration</span>
+                      <span className="font-semibold text-orange-300 tabular-nums">{Math.round((t.bondingPct ?? 0) * 100)}%</span>
+                    </div>
                     <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all"
-                        style={{ width: `${Math.round((t.bondingPct ?? 0) * 100)}%` }}
+                        style={{ width: `${Math.min(100, Math.round((t.bondingPct ?? 0) * 100))}%` }}
                       />
+                    </div>
+                  </div>
+                )}
+                {tab === 'migrated' && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
+                      <span>Bonding curve → Migration</span>
+                      <span className="font-semibold text-green-300">Migrated ✓</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-full w-full bg-gradient-to-r from-green-500 to-emerald-400" />
                     </div>
                   </div>
                 )}
