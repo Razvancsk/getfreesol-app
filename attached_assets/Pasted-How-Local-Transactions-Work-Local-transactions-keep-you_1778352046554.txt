@@ -1,0 +1,121 @@
+How Local Transactions Work
+Local transactions keep your private key 100% on your machine. The flow is:
+
+You send us a request with only your publicKey (no private key).
+Our server builds the transaction and returns it to you unsigned, as raw bytes.
+You sign the transaction locally on your machine.
+You broadcast it to the Solana network yourself (via any RPC).
+This method is for users who prioritize key security over speed and simplicity. If you want the fastest and simplest path — where we sign and broadcast on your behalf — switch to the ⚡ Lightning transactions tab above (recommended).
+
+Request Body
+Field	Description
+publicKey	Your public key (the wallet address)
+action	"buy" or "sell"
+mint	Mint address of the token
+quoteMint	Optional. Not required. It works only if such pools exist. By default, the quote mint is So11111111111111111111111111111111111111112, so you don’t need to set it — we handle it automatically. But if you trade in pools where Solana is not the second token (for example, a Memecoin–USDC pair), then quoteMint should be the USDC address (or the address of any other quote token).
+poolId	Optional. Not required. provide this if you need to trade token from the specific pool.
+amount	Amount to trade. Use '100%' to sell all and get a 0.002 sol refund from the network
+denominatedInQuote	"true" if amount is in SOL (or any other quote token), "false" for token amount
+slippage	Slippage in percent (recommended: 20)
+maxQuoteAmountIn
+minBaseAmountOut
+maxBaseAmountIn
+minQuoteAmountOut	Optional. Not required. Pre-calculate exact bounds and pass them directly. Unlike slippage (a percent applied to the current market price — so if the price shifts before your tx lands, your effective bounds shift with it), these fields are absolute values that stay exactly as you set them. Useful when the price may move between your decision and your tx landing on-chain. Buy: maxQuoteAmountIn (max quote spent), minBaseAmountOut (min tokens received). Sell: maxBaseAmountIn (max tokens spent), minQuoteAmountOut (min quote received). slippage must always be present in the request: if you provide only one of the two fields, the other is derived from slippage; if you provide both, slippage is not used but still required. We recommend providing both fields.
+priorityFee	Optional. Not required. Priority fee in SOL
+partnerAddress	Optional. Run your own service and want to receive a fee from your users? Set this field. The fee defined in partnerFeeRatio + partnerFeeFixed will be sent to this address.
+You can also use it if your strategy requires sending funds somewhere after the operation.
+partnerFeeRatio	Optional. Percentage of the trade you want to send to partnerAddress. Example: 0.005 = 0.5%, 0.01 = 1%.
+partnerFeeFixed	Optional. A fixed amount (in SOL) you want to send to partnerAddress for the operation. Example: 0.0001.
+mintRef	Optional. When using Jito Bundles or Actions and creating tokens, you don’t yet know the token address assigned to you (unless you provide mintPrivateKey). To handle this, within a single request you can set "mintRef": "any value" (the default is "0") and reuse it across related transactions inside the same Jito Bundle or Actions. When buying the token, specify "mintRef": "the value you set earlier", and the backend will understand which token you’re referring to. Works within a single request; a second request requires providing the mint address.
+Python
+JavaScript
+Rust
+Go
+import requests
+from solders.transaction import VersionedTransaction
+from solders.keypair import Keypair
+from solders.message import to_bytes_versioned
+from solders.commitment_config import CommitmentLevel
+from solders.rpc.requests import SendVersionedTransaction
+from solders.rpc.config import RpcSendTransactionConfig
+import base64
+
+
+response = requests.post(url="https://api.pumpapi.io", json={
+    "publicKey": "your_public_key",
+    "action": "buy",  # or sell
+    "mint": "token_address",
+    "amount": 0.01, # When you're selling, you can pass "100%" to sell everything
+    "denominatedInQuote": "true",
+    "slippage": 20,
+    "priorityFee": 0.0001,
+})
+
+
+keypairs = [
+    Keypair.from_base58_string("your_private_key_1"), # stays on your computer
+    # Keypair.from_base58_string("your_private_key_2"), # If you are using actions or jito bundles, add all private keys involved in the transaction here.
+]
+
+try: # jito bundle branch (multiple transactions)
+    b64_txs = response.json()
+    txs = []
+    all_signatures = []
+    for base64_encoded_tx in b64_txs:
+
+        tx = VersionedTransaction.from_bytes(base64.b64decode(base64_encoded_tx))
+        required_signers = list(tx.message.account_keys)[:tx.message.header.num_required_signatures]
+        signatures = list(tx.signatures)
+        for keypair in keypairs:
+            if keypair.pubkey() not in required_signers:
+                continue
+            signer_index = required_signers.index(keypair.pubkey())
+            signatures[signer_index] = keypair.sign_message(to_bytes_versioned(tx.message))
+
+        tx = VersionedTransaction.populate(tx.message, signatures)
+        all_signatures.append(tx.signatures[0])
+        txs.append(base64.b64encode(bytes(tx)).decode("ascii"))
+    jito_response = requests.post(
+        "https://mainnet.block-engine.jito.wtf:443/api/v1/bundles?uuid=PLACE_YOUR_UUID_HERE_TO_USE_JITO_BUNDLES", # if you want to send multiple txs via Jito bundles get your UUID here: https://discord.com/invite/jito , without a UUID it won't land
+        headers={"Content-Type": "application/json"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "sendBundle",
+            "params": [txs, {"encoding": "base64"}]
+        }
+    )
+    print(jito_response.content)
+    print(all_signatures)
+except requests.exceptions.JSONDecodeError: # single tx branch
+    tx = VersionedTransaction.from_bytes(response.content)
+    required_signers = list(tx.message.account_keys)[:tx.message.header.num_required_signatures]
+    signatures = list(tx.signatures)
+
+    for keypair in keypairs:
+        if keypair.pubkey() not in required_signers:
+            continue
+        signer_index = required_signers.index(keypair.pubkey())
+        signatures[signer_index] = keypair.sign_message(to_bytes_versioned(tx.message))
+
+    tx = VersionedTransaction.populate(tx.message, signatures)
+
+    commitment = CommitmentLevel.Confirmed
+    config = RpcSendTransactionConfig(preflight_commitment=commitment)
+    txPayload = SendVersionedTransaction(tx, config)
+
+    response = requests.post(
+        url="https://api.mainnet-beta.solana.com/",  # it's better to use Helius RPC endpoint
+        headers={"Content-Type": "application/json"},
+        data=SendVersionedTransaction(tx, config).to_json()
+    )
+    txSignature = response.json()['result']
+    print(f'Transaction: https://solscan.io/tx/{txSignature}')
+
+
+Response Format
+Local transactions return the raw, unsigned transaction bytes — not JSON. You deserialize them, sign locally, and broadcast yourself.
+
+Request type	Response
+Single transaction (regular buy / sell / create / Actions)	One raw VersionedTransaction in the response body
+Jito Bundle (multiple transactions inside "transactions": [...])	An array of raw base64 VersionedTransaction txs — one per transaction in the bundle (up to 5)
