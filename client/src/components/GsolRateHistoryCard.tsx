@@ -187,28 +187,25 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 </div>
                 {(() => {
                   const elements: any[] = jupPortfolio?.elements ?? [];
-                  const findGsol = (el: any): any => {
-                    if (!el) return null;
-                    const d = el.data || {};
-                    if (Array.isArray(d.assets)) {
-                      const hit = d.assets.find((a: any) => a?.address === GSOL_MINT_ADDR || a?.mint === GSOL_MINT_ADDR);
-                      if (hit) return hit;
-                    }
-                    if (d.address === GSOL_MINT_ADDR || d.mint === GSOL_MINT_ADDR) return d;
-                    return null;
-                  };
-                  let gsolPos: any = null;
-                  for (const el of elements) {
-                    const hit = findGsol(el);
-                    if (hit) { gsolPos = hit; break; }
-                  }
                   const fmtUsd = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(Math.abs(n) >= 100 ? 2 : 4)}`;
                   const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
-                  const unrealized = Number(gsolPos?.unrealizedPnl ?? gsolPos?.pnl?.unrealized ?? gsolPos?.unrealized ?? NaN);
-                  const unrealizedPct = Number(gsolPos?.unrealizedPnlPercentage ?? gsolPos?.pnl?.unrealizedPercentage ?? NaN);
-                  const realized = Number(gsolPos?.realizedPnl ?? gsolPos?.pnl?.realized ?? NaN);
-                  const totalPnl = Number(gsolPos?.totalPnl ?? gsolPos?.pnl?.total ?? (Number.isFinite(unrealized) && Number.isFinite(realized) ? unrealized + realized : NaN));
-                  const hasPnl = Number.isFinite(unrealized) || Number.isFinite(realized) || Number.isFinite(totalPnl);
+                  let unrealized = 0, realized = 0, totalValue = 0;
+                  let hasU = false, hasR = false;
+                  const collect = (n: any) => {
+                    if (!n || typeof n !== 'object') return;
+                    const u = Number(n.unrealizedPnl ?? n.pnl?.unrealized ?? n.unrealized);
+                    const r = Number(n.realizedPnl ?? n.pnl?.realized ?? n.realized);
+                    const v = Number(n.value ?? n.usdValue ?? n.totalValue);
+                    if (Number.isFinite(u)) { unrealized += u; hasU = true; }
+                    if (Number.isFinite(r)) { realized += r; hasR = true; }
+                    if (Number.isFinite(v)) totalValue += v;
+                    if (Array.isArray(n.assets)) n.assets.forEach(collect);
+                  };
+                  for (const el of elements) collect(el?.data ?? el);
+                  const totalPnl = (hasU ? unrealized : 0) + (hasR ? realized : 0);
+                  const costBasis = totalValue - unrealized;
+                  const unrealizedPct = costBasis > 0 ? (unrealized / costBasis) * 100 : NaN;
+                  const hasPnl = hasU || hasR;
 
                   return (
                     <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
