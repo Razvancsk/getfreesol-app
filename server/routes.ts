@@ -12793,6 +12793,53 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  app.get('/api/terminal/token/:mint', async (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const key = process.env.JUPITER_API_KEY;
+      if (!key) return res.status(500).json({ error: 'JUPITER_API_KEY missing' });
+      const r = await fetch(`https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`, {
+        headers: { 'x-api-key': key },
+      });
+      if (!r.ok) return res.status(r.status).json({ error: `jupiter ${r.status}` });
+      const arr: any[] = await r.json();
+      const m = (Array.isArray(arr) ? arr : []).find((x: any) => x?.id === mint) || arr?.[0];
+      if (!m) return res.status(404).json({ error: 'not found' });
+      res.json(m);
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'token info failed' });
+    }
+  });
+
+  app.get('/api/terminal/holders/:mint', async (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const key = process.env.HELIUS_API_KEY;
+      if (!key) return res.status(500).json({ error: 'HELIUS_API_KEY missing' });
+      const rpc = `https://mainnet.helius-rpc.com/?api-key=${key}`;
+      const r = await fetch(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 1, method: 'getTokenLargestAccounts', params: [mint],
+        }),
+      });
+      const j = await r.json();
+      if (j?.error) return res.status(503).json({ error: j.error?.message || 'rpc error', holders: [] });
+      const list: any[] = j?.result?.value || [];
+      const holders = list.map((h: any) => ({
+        address: h.address,
+        amount: Number(h.uiAmount) || 0,
+        decimals: Number(h.decimals) || 0,
+      }));
+      res.json({ holders });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'holders failed' });
+    }
+  });
+
   app.post('/api/terminal/build-tx', async (req, res) => {
     try {
       const { publicKey, action, mint, amount, denominatedInQuote, slippage, priorityFee } = req.body || {};

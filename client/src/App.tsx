@@ -17,7 +17,7 @@ import AdminMigrate from "@/pages/admin-migrate";
 import VaultAdmin from "@/pages/vault-admin";
 import ProfilePage from "@/pages/profile";
 import SwapPage from "@/pages/swap";
-import TerminalPage from "@/pages/terminal";
+import TerminalPage, { TokenPage } from "@/pages/terminal";
 import DesignPreview from "@/pages/design-preview";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsConditions from "@/pages/terms-conditions";
@@ -44,6 +44,7 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/swap" component={SwapPage} />
       <Route path="/terminal" component={TerminalPage} />
+      <Route path="/terminal/token/:mint" component={TokenPage} />
       <Route path="/design" component={DesignPreview} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsConditions} />

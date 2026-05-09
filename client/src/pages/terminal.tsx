@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation, useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, VersionedTransaction } from '@solana/web3.js';
@@ -198,6 +198,7 @@ export function TerminalView() {
   const [tab, setTab] = useState<FeedType>('new');
   const [search, setSearch] = useState('');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
+  const [, navigate] = useLocation();
 
   const cacheKey = `terminal_feed_cache_${tab}`;
   const { data, isFetching } = useQuery<{ tokens: Token[]; status: any }>({
@@ -305,6 +306,7 @@ export function TerminalView() {
             return (
               <div
                 key={t.mint}
+                onClick={() => navigate(`/terminal/token/${t.mint}`)}
                 className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4 hover:border-purple-500/40 transition-all cursor-pointer overflow-hidden active:scale-[0.98] font-bold"
                 data-testid={`row-${t.mint}`}
               >
@@ -369,6 +371,218 @@ export function TerminalView() {
           onClose={() => setTradeFor(null)}
         />
       )}
+    </div>
+  );
+}
+
+type JupMint = {
+  id: string; name?: string; symbol?: string; icon?: string;
+  decimals?: number; twitter?: string; website?: string; dev?: string;
+  circSupply?: number; totalSupply?: number; holderCount?: number;
+  fdv?: number; mcap?: number; usdPrice?: number; liquidity?: number;
+  organicScore?: number; isVerified?: boolean;
+  audit?: { mintAuthorityDisabled?: boolean; freezeAuthorityDisabled?: boolean; topHoldersPercentage?: number };
+  stats5m?: any; stats1h?: any; stats6h?: any; stats24h?: any;
+  firstPool?: { id?: string; createdAt?: string };
+};
+
+function fmtNum(n?: number): string {
+  if (n == null || !Number.isFinite(n)) return '—';
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(2)}K`;
+  return n.toFixed(2);
+}
+
+export function TokenPage() {
+  const [, params] = useRoute('/terminal/token/:mint');
+  const [, navigate] = useLocation();
+  const mint = params?.mint || '';
+  const [tab, setTab] = useState<'chart' | 'info' | 'holders'>('chart');
+  const [tradeFor, setTradeFor] = useState<'buy' | 'sell' | null>(null);
+
+  const { data: info, isLoading } = useQuery<JupMint>({
+    queryKey: ['/api/terminal/token', mint],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/token/${mint}`);
+      if (!r.ok) throw new Error('info failed');
+      return r.json();
+    },
+    refetchInterval: 10_000,
+    enabled: !!mint,
+  });
+  const { data: holdersData, isFetching: holdersLoading } = useQuery<{ holders: { address: string; amount: number }[] }>({
+    queryKey: ['/api/terminal/holders', mint],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/holders/${mint}`);
+      if (!r.ok) throw new Error('holders failed');
+      return r.json();
+    },
+    enabled: tab === 'holders' && !!mint,
+    staleTime: 60_000,
+  });
+
+  const s24 = info?.stats24h || {};
+  const pct24 = typeof s24.priceChange === 'number' ? s24.priceChange : undefined;
+  const pctUp = (pct24 ?? 0) >= 0;
+  const totalSupply = info?.totalSupply ?? info?.circSupply ?? 0;
+  const tokenForTrade: Token = {
+    mint,
+    name: info?.name,
+    symbol: info?.symbol,
+    imageUri: info?.icon,
+    priceUsd: info?.usdPrice,
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white">
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/terminal')} className="text-white/70 hover:text-white" data-testid="button-back">
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+        </div>
+
+        {isLoading && !info && (
+          <div className="text-center text-white/50 py-16">Loading token…</div>
+        )}
+
+        <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 rounded-2xl border border-purple-500/20 p-4 md:p-5 mb-4">
+          <div className="flex items-center gap-3">
+            {info?.icon ? (
+              <img src={info.icon} className="w-14 h-14 rounded-xl object-cover" alt="" />
+            ) : (
+              <div className="w-14 h-14 rounded-xl bg-purple-700" />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xl md:text-2xl font-bold truncate">{info?.name || 'Unknown'}</span>
+                <span className="text-sm text-white/60">${info?.symbol || ''}</span>
+                {info?.isVerified && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
+                )}
+              </div>
+              <div className="text-xs text-white/40 font-mono truncate">{mint}</div>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <div className="text-xl md:text-2xl font-bold tabular-nums">{fmtPriceUsd(info?.usdPrice)}</div>
+              <div className={`text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
+                {pct24 != null && Number.isFinite(pct24) ? `${pctUp ? '+' : ''}${pct24.toFixed(2)}%` : '—'}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm mt-4">
+            <div className="bg-black/30 rounded-lg p-2">
+              <div className="text-white/50 text-xs">Market Cap</div>
+              <div className="font-medium tabular-nums">{fmtUsd(info?.mcap)}</div>
+            </div>
+            <div className="bg-black/30 rounded-lg p-2">
+              <div className="text-white/50 text-xs">Liquidity</div>
+              <div className="font-medium tabular-nums">{fmtUsd(info?.liquidity)}</div>
+            </div>
+            <div className="bg-black/30 rounded-lg p-2">
+              <div className="text-white/50 text-xs">Volume 24h</div>
+              <div className="font-medium tabular-nums">{fmtUsd(((Number(s24.buyVolume)||0) + (Number(s24.sellVolume)||0)) || undefined)}</div>
+            </div>
+            <div className="bg-black/30 rounded-lg p-2">
+              <div className="text-white/50 text-xs">Holders</div>
+              <div className="font-medium tabular-nums">{fmtCount(info?.holderCount)}</div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <Button onClick={() => setTradeFor('buy')} className="flex-1 bg-green-600 hover:bg-green-500" data-testid="button-buy">Buy</Button>
+            <Button onClick={() => setTradeFor('sell')} className="flex-1 bg-red-600 hover:bg-red-500" data-testid="button-sell">Sell</Button>
+          </div>
+        </div>
+
+        <div className="flex gap-2 mb-3">
+          {(['chart', 'info', 'holders'] as const).map((id) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`px-4 py-2 rounded-lg text-sm capitalize ${tab === id ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
+              data-testid={`detail-tab-${id}`}
+            >{id}</button>
+          ))}
+        </div>
+
+        {tab === 'chart' && (
+          <div className="rounded-xl overflow-hidden border border-white/10 bg-black">
+            <iframe
+              src={`https://dexscreener.com/solana/${mint}?embed=1&theme=dark&trades=1&info=0`}
+              className="w-full"
+              style={{ height: 600, border: 0 }}
+              title="chart"
+            />
+          </div>
+        )}
+
+        {tab === 'info' && (
+          <div className="space-y-2 text-sm bg-black/20 rounded-xl p-4">
+            <Row k="Symbol" v={info?.symbol} />
+            <Row k="Decimals" v={info?.decimals != null ? String(info.decimals) : undefined} />
+            <Row k="Circulating Supply" v={fmtNum(info?.circSupply)} />
+            <Row k="Total Supply" v={fmtNum(info?.totalSupply)} />
+            <Row k="FDV" v={fmtUsd(info?.fdv)} />
+            <Row k="Holders" v={fmtCount(info?.holderCount)} />
+            <Row k="Mint Authority Disabled" v={info?.audit?.mintAuthorityDisabled == null ? undefined : (info.audit.mintAuthorityDisabled ? 'Yes' : 'No')} />
+            <Row k="Freeze Authority Disabled" v={info?.audit?.freezeAuthorityDisabled == null ? undefined : (info.audit.freezeAuthorityDisabled ? 'Yes' : 'No')} />
+            <Row k="Top Holders %" v={info?.audit?.topHoldersPercentage != null ? `${info.audit.topHoldersPercentage.toFixed(2)}%` : undefined} />
+            <Row k="Created" v={info?.firstPool?.createdAt ? new Date(info.firstPool.createdAt).toLocaleString() : undefined} />
+            <Row k="Dev Wallet" v={info?.dev ? <a className="text-purple-300 underline font-mono text-xs" href={`https://solscan.io/account/${info.dev}`} target="_blank" rel="noreferrer">{shortMint(info.dev)}</a> : undefined} />
+            <div className="flex flex-wrap gap-2 pt-2">
+              {info?.twitter && <a href={info.twitter} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Twitter <ExternalLink className="h-3 w-3" /></a>}
+              {info?.website && <a href={info.website} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Website <ExternalLink className="h-3 w-3" /></a>}
+              <a href={`https://solscan.io/token/${mint}`} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Solscan <ExternalLink className="h-3 w-3" /></a>
+              <a href={`https://dexscreener.com/solana/${mint}`} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">DexScreener <ExternalLink className="h-3 w-3" /></a>
+            </div>
+          </div>
+        )}
+
+        {tab === 'holders' && (
+          <div className="bg-black/20 rounded-xl p-2">
+            {holdersLoading && <div className="text-center text-white/50 text-sm py-6">Loading top holders…</div>}
+            {!holdersLoading && (holdersData?.holders?.length ?? 0) === 0 && (
+              <div className="text-center text-white/50 text-sm py-6">No holders found.</div>
+            )}
+            <div className="divide-y divide-white/5">
+              {(holdersData?.holders || []).slice(0, 20).map((h, i) => {
+                const pct = totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0;
+                return (
+                  <div key={h.address} className="flex items-center justify-between py-2 px-2 text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-white/40 text-xs w-5 text-right">#{i + 1}</span>
+                      <a href={`https://solscan.io/account/${h.address}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-purple-300 underline truncate">
+                        {shortMint(h.address)}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="tabular-nums text-white/80">{fmtNum(h.amount)}</span>
+                      {totalSupply > 0 && <span className="text-white/50 text-xs tabular-nums w-14 text-right">{pct.toFixed(2)}%</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {tradeFor && (
+        <TradeDialog token={tokenForTrade} action={tradeFor} onClose={() => setTradeFor(null)} />
+      )}
+    </div>
+  );
+}
+
+function Row({ k, v }: { k: string; v?: React.ReactNode }) {
+  if (v == null || v === '') return null;
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-white/50">{k}</span>
+      <span className="text-white text-right">{v}</span>
     </div>
   );
 }
