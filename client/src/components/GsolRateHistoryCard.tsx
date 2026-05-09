@@ -223,10 +223,6 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                             {Number(jupPortfolio?.untrackedSells) > 0 && ' · partial history'}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-white/70 text-[10px]">GSOL Value</div>
-                          <div className="text-white font-bold text-base">{fmtUsd(gsolValue)}</div>
-                        </div>
                       </div>
                       {jupPortfolioLoading ? (
                         <div className="text-white/70 text-sm">Loading PnL…</div>
