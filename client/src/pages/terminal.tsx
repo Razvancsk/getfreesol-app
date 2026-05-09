@@ -562,13 +562,16 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
   const pct24 = typeof s24.priceChange === 'number' ? s24.priceChange : undefined;
   const pctUp = (pct24 ?? 0) >= 0;
   const totalSupply = info?.totalSupply ?? info?.circSupply ?? 0;
+  const liveT: any = liveData?.live || {};
   const tokenForTrade: Token = {
     mint,
     name: info?.name,
     symbol: info?.symbol,
     imageUri: info?.icon,
-    priceUsd: info?.usdPrice,
-  };
+    priceUsd: liveT.priceUsd ?? info?.usdPrice,
+    marketCapSol: liveT.marketCapSol,
+  } as any;
+  const [mobileSwapOpen, setMobileSwapOpen] = useState(false);
 
   return (
     <div className="text-white">
@@ -656,7 +659,9 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               </div>
             </div>
 
-            <SwapCard token={tokenForTrade} />
+            <div className="hidden lg:block">
+              <SwapCard token={tokenForTrade} />
+            </div>
           </div>
         </div>
 
@@ -780,6 +785,33 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
 
       {tradeFor && (
         <TradeDialog token={tokenForTrade} action={tradeFor} onClose={() => setTradeFor(null)} />
+      )}
+
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pointer-events-none">
+        <button
+          onClick={() => setMobileSwapOpen(true)}
+          className="pointer-events-auto w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold shadow-lg shadow-purple-900/40"
+          data-testid="button-mobile-trade"
+        >
+          Trade
+        </button>
+      </div>
+      <div className="lg:hidden h-20" />
+
+      {mobileSwapOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end" data-testid="mobile-swap-sheet">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileSwapOpen(false)} />
+          <div className="relative w-full bg-slate-900 border-t border-purple-500/30 rounded-t-2xl p-4 pb-6 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                {info?.icon && <img src={info.icon} className="h-7 w-7 rounded-full" alt="" />}
+                <div className="text-white font-bold">Trade {info?.symbol || ''}</div>
+              </div>
+              <button onClick={() => setMobileSwapOpen(false)} className="text-white/60 hover:text-white text-xl px-2">×</button>
+            </div>
+            <SwapCard token={tokenForTrade} />
+          </div>
+        </div>
       )}
     </div>
   );
