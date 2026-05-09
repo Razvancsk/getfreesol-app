@@ -12743,6 +12743,41 @@ Claimer: ${walletAddress}`;
   // ── /api/terminal — pump.fun screener (powered by pumpapi.io stream) ──
   try { startPumpStream(); } catch (e: any) { console.error('[pumpStream] start failed', e?.message); }
 
+  // Browser-side image fallback: when an IPFS image fails to load in the
+  // <img> tag, the frontend points its src at this endpoint, which queries
+  // Helius DAS for a fresh CDN URL and 302-redirects to it.
+  const heliusImgCache = new Map<string, { url: string | null; ts: number }>();
+  app.get('/api/terminal/image/:mint', async (req, res) => {
+    const mint = String(req.params.mint || '');
+    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint)) return res.status(400).end();
+    const cached = heliusImgCache.get(mint);
+    if (cached && Date.now() - cached.ts < 5 * 60_000) {
+      if (cached.url) return res.redirect(302, cached.url);
+      return res.status(404).end();
+    }
+    const key = process.env.HELIUS_API_KEY;
+    if (!key) return res.status(503).end();
+    try {
+      const r = await fetch(`https://mainnet.helius-rpc.com/?api-key=${key}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: '1', method: 'getAsset',
+          params: { id: mint, displayOptions: { showFungible: true } } }),
+      });
+      const j: any = await r.json().catch(() => null);
+      const files = (j?.result?.content?.files || []) as any[];
+      const cdn = files.find((f) => typeof f?.cdn_uri === 'string')?.cdn_uri as string | undefined;
+      const link = j?.result?.content?.links?.image as string | undefined;
+      const raw = files.find((f) => typeof f?.uri === 'string')?.uri as string | undefined;
+      const url = cdn || link || raw || null;
+      heliusImgCache.set(mint, { url, ts: Date.now() });
+      if (!url) return res.status(404).end();
+      res.redirect(302, url);
+    } catch {
+      res.status(502).end();
+    }
+  });
+
   app.get('/api/terminal/feed', (req, res) => {
     const t = String(req.query.type || 'new');
     if (t !== 'new' && t !== 'bonding' && t !== 'migrated') {

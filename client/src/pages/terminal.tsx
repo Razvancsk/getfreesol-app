@@ -73,7 +73,8 @@ function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: numb
   const [failed, setFailed] = useState(false);
   const initials = (token.symbol || token.name || '?').slice(0, 2).toUpperCase();
   const color = colorFor(token.mint);
-  const showImg = token.imageUri && !failed;
+  const imgSrc = `/api/terminal/image/${token.mint}`;
+  const showImg = !failed;
   const SIZE = 92;
   const IMG = 84;
   const STROKE = 3;
@@ -112,7 +113,7 @@ function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: numb
       >
         {showImg ? (
           <img
-            src={token.imageUri}
+            src={imgSrc}
             alt={`${token.symbol} logo`}
             className="block w-full h-full rounded-xl object-cover"
             onError={() => setFailed(true)}
