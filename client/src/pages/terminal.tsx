@@ -960,17 +960,6 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
     try {
       const denominatedInQuote = side === 'buy';
       const amountVal = side === 'sell' && amt.endsWith('%') ? amt : Number(amt);
-      const slipFrac = Number(slippage) / 100;
-      const extras: any = {};
-      if (priceSol && typeof amountVal === 'number' && amountVal > 0 && isFinite(amountVal)) {
-        if (side === 'buy') {
-          extras.maxQuoteAmountIn = amountVal;
-          extras.minBaseAmountOut = (amountVal / priceSol) * (1 - slipFrac);
-        } else {
-          extras.maxBaseAmountIn = amountVal;
-          extras.minQuoteAmountOut = (amountVal * priceSol) * (1 - slipFrac);
-        }
-      }
       const r = await fetch('/api/terminal/build-tx', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -980,7 +969,6 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
           denominatedInQuote,
           slippage: Number(slippage),
           pool: (token as any).pool,
-          ...extras,
         }),
       });
       const j = await r.json();
