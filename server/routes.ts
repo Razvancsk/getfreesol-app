@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
-import { startPumpStream, getFeed as getPumpFeed, getStreamStatus as getPumpStatus, buildTradeTx as buildPumpTradeTx, validateTradeInput } from './pumpStream';
+import { startPumpStream, getFeed as getPumpFeed, getStreamStatus as getPumpStatus, buildTradeTx as buildPumpTradeTx, validateTradeInput, getTokenLive as getPumpTokenLive } from './pumpStream';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -12809,6 +12809,17 @@ Claimer: ${walletAddress}`;
       res.json(m);
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'token info failed' });
+    }
+  });
+
+  app.get('/api/terminal/token-live/:mint', (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const live = getPumpTokenLive(mint);
+      res.json({ live });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'live failed' });
     }
   });
 

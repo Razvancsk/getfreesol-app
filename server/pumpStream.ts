@@ -538,6 +538,12 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
     .map(serialize);
 }
 
+export function getTokenLive(mint: string) {
+  const t = tokens.get(mint);
+  if (!t) return null;
+  return serialize(t);
+}
+
 export function getStreamStatus() {
   return {
     connected,

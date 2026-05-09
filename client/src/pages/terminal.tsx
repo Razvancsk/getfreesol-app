@@ -515,6 +515,16 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     refetchInterval: 10_000,
     enabled: !!mint,
   });
+  const { data: liveData } = useQuery<{ live: Token | null }>({
+    queryKey: ['/api/terminal/token-live', mint],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/token-live/${mint}`);
+      if (!r.ok) throw new Error('live failed');
+      return r.json();
+    },
+    refetchInterval: 1500,
+    enabled: !!mint,
+  });
   const { data: holdersData, isFetching: holdersLoading } = useQuery<{ holders: { address: string; amount: number }[] }>({
     queryKey: ['/api/terminal/holders', mint],
     queryFn: async () => {
@@ -554,7 +564,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-5 py-5 md:px-6 md:py-6 mb-4">
           <div className="flex items-center gap-4">
             {(() => {
-              const cached = readCachedToken(mint);
+              const live = liveData?.live;
+              const cached = live || readCachedToken(mint);
               const isGraduated =
                 !!(info as any)?.graduatedPool ||
                 (info as any)?.graduated === true ||
