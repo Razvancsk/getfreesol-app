@@ -103,7 +103,10 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 </button>
               ))}
             </div>
-            <div className="h-[200px] w-full">
+            <div className="h-[200px] w-full relative">
+              <div className="absolute top-0 right-12 text-[10px] text-white/70 z-10 pointer-events-none">
+                Display limit: 25% APY
+              </div>
               {isLoading ? (
                 <div className="h-full flex items-center justify-center text-white text-sm">Loading chart…</div>
               ) : last25.length === 0 ? (
