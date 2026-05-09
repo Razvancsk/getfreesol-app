@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp } from 'lucide-react';
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 
 type FeedType = 'new' | 'bonding' | 'migrated';
@@ -930,20 +930,38 @@ function SwapCard({ token }: { token: Token }) {
           data-testid="swap-tab-sell"
         >Sell</button>
       </div>
-      <div className="bg-black/30 rounded-lg px-3 py-2">
-        <div className="flex items-center justify-between">
-          <div className="text-[10px] text-white/50 uppercase tracking-wider">Amount {side === 'buy' ? '(SOL)' : `(${sym} / %)`}</div>
-          {quote && <div className="text-[10px] text-purple-300">{quote}</div>}
-        </div>
-        <input
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="0.0"
-          inputMode="decimal"
-          className="w-full bg-transparent text-white text-xl font-bold outline-none mt-1"
-          data-testid="input-swap-amount"
-        />
-      </div>
+      {(() => {
+        const paySym = side === 'buy' ? 'SOL' : sym;
+        const recvSym = side === 'buy' ? sym : 'SOL';
+        let recvVal = '0.0';
+        if (priceSol && amount && !amount.endsWith('%') && isFinite(amtNum) && amtNum > 0) {
+          recvVal = side === 'buy' ? fmtNum(amtNum / priceSol, 2) : fmtNum(amtNum * priceSol, 6);
+        }
+        return (
+          <>
+            <div className="bg-black/30 rounded-lg px-3 py-2">
+              <div className="text-[10px] text-white/50 uppercase tracking-wider">Pay ({paySym})</div>
+              <input
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.0"
+                inputMode="decimal"
+                className="w-full bg-transparent text-white text-xl font-bold outline-none mt-1"
+                data-testid="input-swap-amount"
+              />
+            </div>
+            <div className="flex justify-center -my-1">
+              <div className="bg-black/30 rounded-full p-1.5 border border-purple-500/20">
+                <ArrowDownUp className="h-3.5 w-3.5 text-purple-300" />
+              </div>
+            </div>
+            <div className="bg-black/30 rounded-lg px-3 py-2">
+              <div className="text-[10px] text-white/50 uppercase tracking-wider">Receive ({recvSym})</div>
+              <div className="text-white/70 text-xl font-bold mt-1 truncate">{recvVal}</div>
+            </div>
+          </>
+        );
+      })()}
       <div className="grid grid-cols-4 gap-2">
         {presets.map((p) => (
           <button
