@@ -104,7 +104,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               ))}
             </div>
             <div className="h-[200px] w-full relative">
-              <div className="absolute top-0 right-12 text-[10px] text-white/70 z-10 pointer-events-none">
+              <div className="absolute top-0 right-12 text-[10px] text-white z-10 pointer-events-none">
                 Display limit: 25% APY
               </div>
               {isLoading ? (
