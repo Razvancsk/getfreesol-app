@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import logoImage from '@assets/image_1757882056840.png';
-import { Connection, VersionedTransaction } from '@solana/web3.js';
+import { Connection, PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -885,12 +885,13 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
   const [slippage] = useState('3');
   const [busy, setBusy] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
+  const [tokenBalance, setTokenBalance] = useState<number | null>(null);
   const buyPresets = ['0.1', '0.3', '0.5', '0.7'];
   const sellPresets = ['25%', '50%', '75%', '100%'];
   const presets = side === 'buy' ? buyPresets : sellPresets;
 
   useEffect(() => {
-    if (!publicKey) { setBalance(null); return; }
+    if (!publicKey) { setBalance(null); setTokenBalance(null); return; }
     let active = true;
     (async () => {
       try {
@@ -900,9 +901,29 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
         const lamports = await conn.getBalance(publicKey);
         if (active) setBalance(lamports / 1e9);
       } catch { /* ignore */ }
+      try {
+        if (!token?.mint) return;
+        const heliusKey = (import.meta as any).env?.VITE_HELIUS_API_KEY;
+        const rpc = heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com';
+        const conn = new Connection(rpc, 'confirmed');
+        const mintPk = new PublicKey(token.mint);
+        const programs = [
+          new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+          new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'),
+        ];
+        let total = 0;
+        for (const programId of programs) {
+          const r = await conn.getParsedTokenAccountsByOwner(publicKey, { mint: mintPk, programId });
+          for (const acc of r.value) {
+            const ui = acc.account.data?.parsed?.info?.tokenAmount?.uiAmount;
+            if (typeof ui === 'number') total += ui;
+          }
+        }
+        if (active) setTokenBalance(total);
+      } catch { /* ignore */ }
     })();
     return () => { active = false; };
-  }, [publicKey, busy]);
+  }, [publicKey, busy, token?.mint]);
 
   const live: any = token || {};
   const STANDARD_SUPPLY = 1_000_000_000;
@@ -985,12 +1006,14 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
         if (priceSol && amount && !amount.endsWith('%') && isFinite(amtNum) && amtNum > 0) {
           recvVal = side === 'buy' ? fmtNum(amtNum / priceSol, 2) : fmtNum(amtNum * priceSol, 6);
         }
-        const balText = balance != null ? balance.toFixed(4) : '0.0000';
+        const balText = side === 'buy'
+          ? `${balance != null ? balance.toFixed(4) : '0.0000'} SOL`
+          : `${tokenBalance != null ? fmtNum(tokenBalance, 4) : '0'} ${sym}`;
         const allPresets = [...presets, 'MAX'];
         return (
           <>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-white">Balance: <span className="text-white">{balText} SOL</span></span>
+              <span className="text-white">Balance: <span className="text-white">{balText}</span></span>
               <button
                 onClick={() => {
                   if (side === 'buy') {
