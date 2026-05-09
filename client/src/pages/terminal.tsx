@@ -11,7 +11,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings, Wallet as WalletIcon } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 
 type FeedType = 'new' | 'bonding' | 'migrated';
@@ -266,6 +267,69 @@ function useDebounced<T>(value: T, ms: number): T {
   return v;
 }
 
+function HoldingsDrawer({ trigger }: { trigger: React.ReactNode }) {
+  const { publicKey } = useWallet();
+  const { setVisible } = useWalletModal();
+  const [, navigate] = useLocation();
+  const [open, setOpen] = useState(false);
+  const addr = publicKey?.toBase58();
+  const { data, isFetching, refetch } = useQuery<{ tokens: any[] }>({
+    queryKey: ['/api/wallet/all-tokens', addr],
+    queryFn: async () => {
+      const r = await fetch(`/api/wallet/all-tokens?address=${addr}`);
+      if (!r.ok) throw new Error('holdings failed');
+      return r.json();
+    },
+    enabled: open && !!addr,
+    refetchInterval: open ? 15_000 : false,
+  });
+  const SOL_MINT = 'So11111111111111111111111111111111111111112';
+  const tokens = (data?.tokens || []).filter((t) => t?.address && t.address !== SOL_MINT && (t.balance || 0) > 0);
+  return (
+    <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (v && addr) refetch(); }}>
+      <SheetTrigger asChild>{trigger}</SheetTrigger>
+      <SheetContent side="right" className="bg-gradient-to-b from-slate-900 via-purple-950 to-slate-900 border-purple-500/30 text-white w-full sm:max-w-md overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="text-white">My Holdings</SheetTitle>
+        </SheetHeader>
+        {!publicKey && (
+          <div className="mt-6 text-center">
+            <p className="text-white/70 text-sm mb-3">Connect your wallet to see holdings.</p>
+            <Button onClick={() => setVisible(true)} className="bg-purple-600 hover:bg-purple-700">Connect Wallet</Button>
+          </div>
+        )}
+        {publicKey && (
+          <div className="mt-4 space-y-2">
+            {isFetching && tokens.length === 0 && <div className="text-white/50 text-sm text-center py-6">Loading…</div>}
+            {!isFetching && tokens.length === 0 && <div className="text-white/50 text-sm text-center py-6">No tokens found.</div>}
+            {tokens.map((t) => (
+              <button
+                key={t.address}
+                onClick={() => { setOpen(false); navigate(`/terminal/token/${t.address}`); }}
+                className="w-full flex items-center justify-between gap-3 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20 hover:bg-purple-800/40 transition text-left"
+                data-testid={`holding-${t.address}`}
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {t.logoURI ? (
+                    <img src={t.logoURI} alt="" className="w-9 h-9 rounded-full bg-black/30 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-purple-700/50 flex items-center justify-center text-xs font-bold">{(t.symbol || '?').slice(0, 2)}</div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-white font-semibold text-sm truncate">{t.symbol || shortMint(t.address)}</div>
+                    <div className="text-white/60 text-xs tabular-nums">{Number(t.balance).toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+                  </div>
+                </div>
+                <div className="text-purple-300 text-xs font-medium px-3 py-1.5 rounded-md bg-purple-600/30 border border-purple-400/30">Sell</div>
+              </button>
+            ))}
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 export function TerminalView() {
   const [tab, setTab] = useState<FeedType>('new');
   const [search, setSearch] = useState('');
@@ -317,15 +381,22 @@ export function TerminalView() {
   return (
     <div className="text-white">
       <div>
-        <div className="flex items-center justify-end mb-4">
-          <div className="flex items-center gap-2">
-            <span className={`text-[10px] px-2 py-1 rounded-full border ${
-              status?.connected ? 'border-green-500/40 text-green-300 bg-green-500/10'
-                                : 'border-yellow-500/40 text-yellow-300 bg-yellow-500/10'
-            }`}>
-              {status?.connected ? 'LIVE' : 'CONNECTING…'}
-            </span>
-          </div>
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <HoldingsDrawer trigger={
+            <button
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
+              data-testid="button-portfolio"
+            >
+              <WalletIcon className="h-3.5 w-3.5" />
+              <span className="font-semibold">Portfolio</span>
+            </button>
+          } />
+          <span className={`text-[10px] px-2 py-1 rounded-full border ${
+            status?.connected ? 'border-green-500/40 text-green-300 bg-green-500/10'
+                              : 'border-yellow-500/40 text-yellow-300 bg-yellow-500/10'
+          }`}>
+            {status?.connected ? 'LIVE' : 'CONNECTING…'}
+          </span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -496,13 +567,24 @@ export function TokenPage() {
           <button onClick={() => navigate('/')} className="flex items-center gap-2" data-testid="link-home">
             <img src={logoImage} alt="Get your SOL back!" className="h-10 w-auto" />
           </button>
-          <Button
-            onClick={() => setVisible(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-            data-testid="button-connect-wallet"
-          >
-            {publicKey ? shortAddr : 'Connect Wallet'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <HoldingsDrawer trigger={
+              <button
+                className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
+                data-testid="button-portfolio"
+              >
+                <WalletIcon className="h-4 w-4" />
+                <span className="font-semibold">Portfolio</span>
+              </button>
+            } />
+            <Button
+              onClick={() => setVisible(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+              data-testid="button-connect-wallet"
+            >
+              {publicKey ? shortAddr : 'Connect Wallet'}
+            </Button>
+          </div>
         </div>
         <TokenContent mint={mint} onBack={() => navigate('/?tab=terminal')} />
       </div>
