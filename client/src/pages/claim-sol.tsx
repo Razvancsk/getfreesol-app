@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, BookOpen, HelpCircle } from "lucide-react";
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
+import { TerminalView } from "@/pages/terminal";
 import { Confetti } from '@/components/Confetti';
 import GsolRateHistoryCard from '@/components/GsolRateHistoryCard';
 import { FaSackDollar } from 'react-icons/fa6';
@@ -112,7 +113,7 @@ export default function SolRefund() {
   
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'coinflip' | 'staking'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'coinflip' | 'staking' | 'terminal'>('reclaim');
   const [claimSubTab, setClaimSubTab] = useState<'empty' | 'programs'>('empty');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [showDevAccountModal, setShowDevAccountModal] = useState(false);
@@ -3786,7 +3787,7 @@ export default function SolRefund() {
           {isConnected && activeTab !== 'docs' && (
             <div className="text-center py-1">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'staking' ? 'Stake your SOL and earn yield.' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'staking' ? 'Stake your SOL and earn yield.' : activeTab === 'terminal' ? 'Live pump.fun screener · trade in one click.' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3873,14 +3874,17 @@ export default function SolRefund() {
                 >
                   <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
                 </Button>
-                <Link href="/terminal">
-                  <Button
-                    className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30"
-                    data-testid="button-terminal-tab"
-                  >
-                    <span className="text-xl shrink-0">📟</span> Terminal
-                  </Button>
-                </Link>
+                <Button
+                  onClick={() => setActiveTab('terminal')}
+                  className={`md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
+                    activeTab === 'terminal'
+                      ? 'bg-purple-600 text-white border-purple-500'
+                      : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
+                  }`}
+                  data-testid="button-terminal-tab"
+                >
+                  <span className="text-xl shrink-0">📟</span> Terminal
+                </Button>
                 {canViewPartners && (
                   <Link href="/partners">
                     <Button
@@ -4910,6 +4914,11 @@ export default function SolRefund() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Terminal Tab Content */}
+          {activeTab === 'terminal' && (
+            <TerminalView />
           )}
 
           {/* Coin Flip Tab Content */}
@@ -7667,10 +7676,14 @@ export default function SolRefund() {
             <FaSackDollar style={{ width: '20px', height: '20px' }} />
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
           </button>
-          <Link href="/terminal" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#c084fc', textDecoration: 'none', cursor: 'pointer' }} data-testid="link-terminal-mobile-nav">
+          <button
+            onClick={() => setActiveTab('terminal')}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'terminal' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+            data-testid="button-terminal-mobile-nav"
+          >
             <span style={{ fontSize: '20px', lineHeight: 1 }}>📟</span>
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Terminal</span>
-          </Link>
+          </button>
           {canViewPartners && (
             <Link href="/partners" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#fde68a', textDecoration: 'none', cursor: 'pointer' }}>
               <span style={{ fontSize: '20px', lineHeight: 1 }}>🤝</span>

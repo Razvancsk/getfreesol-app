@@ -56,6 +56,27 @@ function shortMint(m: string) {
 }
 
 export default function TerminalPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="text-white/70 hover:text-white">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight">Terminal</h1>
+            <p className="text-white/60 text-xs">Live pump.fun screener · powered by pumpapi.io</p>
+          </div>
+        </div>
+        <TerminalView />
+      </div>
+    </div>
+  );
+}
+
+export function TerminalView() {
   const [tab, setTab] = useState<FeedType>('new');
   const [search, setSearch] = useState('');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
@@ -84,20 +105,9 @@ export default function TerminalPage() {
   const status = data?.status;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white">
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="text-white/70 hover:text-white">
-                <ArrowLeft className="h-4 w-4 mr-1" /> Back
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight">Terminal</h1>
-              <p className="text-white/60 text-xs">Live pump.fun screener · powered by pumpapi.io</p>
-            </div>
-          </div>
+    <div className="text-white">
+      <div>
+        <div className="flex items-center justify-end mb-4">
           <div className="flex items-center gap-2">
             <span className={`text-[10px] px-2 py-1 rounded-full border ${
               status?.connected ? 'border-green-500/40 text-green-300 bg-green-500/10'
