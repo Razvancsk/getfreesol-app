@@ -855,7 +855,30 @@ function SwapCard({ token }: { token: Token }) {
   const buyPresets = ['0.1', '0.3', '0.5', '1'];
   const sellPresets = ['25%', '50%', '75%', '100%'];
   const presets = side === 'buy' ? buyPresets : sellPresets;
-  const display = amount || '0';
+
+  const live: any = token || {};
+  const STANDARD_SUPPLY = 1_000_000_000;
+  const priceSol = live.marketCapSol ? live.marketCapSol / STANDARD_SUPPLY : undefined;
+  const sym = (live.symbol || 'TOKEN').toString().slice(0, 8);
+
+  function fmtNum(n: number, max = 6) {
+    if (!isFinite(n)) return '—';
+    if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    if (n >= 1) return n.toFixed(4);
+    return n.toFixed(max);
+  }
+
+  let quote = '';
+  const amtNum = Number(amount);
+  if (priceSol && amount && !amount.endsWith('%') && isFinite(amtNum) && amtNum > 0) {
+    if (side === 'buy') {
+      quote = `≈ ${fmtNum(amtNum / priceSol, 2)} ${sym}`;
+    } else {
+      quote = `≈ ${fmtNum(amtNum * priceSol, 6)} SOL`;
+    }
+  } else if (side === 'sell' && amount.endsWith('%')) {
+    quote = 'sell % of balance';
+  }
 
   async function submit() {
     if (!publicKey) { toast({ title: 'Connect wallet first' }); return; }
@@ -908,7 +931,10 @@ function SwapCard({ token }: { token: Token }) {
         >Sell</button>
       </div>
       <div className="bg-black/30 rounded-lg px-3 py-2">
-        <div className="text-[10px] text-white/50 uppercase tracking-wider">Amount {side === 'buy' ? '(SOL)' : '(tokens / %)'}</div>
+        <div className="flex items-center justify-between">
+          <div className="text-[10px] text-white/50 uppercase tracking-wider">Amount {side === 'buy' ? '(SOL)' : `(${sym} / %)`}</div>
+          {quote && <div className="text-[10px] text-purple-300">{quote}</div>}
+        </div>
         <input
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
