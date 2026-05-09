@@ -718,6 +718,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   }
                   if (
                     h.label === 'pump.fun-bonding-curve' ||
+                    (h.label && h.label.startsWith('liquidity-pool:')) ||
                     (poolAddr && poolAddr !== mint && (o === poolAddr || h.address === poolAddr)) ||
                     (gradAddr && (o === gradAddr || h.address === gradAddr))
                   ) {

@@ -12874,6 +12874,41 @@ Claimer: ${walletAddress}`;
         pumpBondingCurve = bc.toBase58();
         pumpBondingCurveAta = getAssociatedTokenAddressSync(mintPk, bc, true).toBase58();
       } catch {}
+
+      // Resolve the program owner of each holder's owner account so we can
+      // identify pool/AMM accounts (PumpSwap, Raydium, Meteora, Orca, etc.)
+      const AMM_PROGRAMS: Record<string, string> = {
+        '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P9': 'Pump.fun',
+        '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P': 'Pump.fun',
+        'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA': 'PumpSwap',
+        'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXE': 'PumpSwap',
+        '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8': 'Raydium',
+        'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK': 'Raydium',
+        'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C': 'Raydium',
+        'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo': 'Meteora',
+        'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB': 'Meteora',
+        'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc': 'Orca',
+      };
+      const ownerProgramOwners: Record<string, string | undefined> = {};
+      const uniqueOwners = Array.from(new Set(Object.values(owners).filter(Boolean) as string[]));
+      if (uniqueOwners.length) {
+        try {
+          const opRes = await fetch(rpc, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0', id: 3, method: 'getMultipleAccounts',
+              params: [uniqueOwners, { encoding: 'base64', dataSlice: { offset: 0, length: 0 } }],
+            }),
+          });
+          const opj = await opRes.json();
+          const arr: any[] = opj?.result?.value || [];
+          arr.forEach((acc: any, idx: number) => {
+            if (acc?.owner) ownerProgramOwners[uniqueOwners[idx]] = acc.owner;
+          });
+        } catch {}
+      }
+
       const holders = list.map((h: any) => {
         const owner = owners[h.address];
         let label: string | undefined;
@@ -12882,6 +12917,8 @@ Claimer: ${walletAddress}`;
           (pumpBondingCurveAta && h.address === pumpBondingCurveAta)
         ) {
           label = 'pump.fun-bonding-curve';
+        } else if (owner && ownerProgramOwners[owner] && AMM_PROGRAMS[ownerProgramOwners[owner]!]) {
+          label = `liquidity-pool:${AMM_PROGRAMS[ownerProgramOwners[owner]!]}`;
         }
         return {
           address: h.address,
