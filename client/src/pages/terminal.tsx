@@ -302,10 +302,6 @@ export function TerminalView() {
           })}
         </div>
 
-        <div className="text-[10px] text-white/40 text-center mt-3">
-          {status ? `${status.tracked} tokens tracked · feed ${status.lastEventAgeMs ? Math.floor(status.lastEventAgeMs / 1000) + 's' : '—'} ago` : ''}
-          · Trades: 0.25% pumpapi fee + network fee. No private key leaves your wallet.
-        </div>
       </div>
 
       {tradeFor && (
