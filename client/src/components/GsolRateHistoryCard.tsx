@@ -186,31 +186,19 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                   </div>
                 </div>
                 {(() => {
-                  const elements: any[] = jupPortfolio?.elements ?? [];
                   const fmtUsd = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(Math.abs(n) >= 100 ? 2 : 4)}`;
                   const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
-                  let unrealized = 0, realized = 0, totalValue = 0;
-                  let hasU = false, hasR = false;
-                  const collect = (n: any) => {
-                    if (!n || typeof n !== 'object') return;
-                    const u = Number(n.unrealizedPnl ?? n.pnl?.unrealized ?? n.unrealized);
-                    const r = Number(n.realizedPnl ?? n.pnl?.realized ?? n.realized);
-                    const v = Number(n.value ?? n.usdValue ?? n.totalValue);
-                    if (Number.isFinite(u)) { unrealized += u; hasU = true; }
-                    if (Number.isFinite(r)) { realized += r; hasR = true; }
-                    if (Number.isFinite(v)) totalValue += v;
-                    if (Array.isArray(n.assets)) n.assets.forEach(collect);
-                  };
-                  for (const el of elements) collect(el?.data ?? el);
-                  const totalPnl = (hasU ? unrealized : 0) + (hasR ? realized : 0);
-                  const costBasis = totalValue - unrealized;
-                  const unrealizedPct = costBasis > 0 ? (unrealized / costBasis) * 100 : NaN;
-                  const hasPnl = hasU || hasR;
+                  const unrealized = Number(jupPortfolio?.unrealized ?? NaN);
+                  const realized = Number(jupPortfolio?.realized ?? NaN);
+                  const totalPnl = Number(jupPortfolio?.total ?? NaN);
+                  const unrealizedPct = Number(jupPortfolio?.unrealizedPct ?? NaN);
+                  const swapsCount = Number(jupPortfolio?.swapsCount ?? 0);
+                  const hasPnl = swapsCount > 0 && (Number.isFinite(unrealized) || Number.isFinite(realized) || Number.isFinite(totalPnl));
 
                   return (
                     <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="text-white text-sm font-semibold">PnL</div>
+                        <div className="text-white text-sm font-semibold">Portfolio PnL</div>
                         {walletAddress && (
                           <a
                             href={`https://jup.ag/portfolio/${walletAddress}`}
@@ -258,7 +246,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                         </div>
                       ) : (
                         <div className="text-white/70 text-xs">
-                          PnL not yet indexed by Jupiter for this wallet.
+                          No swaps yet — PnL will appear after your first Jupiter swap on this site.
                         </div>
                       )}
                     </div>

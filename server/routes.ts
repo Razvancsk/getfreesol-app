@@ -726,6 +726,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wallet PnL - computed from our swap_records using FIFO cost basis + current Jupiter prices
+  app.get("/api/wallet-pnl/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      if (!address) return res.status(400).json({ error: 'Missing wallet address' });
+
+      const swaps = await storage.getSwapRecordsByWallet(address, 5000);
+      // Build FIFO lots per mint (token bought adds a lot, token sold consumes lots)
+      type Lot = { qty: number; costUsd: number };
+      const lots: Record<string, Lot[]> = {};
+      const symbols: Record<string, string> = {};
+      let realized = 0;
+      // Oldest first
+      const ordered = [...swaps].sort((a, b) => new Date(a.swappedAt).getTime() - new Date(b.swappedAt).getTime());
+      for (const s of ordered) {
+        const usd = Number(s.usdValue || 0);
+        const inAmt = Number(s.inputAmount || 0);
+        const outAmt = Number(s.outputAmount || 0);
+        if (!Number.isFinite(usd) || usd <= 0 || inAmt <= 0 || outAmt <= 0) continue;
+        if (s.outputSymbol) symbols[s.outputMint] = s.outputSymbol;
+        if (s.inputSymbol) symbols[s.inputMint] = s.inputSymbol;
+        // BUY side: outputMint gains qty=outAmt at cost=usd
+        (lots[s.outputMint] ||= []).push({ qty: outAmt, costUsd: usd });
+        // SELL side: inputMint loses qty=inAmt at proceeds=usd → consume FIFO
+        let remaining = inAmt;
+        let proceeds = usd;
+        const queue = (lots[s.inputMint] ||= []);
+        while (remaining > 1e-12 && queue.length > 0) {
+          const lot = queue[0];
+          const take = Math.min(lot.qty, remaining);
+          const cost = (take / lot.qty) * lot.costUsd;
+          const portionProceeds = (take / inAmt) * usd;
+          realized += portionProceeds - cost;
+          lot.qty -= take;
+          lot.costUsd -= cost;
+          remaining -= take;
+          proceeds -= portionProceeds;
+          if (lot.qty <= 1e-12) queue.shift();
+        }
+        // If sold more than known cost basis (no prior buy in our records) we just skip remaining → realized counted only against known basis
+      }
+
+      // Open positions = remaining lots
+      const open: { mint: string; symbol?: string; qty: number; costUsd: number }[] = [];
+      for (const [mint, queue] of Object.entries(lots)) {
+        const qty = queue.reduce((a, l) => a + l.qty, 0);
+        const costUsd = queue.reduce((a, l) => a + l.costUsd, 0);
+        if (qty > 1e-9 && costUsd > 0) open.push({ mint, symbol: symbols[mint], qty, costUsd });
+      }
+
+      let unrealized = 0;
+      let currentValue = 0;
+      const positions: any[] = [];
+      if (open.length > 0) {
+        const ids = open.map(o => o.mint).join(',');
+        const headers: Record<string, string> = { 'Accept': 'application/json' };
+        if (process.env.JUPITER_API_KEY) headers['x-api-key'] = process.env.JUPITER_API_KEY;
+        let prices: Record<string, { usdPrice?: number }> = {};
+        try {
+          const r = await fetch(`https://api.jup.ag/price/v3?ids=${ids}`, { headers });
+          if (r.ok) prices = await r.json();
+        } catch {}
+        for (const o of open) {
+          const px = Number(prices[o.mint]?.usdPrice ?? 0);
+          const val = px * o.qty;
+          const u = val - o.costUsd;
+          if (Number.isFinite(val)) currentValue += val;
+          if (Number.isFinite(u)) unrealized += u;
+          positions.push({
+            mint: o.mint,
+            symbol: o.symbol,
+            qty: o.qty,
+            costUsd: o.costUsd,
+            avgCostUsd: o.costUsd / o.qty,
+            currentPrice: px,
+            currentValue: val,
+            unrealizedPnl: u,
+            unrealizedPnlPct: o.costUsd > 0 ? (u / o.costUsd) * 100 : null,
+          });
+        }
+      }
+
+      const total = realized + unrealized;
+      const totalCost = open.reduce((a, o) => a + o.costUsd, 0);
+      res.json({
+        wallet: address,
+        swapsCount: swaps.length,
+        realized,
+        unrealized,
+        total,
+        currentValue,
+        totalCostBasis: totalCost,
+        unrealizedPct: totalCost > 0 ? (unrealized / totalCost) * 100 : null,
+        positions: positions.sort((a, b) => Math.abs(b.unrealizedPnl) - Math.abs(a.unrealizedPnl)),
+      });
+    } catch (e: any) {
+      console.error('Wallet PnL error:', e);
+      res.status(500).json({ error: 'Failed to compute wallet PnL' });
+    }
+  });
+
   // Jupiter Ultra Holdings API - Get token balances
   app.get("/api/jupiter/ultra/holdings/:address", async (req, res) => {
     try {

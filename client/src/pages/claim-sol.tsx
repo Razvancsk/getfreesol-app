@@ -347,10 +347,10 @@ export default function SolRefund() {
   });
 
   const { data: jupPortfolio, isLoading: jupPortfolioLoading } = useQuery<any>({
-    queryKey: ['/api/jupiter/portfolio', pointsWalletAddress],
+    queryKey: ['/api/wallet-pnl', pointsWalletAddress],
     queryFn: async () => {
       if (!pointsWalletAddress) throw new Error('No wallet');
-      const res = await fetch(`/api/jupiter/portfolio/${pointsWalletAddress}`);
+      const res = await fetch(`/api/wallet-pnl/${pointsWalletAddress}`);
       return res.json();
     },
     enabled: !!pointsWalletAddress,
