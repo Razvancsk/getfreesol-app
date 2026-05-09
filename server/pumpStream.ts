@@ -541,6 +541,9 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
 export function getTokenLive(mint: string) {
   const t = tokens.get(mint);
   if (!t) return null;
+  // Mark MRU so an actively-viewed token isn't evicted
+  tokens.delete(mint);
+  tokens.set(mint, t);
   return serialize(t);
 }
 

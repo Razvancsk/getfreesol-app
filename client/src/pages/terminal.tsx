@@ -520,7 +520,19 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     queryFn: async () => {
       const r = await fetch(`/api/terminal/token-live/${mint}`);
       if (!r.ok) throw new Error('live failed');
-      return r.json();
+      const j = await r.json();
+      if (j?.live) return j;
+      // Fallback: search all 3 feeds (same source the cards render from)
+      for (const tab of ['new', 'bonding', 'migrated'] as const) {
+        try {
+          const fr = await fetch(`/api/terminal/feed?type=${tab}&limit=200`);
+          if (!fr.ok) continue;
+          const fj = await fr.json();
+          const found = (fj?.tokens || []).find((t: any) => t?.mint === mint);
+          if (found) return { live: found as Token };
+        } catch {}
+      }
+      return { live: null };
     },
     refetchInterval: 1500,
     enabled: !!mint,
