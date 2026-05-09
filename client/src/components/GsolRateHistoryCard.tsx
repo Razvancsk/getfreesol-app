@@ -75,7 +75,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               </p>
             )}
           </div>
-          <div className="flex items-center gap-1 bg-purple-900/30 rounded-lg p-1 border border-white/20 shrink-0">
+          <div className="flex items-center gap-1 bg-purple-900/30 rounded-l-lg p-1 border border-r-0 border-white/20 shrink-0 -mr-px">
             <button
               onClick={() => setView('overview')}
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
