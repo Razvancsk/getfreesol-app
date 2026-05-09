@@ -787,7 +787,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         <TradeDialog token={tokenForTrade} action={tradeFor} onClose={() => setTradeFor(null)} />
       )}
 
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pointer-events-none">
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3 pointer-events-none">
         <button
           onClick={() => setMobileSwapOpen(true)}
           className="pointer-events-auto w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold shadow-lg shadow-purple-900/40"
