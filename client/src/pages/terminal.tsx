@@ -564,22 +564,17 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-5 py-5 md:px-6 md:py-6 mb-4">
           <div className="flex items-center gap-4">
             {(() => {
-              const live = liveData?.live;
-              const cached = live || readCachedToken(mint);
-              const isGraduated =
-                !!(info as any)?.graduatedPool ||
-                (info as any)?.graduated === true ||
-                (info as any)?.firstPool?.graduated === true ||
-                (cached?.migrated === true) ||
-                ((cached?.bondingPct ?? 0) >= 1);
-              const bondPct = isGraduated ? 100 : Math.round(((cached?.bondingPct ?? 0)) * 100);
+              const t: Token = (liveData?.live as Token) || readCachedToken(mint) || ({ mint } as Token);
               const tokenForAvatar: Token = {
+                ...t,
                 mint,
-                name: info?.name || cached?.name,
-                symbol: info?.symbol || cached?.symbol,
-                imageUri: info?.icon || cached?.imageUri,
+                name: t.name || info?.name,
+                symbol: t.symbol || info?.symbol,
+                imageUri: t.imageUri || info?.icon,
               };
-              return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isGraduated} />;
+              const bondPct = Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
+              const isMigrated = !!t.migrated || (t.bondingPct ?? 0) >= 1 || !!(info as any)?.graduatedPool;
+              return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isMigrated} />;
             })()}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
