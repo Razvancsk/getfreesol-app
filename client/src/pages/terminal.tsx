@@ -554,8 +554,16 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
 
             <InfoAddressRow label="Contract Address" value={mint} />
             <InfoAddressRow label="Developer Address" value={info?.dev} />
-            <InfoTextRow label="Launchpad" value={info?.firstPool?.launchpad || info?.launchpad} />
-            <InfoTextRow label="Graduated Pool" value={info?.graduatedPool || info?.firstPool?.id} isLast />
+            {(() => {
+              const graduatedPool = (info as any)?.graduatedPool || (info as any)?.firstPool?.graduatedPool;
+              const isGraduated = !!graduatedPool || (info as any)?.graduated === true || (info as any)?.firstPool?.graduated === true;
+              return (
+                <>
+                  <InfoTextRow label="Launchpad" value={info?.firstPool?.launchpad || (info as any)?.launchpad} isLast={!isGraduated} />
+                  {isGraduated && <InfoTextRow label="Graduated Pool" value={graduatedPool} isLast />}
+                </>
+              );
+            })()}
 
             {(info?.twitter || info?.website) && (
               <div className="flex flex-wrap gap-2 p-4 border-t border-purple-500/20">
