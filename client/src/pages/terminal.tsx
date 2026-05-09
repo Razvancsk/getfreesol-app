@@ -493,17 +493,16 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-4 gap-2 md:gap-3 mb-4">
           {[
-            { label: 'PRICE', value: fmtPriceUsd(info?.usdPrice), extra: pct24 != null && Number.isFinite(pct24) ? `${pctUp ? '+' : ''}${pct24.toFixed(2)}%` : null, extraColor: pctUp ? 'text-green-400' : 'text-red-400' },
             { label: 'LIQUIDITY', value: fmtUsd(info?.liquidity) },
             { label: 'MARKET CAP', value: fmtUsd(info?.mcap) },
             { label: '24H VOL', value: fmtUsd(((Number(s24.buyVolume)||0) + (Number(s24.sellVolume)||0)) || undefined) },
+            { label: '24H TXNS', value: fmtCount(((Number(s24.numBuys)||0) + (Number(s24.numSells)||0)) || info?.holderCount) },
           ].map((s) => (
-            <div key={s.label} className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-5 py-4 text-center">
-              <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">{s.label}</div>
-              <div className="text-white text-2xl md:text-3xl font-bold tabular-nums mt-1">{s.value}</div>
-              {s.extra && <div className={`text-sm font-medium mt-1 ${s.extraColor}`}>{s.extra}</div>}
+            <div key={s.label} className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-2 py-3 md:px-4 md:py-4 text-center min-w-0">
+              <div className="text-purple-300/70 text-[10px] md:text-xs font-semibold tracking-wider uppercase truncate">{s.label}</div>
+              <div className="text-white text-base md:text-2xl font-bold tabular-nums mt-1 truncate">{s.value}</div>
             </div>
           ))}
         </div>
