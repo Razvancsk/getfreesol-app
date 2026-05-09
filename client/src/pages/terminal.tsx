@@ -612,6 +612,17 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                 <SocialIcons socials={pickSocials(info)} />
               </div>
             </div>
+            <div className="hidden sm:flex flex-col items-end ml-auto pl-3">
+              <div className="text-white text-xl md:text-2xl font-bold tabular-nums leading-tight">
+                {info?.usdPrice ? `$${Number(info.usdPrice) < 0.01 ? Number(info.usdPrice).toExponential(2) : Number(info.usdPrice).toFixed(Number(info.usdPrice) < 1 ? 6 : 4)}` : '—'}
+              </div>
+              {typeof pct24 === 'number' && (
+                <div className={`text-xs font-semibold tabular-nums mt-0.5 flex items-center gap-1 ${pct24 >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {pct24 >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {pct24 >= 0 ? '+' : ''}{pct24.toFixed(2)}% 24h
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
