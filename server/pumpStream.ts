@@ -197,13 +197,9 @@ async function runHeliusFor(mint: string): Promise<'done' | 'retry'> {
     const tinfo = a.token_info || {};
     const name = (meta.name || ext.name) as string | undefined;
     const symbol = (meta.symbol || ext.symbol || tinfo.symbol) as string | undefined;
-    // Prefer Helius CDN URL — it's served from Cloudflare and is far more
-    // reliable than raw IPFS gateways which often fail/time out in browsers.
-    const files = (a.content?.files || []) as any[];
-    const cdnImg = files.find((f) => typeof f?.cdn_uri === 'string')?.cdn_uri as string | undefined;
-    const filesImg = files.find((f) => typeof f?.uri === 'string')?.uri as string | undefined;
     const linkImg = a.content?.links?.image as string | undefined;
-    const img = cdnImg || linkImg || filesImg;
+    const filesImg = (a.content?.files || []).find((f: any) => typeof f?.uri === 'string')?.uri as string | undefined;
+    const img = linkImg || filesImg;
     const t = tokens.get(mint);
     if (!t) return 'done';
     if (name && !t.name) t.name = name;
@@ -540,10 +536,6 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
     .sort((a, b) => (b.bondingPct ?? 0) - (a.bondingPct ?? 0))
     .slice(0, limit)
     .map(serialize);
-}
-
-export function getTokenImageUri(mint: string): string | undefined {
-  return tokens.get(mint)?.imageUri;
 }
 
 export function getStreamStatus() {
