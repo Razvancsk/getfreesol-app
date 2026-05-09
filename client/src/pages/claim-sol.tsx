@@ -5170,7 +5170,7 @@ export default function SolRefund() {
                         placeholder="0.00"
                         value={stakeAmount}
                         onChange={e => setStakeAmount(e.target.value)}
-                        className="flex-1 bg-transparent text-white text-3xl font-black outline-none placeholder-white/30 text-right min-w-0"
+                        className="flex-1 bg-transparent text-white text-4xl font-black outline-none placeholder-white/30 text-right min-w-0 leading-none"
                       />
                     </div>
                   </div>
