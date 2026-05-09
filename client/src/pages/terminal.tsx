@@ -443,8 +443,8 @@ type JupMint = {
   circSupply?: number; totalSupply?: number; holderCount?: number;
   fdv?: number; mcap?: number; usdPrice?: number; liquidity?: number;
   organicScore?: number; isVerified?: boolean;
-  audit?: { mintAuthorityDisabled?: boolean; freezeAuthorityDisabled?: boolean; topHoldersPercentage?: number };
-  stats5m?: any; stats1h?: any; stats6h?: any; stats24h?: any;
+  audit?: { mintAuthorityDisabled?: boolean; freezeAuthorityDisabled?: boolean; topHoldersPercentage?: number; devBalancePercentage?: number };
+  stats5m?: { holderChange?: number;[k: string]: any }; stats1h?: { holderChange?: number;[k: string]: any }; stats6h?: { holderChange?: number;[k: string]: any }; stats24h?: { holderChange?: number;[k: string]: any };
   firstPool?: { id?: string; createdAt?: string; launchpad?: string };
   launchpad?: string; graduatedPool?: string;
   socials?: { twitter?: string; website?: string; telegram?: string; discord?: string };
@@ -689,7 +689,18 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         )}
 
         {tab === 'holders' && (
-          <div className="bg-black/20 rounded-xl p-2">
+          <div className="space-y-3">
+            <div className="bg-black/40 rounded-2xl border border-purple-500/20 grid grid-cols-2 md:grid-cols-4 divide-x divide-purple-500/20 overflow-hidden">
+              <HolderStat label="Holders" value={info?.holderCount != null ? fmtCount(info.holderCount) : '—'} />
+              <HolderStat label="Top 10" value={info?.audit?.topHoldersPercentage != null ? `${info.audit.topHoldersPercentage.toFixed(1)}%` : '—'} />
+              <HolderStat label="Dev" value={info?.audit?.devBalancePercentage != null ? `${info.audit.devBalancePercentage.toFixed(2)}%` : '—'} />
+              <HolderStat
+                label="24H Δ"
+                value={info?.stats24h?.holderChange != null ? `${info.stats24h.holderChange > 0 ? '+' : ''}${info.stats24h.holderChange.toFixed(2)}%` : '—'}
+                tone={info?.stats24h?.holderChange != null ? (info.stats24h.holderChange >= 0 ? 'pos' : 'neg') : undefined}
+              />
+            </div>
+            <div className="bg-black/20 rounded-xl p-2">
             {holdersLoading && <div className="text-center text-white/50 text-sm py-6">Loading top holders…</div>}
             {!holdersLoading && (holdersData?.holders?.length ?? 0) === 0 && (
               <div className="text-center text-white/50 text-sm py-6">No holders found.</div>
@@ -713,6 +724,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                 );
               })}
             </div>
+            </div>
           </div>
         )}
       </div>
@@ -720,6 +732,16 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
       {tradeFor && (
         <TradeDialog token={tokenForTrade} action={tradeFor} onClose={() => setTradeFor(null)} />
       )}
+    </div>
+  );
+}
+
+function HolderStat({ label, value, tone }: { label: string; value: React.ReactNode; tone?: 'pos' | 'neg' }) {
+  const color = tone === 'pos' ? 'text-emerald-400' : tone === 'neg' ? 'text-red-400' : 'text-white';
+  return (
+    <div className="py-3 px-3 text-center">
+      <div className="text-[11px] uppercase tracking-wide text-white/50">{label}</div>
+      <div className={`text-base md:text-lg font-bold tabular-nums mt-0.5 ${color}`}>{value}</div>
     </div>
   );
 }
