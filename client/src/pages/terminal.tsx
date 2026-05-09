@@ -934,7 +934,7 @@ function SwapCard({ token }: { token: Token }) {
         className={`w-full font-bold ${side === 'buy' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-90'}`}
         data-testid="button-quick-swap"
       >
-        {busy ? 'Sending…' : !publicKey ? 'Connect Wallet' : side === 'buy' ? `Quick Buy ${display} SOL` : `Quick Sell ${display}`}
+        {busy ? 'Sending…' : !publicKey ? 'Connect Wallet' : side === 'buy' ? 'Buy' : 'Sell'}
       </Button>
     </div>
   );
