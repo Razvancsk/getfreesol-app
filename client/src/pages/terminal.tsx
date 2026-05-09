@@ -808,8 +808,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                 <div className="text-white font-bold text-lg">Trade {info?.symbol || ''}</div>
               </div>
               <div className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-white/50" />
-                <button onClick={() => setMobileSwapOpen(false)} className="text-white/60 hover:text-white text-xl px-2">×</button>
+                <Settings className="h-5 w-5 text-white" />
+                <button onClick={() => setMobileSwapOpen(false)} className="text-white text-xl px-2">×</button>
               </div>
             </div>
             <SwapCard token={tokenForTrade} flat />
@@ -972,12 +972,12 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       <div className="grid grid-cols-2 bg-purple-950/50 border border-purple-500/20 rounded-lg p-1 gap-1">
         <button
           onClick={() => { setSide('buy'); setAmount(''); }}
-          className={`py-2 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1.5 ${side === 'buy' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
+          className={`py-2 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1.5 text-white ${side === 'buy' ? 'bg-purple-600' : 'hover:bg-white/5'}`}
           data-testid="swap-tab-buy"
         ><Zap className="h-3.5 w-3.5" /> Buy</button>
         <button
           onClick={() => { setSide('sell'); setAmount(''); }}
-          className={`py-2 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1.5 ${side === 'sell' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
+          className={`py-2 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1.5 text-white ${side === 'sell' ? 'bg-purple-600' : 'hover:bg-white/5'}`}
           data-testid="swap-tab-sell"
         ><ArrowDownUp className="h-3.5 w-3.5" /> Sell</button>
       </div>
@@ -993,7 +993,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
         return (
           <>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-white/60">Balance: <span className="text-white">{balText} SOL</span></span>
+              <span className="text-white">Balance: <span className="text-white">{balText} SOL</span></span>
               <button
                 onClick={() => {
                   if (side === 'buy') {
@@ -1002,12 +1002,12 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
                     setAmount('100%');
                   }
                 }}
-                className="text-purple-400 font-semibold text-sm hover:text-purple-300"
+                className="text-white font-semibold text-sm hover:opacity-80"
                 data-testid="swap-max-top"
               >MAX</button>
             </div>
             <div className="bg-purple-950/50 rounded-lg border border-purple-500/40 px-3 py-2 flex items-center gap-3">
-              <div className="text-white/70 text-sm font-semibold">{paySym}</div>
+              <div className="text-white text-sm font-semibold">{paySym}</div>
               <input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
@@ -1033,17 +1033,17 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
               ))}
             </div>
             <div className="flex items-center justify-between text-sm pt-1">
-              <span className="text-white/60">You receive:</span>
-              <span className="text-emerald-400 font-semibold tabular-nums">{recvVal} {recvSym}</span>
+              <span className="text-white">You receive:</span>
+              <span className="text-white font-semibold tabular-nums">{recvVal} {recvSym}</span>
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-white/50">Referral Fee</span>
-                <span className="text-purple-400 font-semibold">0.10%</span>
+                <span className="text-white">Referral Fee</span>
+                <span className="text-white font-semibold">0.10%</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white/50">Slippage</span>
-                <span className="text-white/70">{slippage}.0%</span>
+                <span className="text-white">Slippage</span>
+                <span className="text-white">{slippage}.0%</span>
               </div>
             </div>
           </>
