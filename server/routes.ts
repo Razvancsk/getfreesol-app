@@ -243,7 +243,7 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
 
 async function getWalletFeeRates(walletAddress: string): Promise<{ feePercent: number; referralPercent: number; isTop10: boolean; gfsHolder: boolean }> {
   const gfsHolder = await checkGfsHolder(walletAddress);
-  const baseFee = gfsHolder ? 10 : 20;
+  const baseFee = 10;
   try {
     const isTop10 = await storage.isTop10Wallet(walletAddress);
     if (isTop10) {
