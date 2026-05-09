@@ -134,14 +134,14 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                       domain={[0, 24]}
                       ticks={[0, 4, 8, 12, 16, 20, 24]}
                       tickFormatter={(v) => `${v}%`}
-                      tick={{ fill: '#ffffff', fontSize: 11 }}
+                      tick={{ fill: '#ffffff', fontSize: 11, fontWeight: 700 }}
                       axisLine={false}
                       tickLine={false}
                       width={32}
                     />
                     <XAxis
                       dataKey="epoch"
-                      tick={{ fill: '#ffffff', fontSize: 11 }}
+                      tick={{ fill: '#ffffff', fontSize: 11, fontWeight: 700 }}
                       axisLine={false}
                       tickLine={false}
                       interval={0}
