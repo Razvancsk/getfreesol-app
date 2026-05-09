@@ -552,7 +552,6 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                 {info?.isVerified && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
                 )}
-                <SocialIcons socials={pickSocials(info)} />
               </div>
               <div className="flex items-center gap-2 mt-1 text-xs text-white/50">
                 {info?.firstPool?.createdAt && (
@@ -568,6 +567,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   <Copy className="h-3 w-3" />
                 </button>
               </div>
+              <SocialIcons socials={pickSocials(info)} />
             </div>
           </div>
         </div>
