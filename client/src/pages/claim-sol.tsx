@@ -3851,17 +3851,6 @@ export default function SolRefund() {
                   <img src="/coin_icon.png" alt="Coin Flip" className="h-5 w-5 object-contain shrink-0" /> Coin Flip
                 </Button>
                 <Button
-                  onClick={() => setActiveTab('staking')}
-                  id="staking-tab-btn"
-                  className={`md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
-                    activeTab === 'staking'
-                      ? 'bg-purple-600 text-white border-purple-500'
-                      : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
-                  }`}
-                >
-                  <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
-                </Button>
-                <Button
                   onClick={() => setActiveTab('terminal')}
                   className={`md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
                     activeTab === 'terminal'
@@ -3871,6 +3860,17 @@ export default function SolRefund() {
                   data-testid="button-terminal-tab"
                 >
                   <span className="text-xl shrink-0">🪖</span> Trenches
+                </Button>
+                <Button
+                  onClick={() => setActiveTab('staking')}
+                  id="staking-tab-btn"
+                  className={`md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap ${
+                    activeTab === 'staking'
+                      ? 'bg-purple-600 text-white border-purple-500'
+                      : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
+                  }`}
+                >
+                  <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
                 </Button>
                 {canViewPartners && (
                   <Link href="/partners">
@@ -7657,19 +7657,19 @@ export default function SolRefund() {
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Coin Flip</span>
           </button>
           <button
-            onClick={() => setActiveTab('staking')}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'staking' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <FaSackDollar style={{ width: '20px', height: '20px' }} />
-            <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
-          </button>
-          <button
             onClick={() => setActiveTab('terminal')}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'terminal' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
             data-testid="button-terminal-mobile-nav"
           >
             <span style={{ fontSize: '20px', lineHeight: 1 }}>🪖</span>
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Trenches</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('staking')}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'staking' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <FaSackDollar style={{ width: '20px', height: '20px' }} />
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
           </button>
           {canViewPartners && (
             <Link href="/partners" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#fde68a', textDecoration: 'none', cursor: 'pointer' }}>
