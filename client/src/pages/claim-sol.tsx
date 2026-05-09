@@ -3555,8 +3555,8 @@ export default function SolRefund() {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
 
     const total = parseFloat(scanResult.totalReclaimable);
-    const net = scanResult.emptyAccounts * 0.002; // user always gets 0.002 SOL per account
-    const donation = Math.max(0, total - net); // platform keeps the rest
+    const donation = total * 0.1; // 10% platform fee
+    const net = total - donation; // user gets 90%
 
     return { total, donation, net };
   };
@@ -4393,7 +4393,7 @@ export default function SolRefund() {
                         <ul className="space-y-1 text-white">
                           <li>• Burn unwanted tokens and recover SOL rent deposits</li>
                           <li>• Burning permanently destroys the tokens</li>
-                          <li>• Most tokens return ~0.002 SOL per account closed</li>
+                          <li>• You receive 90% of recovered SOL (10% platform fee)</li>
                         </ul>
                       </>
                     ) : (
@@ -7285,7 +7285,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">You receive 0.002 SOL per account</span>
+                  <span className="text-sm">10% platform fee — you receive 90%</span>
                 </div>
               </div>
             </div>
