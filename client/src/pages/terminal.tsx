@@ -501,23 +501,18 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm mt-4">
-            <div className="bg-black/30 rounded-lg p-2">
-              <div className="text-white/50 text-xs">Market Cap</div>
-              <div className="font-medium tabular-nums">{fmtUsd(info?.mcap)}</div>
-            </div>
-            <div className="bg-black/30 rounded-lg p-2">
-              <div className="text-white/50 text-xs">Liquidity</div>
-              <div className="font-medium tabular-nums">{fmtUsd(info?.liquidity)}</div>
-            </div>
-            <div className="bg-black/30 rounded-lg p-2">
-              <div className="text-white/50 text-xs">Volume 24h</div>
-              <div className="font-medium tabular-nums">{fmtUsd(((Number(s24.buyVolume)||0) + (Number(s24.sellVolume)||0)) || undefined)}</div>
-            </div>
-            <div className="bg-black/30 rounded-lg p-2">
-              <div className="text-white/50 text-xs">Holders</div>
-              <div className="font-medium tabular-nums">{fmtCount(info?.holderCount)}</div>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+            {[
+              { label: 'LIQUIDITY', value: fmtUsd(info?.liquidity) },
+              { label: 'MARKET CAP', value: fmtUsd(info?.mcap) },
+              { label: '24H VOL', value: fmtUsd(((Number(s24.buyVolume)||0) + (Number(s24.sellVolume)||0)) || undefined) },
+              { label: '24H TXNS', value: fmtCount(((Number(s24.numBuys)||0) + (Number(s24.numSells)||0)) || info?.holderCount) },
+            ].map((s) => (
+              <div key={s.label} className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-5 py-4 text-center">
+                <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">{s.label}</div>
+                <div className="text-white text-2xl md:text-3xl font-bold tabular-nums mt-1">{s.value}</div>
+              </div>
+            ))}
           </div>
 
           <div className="flex gap-2 mt-4">
