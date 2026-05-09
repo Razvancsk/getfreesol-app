@@ -63,6 +63,34 @@ function fmtPriceUsd(n?: number): JSX.Element {
   }
   return <>$0.0<sub className="text-[0.7em]">{zeros}</sub>{sig}</>;
 }
+const AVATAR_COLORS = ['bg-pink-600', 'bg-purple-600', 'bg-indigo-600', 'bg-blue-600', 'bg-emerald-600', 'bg-orange-600', 'bg-rose-600', 'bg-fuchsia-600'];
+function colorFor(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+function TokenAvatar({ token }: { token: Token }) {
+  const [failed, setFailed] = useState(false);
+  const initials = (token.symbol || token.name || '?').slice(0, 2).toUpperCase();
+  const color = colorFor(token.mint);
+  const showImg = token.imageUri && !failed;
+  return (
+    <div className="relative flex-shrink-0" style={{ width: 40, height: 40 }}>
+      {showImg ? (
+        <img
+          src={token.imageUri}
+          alt={`${token.symbol} logo`}
+          className="w-10 h-10 rounded-xl object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <div className={`${color} w-10 h-10 text-sm rounded-xl flex items-center justify-center text-white font-bold`}>
+          {initials}
+        </div>
+      )}
+    </div>
+  );
+}
 function fmtCount(n?: number): string {
   if (!n) return '0';
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -217,20 +245,7 @@ export function TerminalView() {
               >
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative flex-shrink-0" style={{ width: 40, height: 40 }}>
-                      {t.imageUri ? (
-                        <img
-                          src={t.imageUri}
-                          alt={`${t.symbol} logo`}
-                          className="w-10 h-10 text-sm rounded-xl object-cover"
-                          onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
-                        />
-                      ) : (
-                        <div className="bg-pink-600 w-10 h-10 text-sm rounded-xl flex items-center justify-center text-white font-bold">
-                          {(t.symbol || '?').slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
+                    <TokenAvatar token={t} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-white text-base truncate">{t.name || t.symbol || 'Unknown'}</span>
@@ -251,35 +266,6 @@ export function TerminalView() {
                   </div>
                 </div>
 
-                {/* Badge row */}
-                <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                  {t.launchpad && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-purple-500/10 text-purple-300 border-purple-500/20">
-                      {t.launchpad}
-                    </span>
-                  )}
-                  {!isMigrated && (t.bondingPct ?? 0) > 0 && (
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border tabular-nums ${
-                        bondPct >= 60
-                          ? 'bg-orange-500/10 text-orange-300 border-orange-500/20'
-                          : 'bg-slate-500/10 text-slate-300 border-slate-500/20'
-                      }`}
-                      title="Progress toward bonding curve migration"
-                    >
-                      Bonding {bondPct}%
-                    </span>
-                  )}
-                  {isMigrated && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-300 border-emerald-500/20">
-                      Migrated ✓
-                    </span>
-                  )}
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-500/10 text-slate-400 border-slate-500/20">
-                    {ago(t.createdAt)} old
-                  </span>
-                </div>
-
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                   <div>
@@ -287,7 +273,7 @@ export function TerminalView() {
                     <div className="text-white font-medium tabular-nums">{fmtUsd(t.marketCapUsd)}</div>
                   </div>
                   <div>
-                    <div className="text-gray-400">Volume</div>
+                    <div className="text-gray-400">Volume 24h</div>
                     <div className="text-white font-medium tabular-nums">{fmtUsd(t.volumeUsd)}</div>
                   </div>
                   <div>
@@ -296,9 +282,7 @@ export function TerminalView() {
                   </div>
                   <div>
                     <div className="text-gray-400">Transactions</div>
-                    <div className="text-white font-medium tabular-nums">
-                      {fmtCount(totalTx)} <span className="text-[10px] text-gray-500">({t.buys ?? 0}b/{t.sells ?? 0}s)</span>
-                    </div>
+                    <div className="text-white font-medium tabular-nums">{fmtCount(totalTx)}</div>
                   </div>
                 </div>
 
