@@ -609,8 +609,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
-                <SocialIcons socials={pickSocials(info)} />
               </div>
+              <SocialIcons socials={pickSocials(info)} />
             </div>
           </div>
         </div>
