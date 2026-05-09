@@ -971,39 +971,34 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
         }
         return (
           <>
-            <div className="bg-black/30 rounded-lg px-3 py-2">
-              <div className="text-[10px] text-white/50 uppercase tracking-wider">Pay ({paySym})</div>
+            <div className="bg-black/30 rounded-lg border border-purple-500/20 px-3 py-2 flex items-center gap-3">
+              <div className="text-white/70 text-sm font-semibold">{paySym}</div>
               <input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.0"
                 inputMode="decimal"
-                className="w-full bg-transparent text-white text-xl font-bold outline-none mt-1"
+                className="flex-1 bg-transparent text-white text-lg font-bold outline-none text-right"
                 data-testid="input-swap-amount"
               />
             </div>
-            <div className="flex justify-center -my-1">
-              <div className="bg-black/30 rounded-full p-1.5 border border-purple-500/20">
-                <ArrowDownUp className="h-3.5 w-3.5 text-purple-300" />
-              </div>
+            <div className="grid grid-cols-4 gap-2">
+              {presets.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setAmount(p)}
+                  className="py-1.5 rounded-md text-xs bg-black/30 text-white/80 hover:bg-purple-600/40"
+                  data-testid={`swap-preset-${p}`}
+                >{p}</button>
+              ))}
             </div>
-            <div className="bg-black/30 rounded-lg px-3 py-2">
-              <div className="text-[10px] text-white/50 uppercase tracking-wider">Receive ({recvSym})</div>
-              <div className="text-white/70 text-xl font-bold mt-1 truncate">{recvVal}</div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-white/60">You receive:</span>
+              <span className="text-emerald-400 font-semibold tabular-nums">{recvVal} {recvSym}</span>
             </div>
           </>
         );
       })()}
-      <div className="grid grid-cols-4 gap-2">
-        {presets.map((p) => (
-          <button
-            key={p}
-            onClick={() => setAmount(p)}
-            className="py-1.5 rounded-md text-xs bg-black/30 text-white/80 hover:bg-purple-600/40"
-            data-testid={`swap-preset-${p}`}
-          >{p}</button>
-        ))}
-      </div>
       <Button
         onClick={submit}
         disabled={busy || !publicKey}
