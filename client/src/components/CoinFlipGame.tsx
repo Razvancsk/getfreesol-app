@@ -9,9 +9,6 @@ import { Loader2 } from 'lucide-react';
 import lossGif from '@assets/tenor_1773011576032.gif';
 
 const BET_AMOUNTS = [0.002, 0.01, 0.05, 0.1, 0.5, 1];
-const ADMIN_BET_AMOUNTS = [0.1, 0.5, 1];
-const PUBLIC_BET_AMOUNTS = [0.002, 0.01, 0.05];
-const ADMIN_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 
 function timeAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -396,7 +393,7 @@ export function CoinFlipGame() {
       <div className="text-center">
         <p className="text-gray-300 font-bold text-lg tracking-widest uppercase mb-3">For</p>
         <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
-          {PUBLIC_BET_AMOUNTS.map((amount) => {
+          {BET_AMOUNTS.map((amount) => {
             const tooHighForVault = vaultBalance > 0 && vaultBalance < amount * 2;
             return (
               <button
@@ -417,30 +414,6 @@ export function CoinFlipGame() {
             );
           })}
         </div>
-        {publicKey?.toBase58() === ADMIN_WALLET && (
-          <div className="grid grid-cols-3 gap-2 max-w-md mx-auto mt-3">
-            {ADMIN_BET_AMOUNTS.map((amount) => {
-              const tooHighForVault = vaultBalance > 0 && vaultBalance < amount * 2;
-              return (
-                <button
-                  key={amount}
-                  onClick={() => setBetAmount(amount)}
-                  disabled={isFlipping || tooHighForVault}
-                  className={`py-5 px-3 rounded-2xl font-black text-xl uppercase transition-all border-2 ${
-                    tooHighForVault
-                      ? 'bg-gray-800/50 text-gray-500 border-gray-600/30 cursor-not-allowed opacity-50'
-                      : betAmount === amount
-                      ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
-                      : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
-                  }`}
-                  title={tooHighForVault ? `Vault needs ${(amount * 2).toFixed(2)} SOL to cover this bet` : ''}
-                >
-                  {amount} SOL
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* DOUBLE OR NOTHING button */}
