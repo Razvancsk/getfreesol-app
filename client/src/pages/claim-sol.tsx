@@ -3870,7 +3870,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-terminal-tab"
                 >
-                  <span className="text-xl shrink-0">⛑️</span> Trenches
+                  <span className="text-xl shrink-0">🪖</span> Trenches
                 </Button>
                 {canViewPartners && (
                   <Link href="/partners">
@@ -7668,7 +7668,7 @@ export default function SolRefund() {
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'terminal' ? '#c084fc' : '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
             data-testid="button-terminal-mobile-nav"
           >
-            <span style={{ fontSize: '20px', lineHeight: 1 }}>⛑️</span>
+            <span style={{ fontSize: '20px', lineHeight: 1 }}>🪖</span>
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Trenches</span>
           </button>
           {canViewPartners && (
