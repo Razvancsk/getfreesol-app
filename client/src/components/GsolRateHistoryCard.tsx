@@ -67,8 +67,8 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
             </h2>
             {view === 'overview' && (
               <p className="text-base font-bold mt-1 text-white">
-                {activeEpoch
-                  ? `${formatDate(activeEpoch.date)}, Epoch ${activeEpoch.epoch}`
+                {hovered
+                  ? `${formatDate(hovered.date)}, Epoch ${hovered.epoch}`
                   : "Last Epoch's APY"}
               </p>
             )}
