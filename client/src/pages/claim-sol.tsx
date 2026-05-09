@@ -5152,16 +5152,16 @@ export default function SolRefund() {
                     </div>
                     {/* Bottom row: token badge left, amount right */}
                     <div className="flex items-center gap-3">
-                      <div className="flex gap-1.5 items-center shrink-0">
+                      <div className="flex gap-2 items-center shrink-0">
                         {stakeMode === 'stake' ? (
                           <>
-                            <img alt="SOL" className="w-7 h-7 rounded-full shrink-0" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
-                            <span className="text-white font-semibold text-sm">SOL</span>
+                            <img alt="SOL" className="w-9 h-9 rounded-full shrink-0" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
+                            <span className="text-white font-black text-3xl">SOL</span>
                           </>
                         ) : (
                           <>
-                            <img alt="GSOL" className="w-7 h-7 rounded-full shrink-0 object-cover" src="/gsol-token-logo.png?v=6" />
-                            <span className="text-white font-semibold text-sm">GSOL</span>
+                            <img alt="GSOL" className="w-9 h-9 rounded-full shrink-0 object-cover" src="/gsol-token-logo.png?v=6" />
+                            <span className="text-white font-black text-3xl">GSOL</span>
                           </>
                         )}
                       </div>
@@ -5191,16 +5191,16 @@ export default function SolRefund() {
                     </div>
                     {/* Token pill left, amount right */}
                     <div className="flex items-center justify-between gap-4">
-                      <div className="flex gap-1.5 items-center shrink-0">
+                      <div className="flex gap-2 items-center shrink-0">
                         {stakeMode === 'stake' ? (
                           <>
-                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-7 h-7 rounded-full object-contain shrink-0" />
-                            <span className="text-white font-semibold text-sm">GSOL</span>
+                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-10 h-10 rounded-full object-contain shrink-0" />
+                            <span className="text-white font-black text-4xl leading-none">GSOL</span>
                           </>
                         ) : (
                           <>
-                            <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" className="w-7 h-7 rounded-full shrink-0" />
-                            <span className="text-white font-semibold text-sm">SOL</span>
+                            <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" className="w-10 h-10 rounded-full shrink-0" />
+                            <span className="text-white font-black text-4xl leading-none">SOL</span>
                           </>
                         )}
                       </div>
