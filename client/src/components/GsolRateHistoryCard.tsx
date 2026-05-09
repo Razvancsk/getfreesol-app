@@ -25,7 +25,7 @@ function formatTvl(tvlLamports: number | null): string {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalance = 0, gsolApy = null, connected = false }: Props) {
