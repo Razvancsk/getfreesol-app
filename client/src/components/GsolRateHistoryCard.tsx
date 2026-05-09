@@ -61,7 +61,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
 
   return (
     <div className="w-full rounded-2xl bg-purple-900/20 border border-white/20 backdrop-blur-sm overflow-hidden mt-6">
-      <div className="px-0 pt-4 pb-0">
+      <div className="px-0 pt-4 pb-0 relative">
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
             <h2 className="text-green-400 font-black text-3xl">
@@ -75,7 +75,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               </p>
             )}
           </div>
-          <div className="flex items-center gap-1 bg-purple-900/30 rounded-l-lg p-1 border border-r-0 border-white/20 shrink-0 -mr-px">
+          <div className="absolute top-0 right-0 flex items-center gap-1 bg-purple-900/30 rounded-bl-lg p-1 border border-t-0 border-r-0 border-white/20 shrink-0">
             <button
               onClick={() => setView('overview')}
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
