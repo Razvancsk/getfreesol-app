@@ -930,7 +930,10 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
 
   const live: any = token || {};
   const STANDARD_SUPPLY = 1_000_000_000;
-  const priceSol = live.priceSol ?? (live.marketCapSol ? live.marketCapSol / STANDARD_SUPPLY : undefined);
+  // Prefer priceUsd/solUsd (DexScreener-anchored) over stream priceSol which can be stale for graduated tokens.
+  const priceSol = (live.priceUsd && live.solUsd)
+    ? Number(live.priceUsd) / Number(live.solUsd)
+    : (live.priceSol ?? (live.marketCapSol ? live.marketCapSol / STANDARD_SUPPLY : undefined));
   const sym = (live.symbol || 'TOKEN').toString().slice(0, 8);
 
   function fmtNum(n: number, max = 6) {

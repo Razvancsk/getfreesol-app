@@ -12857,6 +12857,8 @@ Claimer: ${walletAddress}`;
               const SOL_MINT = 'So11111111111111111111111111111111111111112';
               const solPair = sol.find((p) => p?.quoteToken?.address === SOL_MINT) || best;
               const priceSol = Number(solPair?.priceNative) || undefined;
+              const { getSolUsd } = await import('./pumpStream');
+              const solUsdNow = getSolUsd();
               const buys = sol.reduce((s, p) => s + (Number(p?.txns?.h24?.buys) || 0), 0);
               const sells = sol.reduce((s, p) => s + (Number(p?.txns?.h24?.sells) || 0), 0);
               const volumeUsd = sol.reduce((s, p) => s + (Number(p?.volume?.h24) || 0), 0);
@@ -12873,6 +12875,7 @@ Claimer: ${walletAddress}`;
                 volumeUsd: live?.volumeUsd ?? (volumeUsd || undefined),
                 buys: live?.buys ?? buys,
                 sells: live?.sells ?? sells,
+                solUsd: live?.solUsd ?? (solUsdNow || undefined),
               };
               live = merged;
             }

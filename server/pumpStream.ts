@@ -554,6 +554,7 @@ function serialize(t: Token) {
     sells: t.sells,
     migrated: !!t.migrated,
     migratedAt: t.migratedAt,
+    solUsd: solUsd || undefined,
   };
 }
 
@@ -571,6 +572,8 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
     .slice(0, limit)
     .map(serialize);
 }
+
+export function getSolUsd() { return solUsd; }
 
 export function getTokenLive(mint: string) {
   const t = tokens.get(mint);
