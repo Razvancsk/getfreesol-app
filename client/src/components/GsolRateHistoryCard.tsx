@@ -115,20 +115,19 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={last25.map(e => ({ ...e, apyPct: (e.apy ?? 0) * 100 }))}
-                    margin={{ top: 10, right: 8, left: 8, bottom: 25 }}
+                    margin={{ top: 10, right: 4, left: 8, bottom: 25 }}
                     barCategoryGap="15%"
                   >
                     <YAxis
                       type="number"
                       orientation="right"
                       domain={[0, 24]}
-                      ticks={[4, 8, 12, 16, 20, 24]}
+                      ticks={[0, 4, 8, 12, 16, 20, 24]}
                       tickFormatter={(v) => `${v}%`}
-                      tick={{ fill: '#ffffff', fontSize: 11, dx: -4 }}
+                      tick={{ fill: '#ffffff', fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
-                      width={0}
-                      mirror
+                      width={32}
                     />
                     <XAxis
                       dataKey="epoch"
