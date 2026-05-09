@@ -185,6 +185,15 @@ export default function TerminalPage() {
   );
 }
 
+function useDebounced<T>(value: T, ms: number): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return v;
+}
+
 export function TerminalView() {
   const [tab, setTab] = useState<FeedType>('new');
   const [search, setSearch] = useState('');
@@ -213,16 +222,22 @@ export function TerminalView() {
     },
   });
 
+  const debouncedSearch = useDebounced(search.trim(), 300);
+  const { data: searchData, isFetching: searchFetching } = useQuery<{ tokens: Token[] }>({
+    queryKey: ['/api/terminal/search', debouncedSearch],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/search?q=${encodeURIComponent(debouncedSearch)}`);
+      if (!r.ok) throw new Error('search failed');
+      return r.json();
+    },
+    enabled: debouncedSearch.length > 0,
+    staleTime: 30_000,
+  });
+
   const tokens = useMemo(() => {
-    const list = data?.tokens ?? [];
-    if (!search.trim()) return list;
-    const q = search.trim().toLowerCase();
-    return list.filter(t =>
-      (t.symbol || '').toLowerCase().includes(q) ||
-      (t.name || '').toLowerCase().includes(q) ||
-      t.mint.toLowerCase().includes(q),
-    );
-  }, [data, search]);
+    if (debouncedSearch.length > 0) return searchData?.tokens ?? [];
+    return data?.tokens ?? [];
+  }, [data, searchData, debouncedSearch]);
 
   const status = data?.status;
 

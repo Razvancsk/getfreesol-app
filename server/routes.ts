@@ -12752,6 +12752,39 @@ Claimer: ${walletAddress}`;
     res.json({ tokens: getPumpFeed(t as any, limit), status: getPumpStatus() });
   });
 
+  app.get('/api/terminal/search', async (req, res) => {
+    try {
+      const q = String(req.query.q || '').trim();
+      if (!q) return res.json({ tokens: [] });
+      const key = process.env.JUPITER_API_KEY;
+      if (!key) return res.status(500).json({ error: 'JUPITER_API_KEY missing' });
+      const r = await fetch(`https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(q)}`, {
+        headers: { 'x-api-key': key },
+      });
+      if (!r.ok) return res.status(r.status).json({ error: `jupiter ${r.status}` });
+      const arr: any[] = await r.json();
+      const tokens = (Array.isArray(arr) ? arr : []).map((m: any) => ({
+        mint: m.id,
+        name: m.name || '',
+        symbol: m.symbol || '',
+        imageUri: m.icon || '',
+        pool: '',
+        bondingPct: undefined,
+        marketCapUsd: m.mcap ?? m.fdv ?? undefined,
+        priceUsd: m.usdPrice ?? undefined,
+        liquidityUsd: m.liquidity ?? undefined,
+        solVolume: undefined,
+        buys: m?.stats24h?.numBuys ?? 0,
+        sells: m?.stats24h?.numSells ?? 0,
+        createdAt: m.firstPool?.createdAt ? Date.parse(m.firstPool.createdAt) : undefined,
+        migrated: false,
+      }));
+      res.json({ tokens });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'search failed' });
+    }
+  });
+
   app.post('/api/terminal/build-tx', async (req, res) => {
     try {
       const { publicKey, action, mint, amount, denominatedInQuote, slippage, priorityFee } = req.body || {};
