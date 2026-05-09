@@ -762,7 +762,14 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   const tag = tagFor(h);
                   const linkAddr = h.owner || h.address;
                   return (
-                    <div key={h.address} className="flex items-center justify-between py-3 text-sm">
+                    <a
+                      key={h.address}
+                      href={`https://solscan.io/account/${linkAddr}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between py-3 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors"
+                      data-testid={`holder-row-${linkAddr}`}
+                    >
                       <div className="flex items-center gap-2 min-w-0">
                         {tag ? (
                           <>
@@ -770,13 +777,13 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                             <tag.icon className={`h-4 w-4 ${tag.color}`} />
                           </>
                         ) : (
-                          <a href={`https://solscan.io/account/${linkAddr}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-purple-300 hover:underline truncate">
+                          <span className="font-mono text-xs text-purple-300 truncate">
                             {shortMint(linkAddr)}
-                          </a>
+                          </span>
                         )}
                       </div>
                       <div className="text-white tabular-nums">{pct.toFixed(2)}%</div>
-                    </div>
+                    </a>
                   );
                 });
               })()}
