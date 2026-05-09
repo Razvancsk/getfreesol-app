@@ -218,7 +218,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                         <div>
                           <div className="text-white text-sm font-semibold">GSOL PnL</div>
                           <div className="text-white/50 text-[10px]">
-                            FIFO via Helius
+                            FIFO cost basis · history via Helius
                             {jupPortfolio?.reachedLimit && ' · history capped'}
                             {Number(jupPortfolio?.untrackedSells) > 0 && ' · partial history'}
                           </div>
