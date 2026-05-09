@@ -28,6 +28,8 @@ type Token = {
   vSolInBondingCurve?: number;
   vTokensInBondingCurve?: number;
   marketCapSol?: number;
+  firstMarketCapSol?: number;
+  solVolume?: number;
   bondingPct?: number;
   createdAt?: number;
   lastSeen: number;
@@ -36,6 +38,21 @@ type Token = {
   migrated?: boolean;
   migratedAt?: number;
 };
+
+// Standard supply for nearly all launchpad memecoins (1B tokens). Used to
+// derive a per-token USD price from marketCapSol × SOL price.
+const STANDARD_SUPPLY = 1_000_000_000;
+
+let solUsd = 0;
+let solUsdFetchedAt = 0;
+async function refreshSolUsd() {
+  try {
+    const r = await fetch('https://lite-api.jup.ag/price/v3?ids=So11111111111111111111111111111111111111112');
+    const j: any = await r.json();
+    const p = j?.['So11111111111111111111111111111111111111112']?.usdPrice;
+    if (p && Number.isFinite(p)) { solUsd = Number(p); solUsdFetchedAt = Date.now(); }
+  } catch { /* keep stale */ }
+}
 
 const MAX_NEW = 200;
 const MAX_MIGRATED = 200;
@@ -168,6 +185,12 @@ function handleEvent(ev: Event) {
       bondingPct: bondingPctFor(ev.pool, ev.vSolInBondingCurve),
     };
     const t = upsert(ev.mint, patch);
+    if (typeof ev.marketCapSol === 'number' && t.firstMarketCapSol == null) {
+      t.firstMarketCapSol = ev.marketCapSol;
+    }
+    const solSize = typeof ev.solAmount === 'number' ? ev.solAmount
+      : typeof ev.sol === 'number' ? ev.sol : 0;
+    if (solSize > 0) t.solVolume = (t.solVolume ?? 0) + solSize;
     if (ev.txType === 'buy') t.buys++; else t.sells++;
   }
 }
@@ -218,9 +241,23 @@ export function startPumpStream() {
   // periodic batched LRU eviction (cheap)
   if (evictTimer) clearInterval(evictTimer);
   evictTimer = setInterval(evictIfNeeded, 10_000);
+  // SOL/USD price refresh
+  refreshSolUsd();
+  setInterval(refreshSolUsd, 60_000);
 }
 
 function serialize(t: Token) {
+  const mcSol = t.marketCapSol;
+  const mcUsd = mcSol && solUsd ? mcSol * solUsd : undefined;
+  const priceUsd = mcUsd ? mcUsd / STANDARD_SUPPLY : undefined;
+  const liqSol = t.vSolInBondingCurve;
+  const liqUsd = liqSol && solUsd ? liqSol * solUsd : undefined;
+  const volSol = t.solVolume;
+  const volUsd = volSol && solUsd ? volSol * solUsd : undefined;
+  let pctChange: number | undefined;
+  if (mcSol && t.firstMarketCapSol && t.firstMarketCapSol > 0) {
+    pctChange = ((mcSol - t.firstMarketCapSol) / t.firstMarketCapSol) * 100;
+  }
   return {
     mint: t.mint,
     name: t.name,
@@ -230,6 +267,11 @@ function serialize(t: Token) {
     launchpad: launchpadLabel(t.pool),
     vSolInBondingCurve: t.vSolInBondingCurve,
     marketCapSol: t.marketCapSol,
+    marketCapUsd: mcUsd,
+    priceUsd,
+    pctChange,
+    liquidityUsd: liqUsd,
+    volumeUsd: volUsd,
     bondingPct: t.bondingPct,
     createdAt: t.createdAt,
     lastSeen: t.lastSeen,

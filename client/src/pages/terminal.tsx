@@ -9,7 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, RefreshCw, Search, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, RefreshCw, Search, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
 
 type FeedType = 'new' | 'bonding' | 'migrated';
 
@@ -22,6 +22,11 @@ type Token = {
   launchpad?: string;
   vSolInBondingCurve?: number;
   marketCapSol?: number;
+  marketCapUsd?: number;
+  priceUsd?: number;
+  pctChange?: number;
+  liquidityUsd?: number;
+  volumeUsd?: number;
   bondingPct?: number;
   createdAt?: number;
   lastSeen?: number;
@@ -29,6 +34,23 @@ type Token = {
   sells?: number;
   migrated?: boolean;
 };
+
+function fmtUsd(n?: number): string {
+  if (n == null || !Number.isFinite(n)) return '—';
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}B`;
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(2)}K`;
+  if (n >= 1) return `$${n.toFixed(2)}`;
+  if (n >= 0.01) return `$${n.toFixed(4)}`;
+  if (n > 0) return `$${n.toPrecision(3)}`;
+  return '$0';
+}
+function fmtCount(n?: number): string {
+  if (!n) return '0';
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
 
 const TABS: { id: FeedType; label: string; icon: any; sub: string }[] = [
   { id: 'new',       label: 'New',           icon: Sparkles, sub: 'All launchpads' },
@@ -165,70 +187,76 @@ export function TerminalView() {
           )}
           {tokens.map((t) => {
             const totalTx = (t.buys ?? 0) + (t.sells ?? 0);
-            const rightLabel = tab === 'bonding' ? 'Bonding' : tab === 'migrated' ? 'Migrated' : 'Created';
-            const rightValue = tab === 'bonding'
-              ? `${Math.round((t.bondingPct ?? 0) * 100)}%`
-              : tab === 'migrated'
-                ? `${ago(t.lastSeen)} ago`
-                : `${ago(t.createdAt)} ago`;
-            const rightColor = tab === 'bonding' ? 'text-orange-300' : tab === 'migrated' ? 'text-green-300' : 'text-white';
+            const pct = t.pctChange;
+            const pctUp = (pct ?? 0) >= 0;
             return (
               <div
                 key={t.mint}
-                className="bg-purple-900/30 border border-purple-500/20 rounded-2xl p-4 hover:border-purple-400/40 hover:bg-purple-900/40 transition-colors"
+                className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4 hover:border-purple-500/40 transition-all overflow-hidden"
                 data-testid={`row-${t.mint}`}
               >
-                {/* Top: identity + price/badge */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="h-10 w-10 rounded-full bg-purple-700/40 flex items-center justify-center overflow-hidden shrink-0 ring-1 ring-white/10">
+                {/* Top: identity + price */}
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative flex-shrink-0 w-10 h-10 rounded-xl bg-purple-700/40 flex items-center justify-center overflow-hidden ring-1 ring-white/10">
                       {t.imageUri
-                        ? <img src={t.imageUri} alt="" className="h-full w-full object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+                        ? <img src={t.imageUri} alt={`${t.symbol} logo`} className="w-10 h-10 rounded-xl object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
                         : <span className="text-sm font-bold">{(t.symbol || '?').slice(0, 2)}</span>}
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-base font-bold text-white truncate">{t.symbol || 'UNKN'}</span>
+                        <span className="font-semibold text-white text-base truncate">{t.name || t.symbol || 'Unknown'}</span>
                         {t.launchpad && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/30 border border-purple-400/40 text-purple-100 font-semibold uppercase tracking-wide shrink-0">
                             {t.launchpad}
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-white/50 truncate">{t.name || shortMint(t.mint)}</div>
+                      <div className="text-gray-400 text-sm">{t.symbol || shortMint(t.mint)}</div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className={`text-base font-bold ${rightColor} tabular-nums`}>{rightValue}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-white/40">{rightLabel}</div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="font-bold text-white text-base tabular-nums">{fmtUsd(t.priceUsd)}</div>
+                    {pct != null && Number.isFinite(pct) ? (
+                      <div className={`flex items-center justify-end text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
+                        {pctUp ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+                        {pctUp ? '+' : ''}{pct.toFixed(2)}%
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm">—</div>
+                    )}
                   </div>
                 </div>
 
                 {/* Stats grid */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
+                <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-white/40">Market Cap</div>
-                    <div className="text-sm font-semibold text-white tabular-nums">{fmtSol(t.marketCapSol)} SOL</div>
+                    <div className="text-gray-400">Market Cap</div>
+                    <div className="text-white font-medium tabular-nums">{fmtUsd(t.marketCapUsd)}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-white/40">Liquidity</div>
-                    <div className="text-sm font-semibold text-white tabular-nums">{fmtSol(t.vSolInBondingCurve)} SOL</div>
+                    <div className="text-gray-400">{tab === 'bonding' ? 'Bonding' : tab === 'migrated' ? 'Migrated' : 'Age'}</div>
+                    <div className={`font-medium tabular-nums ${tab === 'bonding' ? 'text-orange-300' : tab === 'migrated' ? 'text-green-300' : 'text-white'}`}>
+                      {tab === 'bonding'
+                        ? `${Math.round((t.bondingPct ?? 0) * 100)}%`
+                        : tab === 'migrated'
+                          ? `${ago(t.lastSeen)} ago`
+                          : `${ago(t.createdAt)} ago`}
+                    </div>
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-white/40">Transactions</div>
-                    <div className="text-sm font-semibold text-white tabular-nums">{totalTx}</div>
+                    <div className="text-gray-400">Liquidity</div>
+                    <div className="text-white font-medium tabular-nums">{fmtUsd(t.liquidityUsd)}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-white/40">Buys / Sells</div>
-                    <div className="text-sm font-semibold tabular-nums">
-                      <span className="text-green-400">{t.buys ?? 0}</span>
-                      <span className="text-white/30"> / </span>
-                      <span className="text-red-400">{t.sells ?? 0}</span>
+                    <div className="text-gray-400">Transactions</div>
+                    <div className="text-white font-medium tabular-nums">
+                      {fmtCount(totalTx)} <span className="text-[10px] text-gray-500">({t.buys ?? 0}b/{t.sells ?? 0}s)</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Bonding progress bar (when applicable) */}
+                {/* Bonding progress bar */}
                 {tab !== 'migrated' && (t.bondingPct ?? 0) > 0 && (
                   <div className="mb-3">
                     <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
