@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Twitter } from 'lucide-react';
 
 type FeedType = 'new' | 'bonding' | 'migrated';
 
@@ -164,6 +164,35 @@ function fmtSol(n?: number) {
 
 function shortMint(m: string) {
   return `${m.slice(0, 4)}…${m.slice(-4)}`;
+}
+
+function SocialIcons({ socials }: { socials: { twitter?: string; website?: string; telegram?: string; discord?: string } }) {
+  const items: { href: string; icon: any; label: string }[] = [];
+  if (socials.twitter) items.push({ href: socials.twitter, icon: Twitter, label: 'Twitter' });
+  if (socials.website) items.push({ href: socials.website, icon: Globe, label: 'Website' });
+  if (socials.telegram) items.push({ href: socials.telegram, icon: Send, label: 'Telegram' });
+  if (socials.discord) items.push({ href: socials.discord, icon: MessageCircle, label: 'Discord' });
+  if (items.length === 0) return null;
+  return (
+    <div className="flex items-center gap-1.5 ml-1">
+      {items.map((it) => {
+        const Icon = it.icon;
+        return (
+          <a
+            key={it.label}
+            href={it.href}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={it.label}
+            className="text-white/60 hover:text-white p-1 rounded-md hover:bg-white/10"
+            data-testid={`link-social-${it.label.toLowerCase()}`}
+          >
+            <Icon className="h-3.5 w-3.5" />
+          </a>
+        );
+      })}
+    </div>
+  );
 }
 
 function relAge(input: string | number | Date | undefined): string {
@@ -397,14 +426,29 @@ export function TerminalView() {
 
 type JupMint = {
   id: string; name?: string; symbol?: string; icon?: string;
-  decimals?: number; twitter?: string; website?: string; dev?: string;
+  decimals?: number; twitter?: string; website?: string; telegram?: string; discord?: string; dev?: string;
   circSupply?: number; totalSupply?: number; holderCount?: number;
   fdv?: number; mcap?: number; usdPrice?: number; liquidity?: number;
   organicScore?: number; isVerified?: boolean;
   audit?: { mintAuthorityDisabled?: boolean; freezeAuthorityDisabled?: boolean; topHoldersPercentage?: number };
   stats5m?: any; stats1h?: any; stats6h?: any; stats24h?: any;
-  firstPool?: { id?: string; createdAt?: string };
+  firstPool?: { id?: string; createdAt?: string; launchpad?: string };
+  launchpad?: string; graduatedPool?: string;
+  socials?: { twitter?: string; website?: string; telegram?: string; discord?: string };
+  metadata?: { extensions?: { twitter?: string; website?: string; telegram?: string; discord?: string } };
 };
+
+function pickSocials(info?: JupMint): { twitter?: string; website?: string; telegram?: string; discord?: string } {
+  if (!info) return {};
+  const ext = (info as any)?.metadata?.extensions || {};
+  const s = (info as any)?.socials || {};
+  return {
+    twitter: info.twitter || s.twitter || ext.twitter,
+    website: info.website || s.website || ext.website,
+    telegram: (info as any).telegram || s.telegram || ext.telegram,
+    discord: (info as any).discord || s.discord || ext.discord,
+  };
+}
 
 function fmtNum(n?: number): string {
   if (n == null || !Number.isFinite(n)) return '—';
@@ -502,12 +546,13 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               <div className="w-10 h-10 rounded-full bg-purple-700 flex-shrink-0" />
             )}
             <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xl font-bold text-white">{info?.symbol || '—'}</span>
                 <span className="text-sm text-white/60 truncate">{info?.name || 'Unknown'}</span>
                 {info?.isVerified && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
                 )}
+                <SocialIcons socials={pickSocials(info)} />
               </div>
               <div className="flex items-center gap-2 mt-1 text-xs text-white/50">
                 {info?.firstPool?.createdAt && (
