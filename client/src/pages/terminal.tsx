@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Twitter } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Twitter, Droplet, Hammer } from 'lucide-react';
 
 type FeedType = 'new' | 'bonding' | 'migrated';
 
@@ -537,7 +537,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     refetchInterval: 1500,
     enabled: !!mint,
   });
-  const { data: holdersData, isFetching: holdersLoading } = useQuery<{ holders: { address: string; owner?: string; amount: number }[] }>({
+  const { data: holdersData, isFetching: holdersLoading } = useQuery<{ holders: { address: string; owner?: string; amount: number; label?: string }[] }>({
     queryKey: ['/api/terminal/holders', mint],
     queryFn: async () => {
       const r = await fetch(`/api/terminal/holders/${mint}`);
@@ -689,62 +689,71 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         )}
 
         {tab === 'holders' && (
-          <div className="space-y-3">
-            <div className="bg-black/20 rounded-xl p-2">
+          <div className="bg-black/40 rounded-2xl border border-purple-500/20 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold">Top holders</h3>
+              <a
+                href={`https://app.bubblemaps.io/sol/token/${mint}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/10"
+              >
+                Bubble map
+              </a>
+            </div>
             {holdersLoading && <div className="text-center text-white/50 text-sm py-6">Loading top holders…</div>}
             {!holdersLoading && (holdersData?.holders?.length ?? 0) === 0 && (
               <div className="text-center text-white/50 text-sm py-6">No holders found.</div>
             )}
-            <div className="divide-y divide-purple-500/20">
+            <div className="divide-y divide-white/5">
               {(() => {
                 const devAddr = info?.dev;
                 const poolAddr = (info as any)?.firstPool?.id;
                 const gradAddr = (info as any)?.graduatedPool;
                 const lpName = info?.firstPool?.launchpad || (info as any)?.launchpad;
-                const isBondingPool = lpName && !((info as any)?.graduated === true || gradAddr);
-                const labelFor = (h: { address: string; owner?: string }) => {
+                const tagFor = (h: { address: string; owner?: string; label?: string }) => {
                   const o = h.owner || h.address;
-                  if (devAddr && o === devAddr) return { name: 'Dev', tone: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
-                  if (poolAddr && (o === poolAddr || h.address === poolAddr)) {
-                    return { name: isBondingPool ? `${lpName} Bonding Curve` : `${lpName || 'Pool'}`, tone: 'bg-blue-500/20 text-blue-300 border-blue-500/40' };
+                  if (devAddr && o === devAddr) {
+                    return { name: 'Dev', icon: Hammer, color: 'text-amber-400' };
                   }
-                  if (gradAddr && (o === gradAddr || h.address === gradAddr)) {
-                    return { name: 'Graduated Pool', tone: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+                  if (
+                    h.label === 'pump.fun-bonding-curve' ||
+                    (poolAddr && poolAddr !== mint && (o === poolAddr || h.address === poolAddr)) ||
+                    (gradAddr && (o === gradAddr || h.address === gradAddr))
+                  ) {
+                    return { name: 'Liquidity pool', icon: Droplet, color: 'text-sky-400' };
                   }
                   return null;
                 };
                 const list = [...(holdersData?.holders || [])];
-                // Inject dev if not present and dev holding > 0 from Jupiter audit
                 const devPct = info?.audit?.devBalancePercentage;
                 if (devAddr && totalSupply > 0 && devPct && devPct > 0 && !list.some((h) => (h.owner || h.address) === devAddr)) {
                   list.push({ address: devAddr, owner: devAddr, amount: (devPct / 100) * totalSupply });
                   list.sort((a, b) => b.amount - a.amount);
                 }
-                return list.slice(0, 20).map((h, i) => {
+                return list.slice(0, 20).map((h) => {
                   const pct = totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0;
-                  const tag = labelFor(h);
+                  const tag = tagFor(h);
                   const linkAddr = h.owner || h.address;
                   return (
-                    <div key={h.address} className="flex items-center justify-between py-3 px-3 text-sm">
+                    <div key={h.address} className="flex items-center justify-between py-3 text-sm">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-white/40 text-xs w-5 text-right">#{i + 1}</span>
                         {tag ? (
-                          <span className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${tag.tone}`}>{tag.name}</span>
+                          <>
+                            <span className="text-white">{tag.name}</span>
+                            <tag.icon className={`h-4 w-4 ${tag.color}`} />
+                          </>
                         ) : (
-                          <a href={`https://solscan.io/account/${linkAddr}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-purple-300 underline truncate">
+                          <a href={`https://solscan.io/account/${linkAddr}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-purple-300 hover:underline truncate">
                             {shortMint(linkAddr)}
                           </a>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="tabular-nums text-white/80">{fmtNum(h.amount)}</span>
-                        {totalSupply > 0 && <span className="text-white/50 text-xs tabular-nums w-14 text-right">{pct.toFixed(2)}%</span>}
-                      </div>
+                      <div className="text-white tabular-nums">{pct.toFixed(2)}%</div>
                     </div>
                   );
                 });
               })()}
-            </div>
             </div>
           </div>
         )}

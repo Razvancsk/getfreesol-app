@@ -12861,12 +12861,36 @@ Claimer: ${walletAddress}`;
           });
         } catch {}
       }
-      const holders = list.map((h: any) => ({
-        address: h.address,
-        owner: owners[h.address],
-        amount: Number(h.uiAmount) || 0,
-        decimals: Number(h.decimals) || 0,
-      }));
+      // Derive pump.fun bonding curve PDA + its associated token account
+      let pumpBondingCurve: string | undefined;
+      let pumpBondingCurveAta: string | undefined;
+      try {
+        const PUMP_PROGRAM = new PublicKey('6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P9');
+        const mintPk = new PublicKey(mint);
+        const [bc] = PublicKey.findProgramAddressSync(
+          [Buffer.from('bonding-curve'), mintPk.toBuffer()],
+          PUMP_PROGRAM,
+        );
+        pumpBondingCurve = bc.toBase58();
+        pumpBondingCurveAta = getAssociatedTokenAddressSync(mintPk, bc, true).toBase58();
+      } catch {}
+      const holders = list.map((h: any) => {
+        const owner = owners[h.address];
+        let label: string | undefined;
+        if (
+          (pumpBondingCurve && owner === pumpBondingCurve) ||
+          (pumpBondingCurveAta && h.address === pumpBondingCurveAta)
+        ) {
+          label = 'pump.fun-bonding-curve';
+        }
+        return {
+          address: h.address,
+          owner,
+          amount: Number(h.uiAmount) || 0,
+          decimals: Number(h.decimals) || 0,
+          label,
+        };
+      });
       res.json({ holders });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'holders failed' });
