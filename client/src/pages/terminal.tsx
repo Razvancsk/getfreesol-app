@@ -76,9 +76,8 @@ function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: numb
   const showImg = token.imageUri && !failed;
   const SIZE = 92;
   const IMG = 76;
-  const STROKE = 4;
-  const R = (SIZE - STROKE) / 2;
-  const C = 2 * Math.PI * R;
+  const STROKE = 3;
+  const RX = 14;
   const pct = migrated ? 100 : Math.max(0, Math.min(100, bondPct));
   const ringColor = migrated
     ? '#34d399'
@@ -87,19 +86,23 @@ function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: numb
     : '#a78bfa';
   return (
     <div className="relative flex-shrink-0" style={{ width: SIZE, height: SIZE }}>
-      <svg className="absolute inset-0 -rotate-90 pointer-events-none" width={SIZE} height={SIZE}>
-        <circle
-          cx={SIZE / 2} cy={SIZE / 2} r={R}
+      <svg className="absolute inset-0 pointer-events-none" width={SIZE} height={SIZE}>
+        <rect
+          x={STROKE / 2} y={STROKE / 2}
+          width={SIZE - STROKE} height={SIZE - STROKE}
+          rx={RX} ry={RX}
           stroke="rgba(255,255,255,0.1)" strokeWidth={STROKE} fill="none"
         />
         {pct > 0 && (
-          <circle
-            cx={SIZE / 2} cy={SIZE / 2} r={R}
+          <rect
+            x={STROKE / 2} y={STROKE / 2}
+            width={SIZE - STROKE} height={SIZE - STROKE}
+            rx={RX} ry={RX}
             stroke={ringColor} strokeWidth={STROKE} fill="none"
             strokeLinecap="round"
-            strokeDasharray={C}
-            strokeDashoffset={C * (1 - pct / 100)}
-            style={{ transition: 'stroke-dashoffset 600ms ease' }}
+            pathLength={100}
+            strokeDasharray={`${pct} 100`}
+            style={{ transition: 'stroke-dasharray 600ms ease' }}
           />
         )}
       </svg>
