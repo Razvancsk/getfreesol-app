@@ -11208,43 +11208,35 @@ Claimer: ${walletAddress}`;
       if (_rateHistoryCache && Date.now() - _rateHistoryCache.cachedAt < RATE_HISTORY_CACHE_MS) {
         return res.json(_rateHistoryCache);
       }
-      const heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
-      const GSOL_STAKE_ACCT = 'HwzMUGq3C7STPuHgD9UGPKDhqpcmXyN4JzKigwNqavej';
-      const GSOL_CREATION_EPOCH = 941;
+      const sanctumRes = await fetch(
+        `https://sanctum-api.ironforge.network/lsts/${GSOL_MINT_ADDR}/apys?apiKey=${process.env.SANCTUM_API_KEY}&limit=500`
+      );
+      if (!sanctumRes.ok) throw new Error(`Sanctum apys ${sanctumRes.status}`);
+      const sanctumData = await sanctumRes.json();
+      const apyRows: { epoch: number; epochEndTs: number; apy: number }[] = sanctumData?.data ?? [];
+      apyRows.sort((a, b) => a.epoch - b.epoch);
 
-      const epochJ = await fetch(heliusUrl, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getEpochInfo', params: [] })
-      }).then(r => r.json());
-      const currentEpoch: number = epochJ.result?.epoch ?? 0;
-      const slotsPerEpoch: number = epochJ.result?.slotsInEpoch ?? 432000;
-      const epochDurationMs = slotsPerEpoch * 400; // 400 ms per slot
-      const nowMs = Date.now();
-
-      const epochs: { epoch: number; rate: number; date: string }[] = [];
+      const epochs: { epoch: number; rate: number; apy: number; date: string }[] = [];
       let compound = 1.0;
-      // Seed with creation epoch
-      const creationDate = new Date(nowMs - (currentEpoch - GSOL_CREATION_EPOCH) * epochDurationMs);
-      epochs.push({ epoch: GSOL_CREATION_EPOCH, rate: 1.0, date: creationDate.toISOString() });
-
-      for (let epoch = GSOL_CREATION_EPOCH; epoch < currentEpoch; epoch++) {
-        try {
-          const rewJ = await fetch(heliusUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0', id: 2, method: 'getInflationReward',
-              params: [[GSOL_STAKE_ACCT], { epoch }]
-            })
-          }).then(r => r.json());
-          const rew = (rewJ.result ?? [])[0];
-          if (rew && rew.amount > 0) {
-            const pre = rew.postBalance - rew.amount;
-            if (pre > 0) compound *= (1 + rew.amount / pre);
-          }
-        } catch (_) {}
-        const ep = epoch + 1;
-        const date = new Date(nowMs - (currentEpoch - ep) * epochDurationMs);
-        epochs.push({ epoch: ep, rate: parseFloat(compound.toFixed(6)), date: date.toISOString() });
+      // Seed with first epoch
+      if (apyRows.length > 0) {
+        const seedDate = new Date(apyRows[0].epochEndTs - 2 * 86400000);
+        epochs.push({ epoch: apyRows[0].epoch - 1, rate: 1.0, apy: 0, date: seedDate.toISOString() });
+      }
+      for (let i = 0; i < apyRows.length; i++) {
+        const row = apyRows[i];
+        const prevTs = i > 0 ? apyRows[i - 1].epochEndTs : row.epochEndTs - 2 * 86400000;
+        const epochDays = Math.max(0, (row.epochEndTs - prevTs) / 86400000);
+        // Per-epoch growth from annualized APY
+        if (row.apy > 0 && epochDays > 0) {
+          compound *= Math.pow(1 + row.apy, epochDays / 365);
+        }
+        epochs.push({
+          epoch: row.epoch,
+          rate: parseFloat(compound.toFixed(6)),
+          apy: row.apy,
+          date: new Date(row.epochEndTs).toISOString(),
+        });
       }
 
       const result = { epochs, currentRate: compound, cachedAt: Date.now() };

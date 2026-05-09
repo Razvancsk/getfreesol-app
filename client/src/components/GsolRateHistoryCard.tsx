@@ -12,7 +12,7 @@ interface Props {
 }
 
 interface RateHistory {
-  epochs: { epoch: number; rate: number; date: string }[];
+  epochs: { epoch: number; rate: number; apy: number; date: string }[];
   currentRate: number;
 }
 
@@ -46,22 +46,11 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
     : epochs.filter(e => nowMs - new Date(e.date).getTime() <= periodMs);
   const last25 = filtered.length > 0 ? filtered : epochs.slice(-1);
   const currentRate = data?.currentRate ?? solValue ?? 1;
-  const minRate = last25.length ? Math.min(...last25.map(e => e.rate)) : 1;
-  const maxRate = last25.length ? Math.max(...last25.map(e => e.rate)) : currentRate;
-  const midRate = (minRate + maxRate) / 2;
-
-  const apyApprox = (() => {
-    if (last25.length < 2) return null;
-    const first = last25[0];
-    const last = last25[last25.length - 1];
-    const days = (new Date(last.date).getTime() - new Date(first.date).getTime()) / (1000 * 60 * 60 * 24);
-    if (days <= 0) return null;
-    const ratio = last.rate / first.rate;
-    if (ratio <= 1) return null;
-    return (Math.pow(ratio, 365.25 / days) - 1) * 100;
-  })();
-
-  const displayApy = gsolApy ?? apyApprox;
+  const apyValues = last25.map(e => (e.apy ?? 0) * 100).filter(v => v > 0);
+  const maxApy = apyValues.length ? Math.max(...apyValues) : 6;
+  const yMax = Math.ceil(maxApy * 1.2);
+  const lastEpochApy = last25.length ? (last25[last25.length - 1].apy ?? 0) * 100 : 0;
+  const displayApy = lastEpochApy > 0 ? lastEpochApy : (gsolApy ?? null);
   const solEquivalent = gsolBalance * currentRate;
   const yearlyEarnings = displayApy && gsolBalance > 0 ? (solEquivalent * displayApy) / 100 : 0;
 
@@ -121,16 +110,18 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 <div className="h-full flex items-center justify-center text-white text-sm">No data yet</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={last25} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
+                  <BarChart
+                    data={last25.map(e => ({ ...e, apyPct: (e.apy ?? 0) * 100 }))}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 25 }}
+                  >
                     <YAxis
                       type="number"
-                      domain={[minRate * 0.999, maxRate * 1.001]}
-                      ticks={[minRate, midRate, maxRate]}
-                      tickFormatter={(v) => v.toFixed(4)}
+                      domain={[0, yMax]}
+                      tickFormatter={(v) => `${v}%`}
                       tick={{ fill: '#ffffff', fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
-                      width={55}
+                      width={45}
                     />
                     <XAxis
                       dataKey="epoch"
@@ -162,13 +153,13 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                         color: '#fff',
                         fontSize: '12px',
                       }}
-                      formatter={(v: any) => [`${Number(v).toFixed(6)} SOL`, '1 GSOL']}
+                      formatter={(v: any) => [`${Number(v).toFixed(2)}%`, 'APY']}
                       labelFormatter={(label: any, payload: any) => {
                         const item = payload?.[0]?.payload;
                         return `Epoch ${label}${item ? ` · ${formatDate(item.date)}` : ''}`;
                       }}
                     />
-                    <Bar dataKey="rate" radius={[3, 3, 0, 0]} fill="#16a34a" />
+                    <Bar dataKey="apyPct" radius={[3, 3, 0, 0]} fill="#16a34a" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
