@@ -801,7 +801,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
       {mobileSwapOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex items-end" data-testid="mobile-swap-sheet">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileSwapOpen(false)} />
-          <div className="relative w-full bg-slate-900 border-t border-purple-500/30 rounded-t-2xl p-4 pb-6 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+          <div className="relative w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-t border-purple-500/40 rounded-t-2xl p-4 pb-6 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 {info?.icon && <img src={info.icon} className="h-7 w-7 rounded-full" alt="" />}
@@ -969,7 +969,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
 
   return (
     <div className={flat ? 'space-y-5' : 'bg-purple-900/40 border border-purple-500/20 rounded-2xl p-4 space-y-5'}>
-      <div className="grid grid-cols-2 bg-black/30 rounded-xl p-1.5 gap-1">
+      <div className="grid grid-cols-2 bg-purple-950/50 border border-purple-500/20 rounded-xl p-1.5 gap-1">
         <button
           onClick={() => { setSide('buy'); setAmount(''); }}
           className={`py-3 rounded-lg text-base font-semibold transition flex items-center justify-center gap-2 ${side === 'buy' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
@@ -1006,7 +1006,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
                 data-testid="swap-max-top"
               >MAX</button>
             </div>
-            <div className="bg-black/30 rounded-xl border border-purple-500/40 ring-1 ring-purple-500/30 px-4 py-3 flex items-center gap-3">
+            <div className="bg-purple-950/50 rounded-xl border border-purple-500/40 ring-1 ring-purple-500/30 px-4 py-3 flex items-center gap-3">
               <div className="text-white/70 text-base font-semibold">{paySym}</div>
               <input
                 value={amount}
@@ -1027,7 +1027,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
                       else setAmount('100%');
                     } else setAmount(p);
                   }}
-                  className="py-2.5 rounded-lg text-sm bg-black/30 border border-white/5 text-white hover:bg-purple-600/40"
+                  className="py-2.5 rounded-lg text-sm bg-purple-950/50 border border-purple-500/20 text-white hover:bg-purple-600/40"
                   data-testid={`swap-preset-${p}`}
                 >{p}</button>
               ))}
