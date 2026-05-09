@@ -12840,11 +12840,41 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  app.get('/api/terminal/token-live/:mint', (req, res) => {
+  app.get('/api/terminal/token-live/:mint', async (req, res) => {
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
-      const live = getPumpTokenLive(mint);
+      let live: any = getPumpTokenLive(mint);
+      if (!live || (!live.liquidityUsd && !live.marketCapUsd && !live.volumeUsd)) {
+        try {
+          const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${mint}`);
+          if (r.ok) {
+            const j: any = await r.json();
+            const pairs: any[] = Array.isArray(j?.pairs) ? j.pairs : [];
+            const sol = pairs.filter((p) => p?.chainId === 'solana');
+            if (sol.length) {
+              const best = sol.reduce((a, b) => ((b?.liquidity?.usd || 0) > (a?.liquidity?.usd || 0) ? b : a));
+              const buys = sol.reduce((s, p) => s + (Number(p?.txns?.h24?.buys) || 0), 0);
+              const sells = sol.reduce((s, p) => s + (Number(p?.txns?.h24?.sells) || 0), 0);
+              const volumeUsd = sol.reduce((s, p) => s + (Number(p?.volume?.h24) || 0), 0);
+              const liquidityUsd = sol.reduce((s, p) => s + (Number(p?.liquidity?.usd) || 0), 0);
+              const merged = {
+                ...(live || {}),
+                mint,
+                name: live?.name || best?.baseToken?.name,
+                symbol: live?.symbol || best?.baseToken?.symbol,
+                priceUsd: live?.priceUsd ?? Number(best?.priceUsd) || undefined,
+                marketCapUsd: live?.marketCapUsd ?? Number(best?.marketCap) || Number(best?.fdv) || undefined,
+                liquidityUsd: live?.liquidityUsd ?? liquidityUsd || undefined,
+                volumeUsd: live?.volumeUsd ?? volumeUsd || undefined,
+                buys: live?.buys ?? buys,
+                sells: live?.sells ?? sells,
+              };
+              live = merged;
+            }
+          }
+        } catch {}
+      }
       res.json({ live });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'live failed' });
