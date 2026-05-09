@@ -537,7 +537,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     refetchInterval: 1500,
     enabled: !!mint,
   });
-  const { data: holdersData, isFetching: holdersLoading } = useQuery<{ holders: { address: string; amount: number }[] }>({
+  const { data: holdersData, isFetching: holdersLoading } = useQuery<{ holders: { address: string; owner?: string; amount: number }[] }>({
     queryKey: ['/api/terminal/holders', mint],
     queryFn: async () => {
       const r = await fetch(`/api/terminal/holders/${mint}`);
@@ -690,39 +690,60 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
 
         {tab === 'holders' && (
           <div className="space-y-3">
-            <div className="bg-black/40 rounded-2xl border border-purple-500/20 grid grid-cols-2 md:grid-cols-4 divide-x divide-purple-500/20 overflow-hidden">
-              <HolderStat label="Holders" value={info?.holderCount != null ? fmtCount(info.holderCount) : '—'} />
-              <HolderStat label="Top 10" value={info?.audit?.topHoldersPercentage != null ? `${info.audit.topHoldersPercentage.toFixed(1)}%` : '—'} />
-              <HolderStat label="Dev" value={info?.audit?.devBalancePercentage != null ? `${info.audit.devBalancePercentage.toFixed(2)}%` : '—'} />
-              <HolderStat
-                label="24H Δ"
-                value={info?.stats24h?.holderChange != null ? `${info.stats24h.holderChange > 0 ? '+' : ''}${info.stats24h.holderChange.toFixed(2)}%` : '—'}
-                tone={info?.stats24h?.holderChange != null ? (info.stats24h.holderChange >= 0 ? 'pos' : 'neg') : undefined}
-              />
-            </div>
             <div className="bg-black/20 rounded-xl p-2">
             {holdersLoading && <div className="text-center text-white/50 text-sm py-6">Loading top holders…</div>}
             {!holdersLoading && (holdersData?.holders?.length ?? 0) === 0 && (
               <div className="text-center text-white/50 text-sm py-6">No holders found.</div>
             )}
             <div className="divide-y divide-purple-500/20">
-              {(holdersData?.holders || []).slice(0, 20).map((h, i) => {
-                const pct = totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0;
-                return (
-                  <div key={h.address} className="flex items-center justify-between py-3 px-3 text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-white/40 text-xs w-5 text-right">#{i + 1}</span>
-                      <a href={`https://solscan.io/account/${h.address}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-purple-300 underline truncate">
-                        {shortMint(h.address)}
-                      </a>
+              {(() => {
+                const devAddr = info?.dev;
+                const poolAddr = (info as any)?.firstPool?.id;
+                const gradAddr = (info as any)?.graduatedPool;
+                const lpName = info?.firstPool?.launchpad || (info as any)?.launchpad;
+                const isBondingPool = lpName && !((info as any)?.graduated === true || gradAddr);
+                const labelFor = (h: { address: string; owner?: string }) => {
+                  const o = h.owner || h.address;
+                  if (devAddr && o === devAddr) return { name: 'Dev', tone: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+                  if (poolAddr && (o === poolAddr || h.address === poolAddr)) {
+                    return { name: isBondingPool ? `${lpName} Bonding Curve` : `${lpName || 'Pool'}`, tone: 'bg-blue-500/20 text-blue-300 border-blue-500/40' };
+                  }
+                  if (gradAddr && (o === gradAddr || h.address === gradAddr)) {
+                    return { name: 'Graduated Pool', tone: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+                  }
+                  return null;
+                };
+                const list = [...(holdersData?.holders || [])];
+                // Inject dev if not present and dev holding > 0 from Jupiter audit
+                const devPct = info?.audit?.devBalancePercentage;
+                if (devAddr && totalSupply > 0 && devPct && devPct > 0 && !list.some((h) => (h.owner || h.address) === devAddr)) {
+                  list.push({ address: devAddr, owner: devAddr, amount: (devPct / 100) * totalSupply });
+                  list.sort((a, b) => b.amount - a.amount);
+                }
+                return list.slice(0, 20).map((h, i) => {
+                  const pct = totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0;
+                  const tag = labelFor(h);
+                  const linkAddr = h.owner || h.address;
+                  return (
+                    <div key={h.address} className="flex items-center justify-between py-3 px-3 text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-white/40 text-xs w-5 text-right">#{i + 1}</span>
+                        {tag ? (
+                          <span className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${tag.tone}`}>{tag.name}</span>
+                        ) : (
+                          <a href={`https://solscan.io/account/${linkAddr}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-purple-300 underline truncate">
+                            {shortMint(linkAddr)}
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="tabular-nums text-white/80">{fmtNum(h.amount)}</span>
+                        {totalSupply > 0 && <span className="text-white/50 text-xs tabular-nums w-14 text-right">{pct.toFixed(2)}%</span>}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className="tabular-nums text-white/80">{fmtNum(h.amount)}</span>
-                      {totalSupply > 0 && <span className="text-white/50 text-xs tabular-nums w-14 text-right">{pct.toFixed(2)}%</span>}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
             </div>
           </div>

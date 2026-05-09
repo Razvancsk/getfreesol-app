@@ -12840,8 +12840,30 @@ Claimer: ${walletAddress}`;
       const j = await r.json();
       if (j?.error) return res.status(503).json({ error: j.error?.message || 'rpc error', holders: [] });
       const list: any[] = j?.result?.value || [];
+      // Resolve owners for each token account so we can label dev/pool wallets
+      const tokenAccounts: string[] = list.map((h: any) => h.address).filter(Boolean);
+      const owners: Record<string, string | undefined> = {};
+      if (tokenAccounts.length) {
+        try {
+          const ownerRes = await fetch(rpc, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0', id: 2, method: 'getMultipleAccounts',
+              params: [tokenAccounts, { encoding: 'jsonParsed' }],
+            }),
+          });
+          const oj = await ownerRes.json();
+          const arr: any[] = oj?.result?.value || [];
+          arr.forEach((acc: any, idx: number) => {
+            const owner = acc?.data?.parsed?.info?.owner;
+            if (owner) owners[tokenAccounts[idx]] = owner;
+          });
+        } catch {}
+      }
       const holders = list.map((h: any) => ({
         address: h.address,
+        owner: owners[h.address],
         amount: Number(h.uiAmount) || 0,
         decimals: Number(h.decimals) || 0,
       }));
