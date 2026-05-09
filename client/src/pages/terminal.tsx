@@ -216,11 +216,35 @@ export function TerminalView() {
                 {/* Top: identity + price */}
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative flex-shrink-0 w-10 h-10 rounded-xl bg-purple-700/40 flex items-center justify-center overflow-hidden ring-1 ring-white/10">
-                      {t.imageUri
-                        ? <img src={t.imageUri} alt={`${t.symbol} logo`} className="w-10 h-10 rounded-xl object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
-                        : <span className="text-sm font-bold">{(t.symbol || '?').slice(0, 2)}</span>}
-                    </div>
+                    {(() => {
+                      const pct = tab === 'migrated' ? 100 : Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
+                      const isMigrated = tab === 'migrated' || (t.bondingPct ?? 0) >= 1;
+                      const stroke = isMigrated ? '#10b981' : pct >= 60 ? '#f97316' : '#a855f7';
+                      return (
+                        <div className="relative flex-shrink-0" style={{ width: 60, height: 60 }}>
+                          <svg className="absolute inset-0 -rotate-90" width={60} height={60} viewBox="0 0 60 60" fill="none">
+                            <rect x="3" y="3" width="54" height="54" rx="12" stroke="rgba(255,255,255,0.12)" strokeWidth="3" />
+                            <rect
+                              x="3" y="3" width="54" height="54" rx="12"
+                              stroke={stroke} strokeWidth="3" strokeLinecap="round"
+                              pathLength={100}
+                              strokeDasharray={`${pct} 100`}
+                              style={{ transition: 'stroke-dasharray 400ms ease' }}
+                            />
+                          </svg>
+                          <div className="absolute inset-[6px] rounded-[10px] bg-purple-700/40 overflow-hidden flex items-center justify-center ring-1 ring-white/10">
+                            {t.imageUri
+                              ? <img src={t.imageUri} alt={`${t.symbol} logo`} className="w-full h-full object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+                              : <span className="text-sm font-bold text-white">{(t.symbol || '?').slice(0, 2)}</span>}
+                          </div>
+                          <div
+                            className={`absolute left-1/2 -translate-x-1/2 -bottom-1.5 text-[10px] font-bold text-white px-1.5 py-px rounded-md shadow-md ${isMigrated ? 'bg-emerald-500' : pct >= 60 ? 'bg-orange-500' : 'bg-purple-600'}`}
+                          >
+                            {isMigrated ? '✓' : `${pct}%`}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-white text-base truncate">{t.name || t.symbol || 'Unknown'}</span>
@@ -273,33 +297,6 @@ export function TerminalView() {
                     </div>
                   </div>
                 </div>
-
-                {/* Bonding progress bar */}
-                {tab !== 'migrated' && (t.bondingPct ?? 0) > 0 && (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
-                      <span>Bonding curve → Migration</span>
-                      <span className="font-semibold text-orange-300 tabular-nums">{Math.round((t.bondingPct ?? 0) * 100)}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all"
-                        style={{ width: `${Math.min(100, Math.round((t.bondingPct ?? 0) * 100))}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-                {tab === 'migrated' && (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
-                      <span>Bonding curve → Migration</span>
-                      <span className="font-semibold text-green-300">Migrated ✓</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                      <div className="h-full w-full bg-gradient-to-r from-green-500 to-emerald-400" />
-                    </div>
-                  </div>
-                )}
 
                 {/* Footer: mint + actions */}
                 <div className="flex items-center justify-between gap-2">
