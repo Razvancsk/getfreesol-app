@@ -283,6 +283,7 @@ function handleEvent(ev: Event) {
   }
 
   if (ev.txType === 'buy' || ev.txType === 'sell') {
+    const directImg = ev.imageUri && looksLikeImage(ev.imageUri) ? ipfsToHttp(ev.imageUri) : ev.imageUri;
     const patch: Partial<Token> = {
       pool: ev.pool ?? undefined,
       vSolInBondingCurve: ev.vSolInBondingCurve ?? undefined,
@@ -290,7 +291,17 @@ function handleEvent(ev: Event) {
       marketCapSol: ev.marketCapSol ?? undefined,
       bondingPct: bondingPctFor(ev.pool, ev.vSolInBondingCurve),
     };
+    // pumpapi ships name/symbol/uri/imageUri on most buy/sell events too — use them
+    // so tokens we discover mid-stream (no `create` seen) still have full metadata.
+    const existing = tokens.get(ev.mint);
+    if (ev.name && !existing?.name) patch.name = ev.name;
+    if (ev.symbol && !existing?.symbol) patch.symbol = ev.symbol;
+    if (directImg && !existing?.imageUri) patch.imageUri = directImg;
     const t = upsert(ev.mint, patch);
+    const metaUri = ev.uri || (!directImg ? ev.imageUri : undefined);
+    if (metaUri && (!t.imageUri || !looksLikeImage(t.imageUri))) {
+      resolveImageFromUri(ev.mint, metaUri).catch(() => {});
+    }
     if (typeof ev.marketCapSol === 'number' && t.firstMarketCapSol == null) {
       t.firstMarketCapSol = ev.marketCapSol;
     }
