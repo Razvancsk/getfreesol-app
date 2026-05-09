@@ -217,10 +217,6 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <div className="text-white text-sm font-semibold">GSOL PnL</div>
-                          <div className="text-white/50 text-[10px]">
-                            LST appreciation · FIFO via Helius + Sanctum
-                            {jupPortfolio?.reachedLimit && ' · history capped'}
-                          </div>
                         </div>
                       </div>
                       {jupPortfolioLoading ? (
