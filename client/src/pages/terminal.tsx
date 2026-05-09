@@ -674,16 +674,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               </div>
               <InfoAddressRow label="Contract Address" value={mint} />
               <InfoAddressRow label="Developer Address" value={info?.dev} />
-              <InfoTextRow label="Launchpad" value={launchpad} isLast={!isGraduated && !info?.twitter && !info?.website} />
-              {isGraduated && <InfoTextRow label="Graduated Pool" value={graduatedPool} isLast={!info?.twitter && !info?.website} />}
-              {(info?.twitter || info?.website) && (
-                <div className="flex flex-wrap gap-2 p-4 border-t border-purple-500/20">
-                  {info?.twitter && <a href={info.twitter} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Twitter <ExternalLink className="h-3 w-3" /></a>}
-                  {info?.website && <a href={info.website} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Website <ExternalLink className="h-3 w-3" /></a>}
-                  <a href={`https://solscan.io/token/${mint}`} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Solscan <ExternalLink className="h-3 w-3" /></a>
-                  <a href={`https://dexscreener.com/solana/${mint}`} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">DexScreener <ExternalLink className="h-3 w-3" /></a>
-                </div>
-              )}
+              <InfoTextRow label="Launchpad" value={launchpad} isLast={!isGraduated} />
+              {isGraduated && <InfoTextRow label="Graduated Pool" value={graduatedPool} isLast />}
             </div>
           );
         })()}
