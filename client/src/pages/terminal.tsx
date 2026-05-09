@@ -75,18 +75,18 @@ function TokenAvatar({ token }: { token: Token }) {
   const color = colorFor(token.mint);
   const showImg = token.imageUri && !failed;
   return (
-    <div className="relative flex-shrink-0 w-14 h-14">
+    <div className="relative flex-shrink-0 w-20 h-20">
       {showImg ? (
         <img
           src={token.imageUri}
           alt={`${token.symbol} logo`}
-          width={56}
-          height={56}
-          className="block w-14 h-14 min-w-[56px] min-h-[56px] rounded-xl object-cover"
+          width={80}
+          height={80}
+          className="block w-20 h-20 min-w-[80px] min-h-[80px] rounded-xl object-cover"
           onError={() => setFailed(true)}
         />
       ) : (
-        <div className={`${color} w-14 h-14 min-w-[56px] min-h-[56px] text-base rounded-xl flex items-center justify-center text-white font-bold`}>
+        <div className={`${color} w-20 h-20 min-w-[80px] min-h-[80px] text-xl rounded-xl flex items-center justify-center text-white font-bold`}>
           {initials}
         </div>
       )}
