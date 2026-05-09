@@ -159,23 +159,6 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mt-3">
-              <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
-                <div className="text-white text-xs">Total Staked</div>
-                <div className="text-white font-bold text-base mt-1">{formatTvl(tvl)}</div>
-              </div>
-              <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
-                <div className="text-white text-xs">Holders</div>
-                <div className="text-white font-bold text-base mt-1">
-                  {holders !== null ? holders.toLocaleString() : '—'}
-                </div>
-              </div>
-              <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
-                <div className="text-white text-xs">1 GSOL =</div>
-                <div className="text-white font-bold text-sm mt-1 whitespace-nowrap">{currentRate.toFixed(4)} SOL</div>
-              </div>
-            </div>
-
           </>
         ) : (
           <div className="space-y-3">
