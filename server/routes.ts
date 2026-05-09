@@ -732,40 +732,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { address } = req.params;
       if (!address) return res.status(400).json({ error: 'Missing wallet address' });
 
-      const swaps = await storage.getSwapRecordsByWallet(address, 5000);
-      // Weighted-average cost basis per mint (matches typical portfolio tracker methodology)
-      // For each mint: sum USD spent buying ÷ sum qty bought = avg buy price
-      // Realized PnL = sum over sells of (proceeds - avg_cost × qty_sold)
-      const buyQty: Record<string, number> = {};
-      const buyUsd: Record<string, number> = {};
+      // Cost-basis from on-site swap records is unreliable (incomplete history,
+      // missing transfers/mints). Show real holdings only; PnL is sourced via Jupiter link.
       const symbols: Record<string, string> = {};
-      let realized = 0;
-      const ordered = [...swaps].sort((a, b) => new Date(a.swappedAt).getTime() - new Date(b.swappedAt).getTime());
-      for (const s of ordered) {
-        const usd = Number(s.usdValue || 0);
-        const inAmt = Number(s.inputAmount || 0);
-        const outAmt = Number(s.outputAmount || 0);
-        if (!Number.isFinite(usd) || usd <= 0 || inAmt <= 0 || outAmt <= 0) continue;
-        if (s.outputSymbol) symbols[s.outputMint] = s.outputSymbol;
-        if (s.inputSymbol) symbols[s.inputMint] = s.inputSymbol;
-        // BUY side: outputMint gained
-        buyQty[s.outputMint] = (buyQty[s.outputMint] || 0) + outAmt;
-        buyUsd[s.outputMint] = (buyUsd[s.outputMint] || 0) + usd;
-        // SELL side: inputMint sold → realized vs running avg cost
-        const avg = buyQty[s.inputMint] > 0 ? (buyUsd[s.inputMint] / buyQty[s.inputMint]) : 0;
-        if (avg > 0) {
-          const costOfSold = avg * inAmt;
-          realized += usd - costOfSold;
-          // reduce qty proportionally, keep avg cost stable
-          buyQty[s.inputMint] = Math.max(0, buyQty[s.inputMint] - inAmt);
-          buyUsd[s.inputMint] = avg * buyQty[s.inputMint];
-        }
-      }
-
-      const avgCost: Record<string, number> = {};
-      for (const mint of Object.keys(buyQty)) {
-        if (buyQty[mint] > 1e-9 && buyUsd[mint] > 0) avgCost[mint] = buyUsd[mint] / buyQty[mint];
-      }
 
       // Fetch ACTUAL on-chain holdings via Jupiter Ultra Holdings
       const headers: Record<string, string> = { 'Accept': 'application/json' };
@@ -811,49 +780,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch {}
       }
 
-      let unrealized = 0;
       let currentValue = 0;
       const positions: any[] = [];
       for (const h of heldTokens) {
         const px = Number(prices[h.mint]?.usdPrice ?? 0);
         const val = px * h.qty;
         if (val < 0.01) continue; // hide dust
-        const isBase = h.mint === WSOL; // treat SOL as base currency, no PnL
-        const ac = isBase ? undefined : avgCost[h.mint];
-        // cap cost basis at the lesser of held qty vs tracked buy qty (handles transfers in/out)
-        const trackedQty = buyQty[h.mint] || 0;
-        const basisQty = ac ? Math.min(h.qty, trackedQty) : 0;
-        const costUsd = ac ? ac * basisQty : 0;
-        const valOfBasis = ac ? px * basisQty : 0;
-        const u = ac ? valOfBasis - costUsd : 0;
         currentValue += val;
-        unrealized += u;
         positions.push({
           mint: h.mint,
           symbol: symbols[h.mint] || knownSymbols[h.mint],
           qty: h.qty,
-          costUsd,
-          avgCostUsd: ac ?? null,
           currentPrice: px,
           currentValue: val,
-          unrealizedPnl: ac ? u : null,
-          unrealizedPnlPct: costUsd > 0 ? (u / costUsd) * 100 : null,
-          hasCostBasis: !!ac,
+          unrealizedPnl: null,
+          unrealizedPnlPct: null,
+          hasCostBasis: false,
         });
       }
       positions.sort((a, b) => b.currentValue - a.currentValue);
 
-      const total = realized + unrealized;
-      const totalCost = positions.reduce((a, p) => a + (p.costUsd || 0), 0);
       res.json({
         wallet: address,
-        swapsCount: swaps.length,
-        realized,
-        unrealized,
-        total,
+        swapsCount: 0,
+        realized: null,
+        unrealized: null,
+        total: null,
         currentValue,
-        totalCostBasis: totalCost,
-        unrealizedPct: totalCost > 0 ? (unrealized / totalCost) * 100 : null,
+        totalCostBasis: null,
+        unrealizedPct: null,
         positions,
       });
     } catch (e: any) {
