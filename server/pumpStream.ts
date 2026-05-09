@@ -263,6 +263,11 @@ function handleEvent(ev: Event) {
   }
 
   if (ev.txType === 'buy' || ev.txType === 'sell') {
+    if ((globalThis as any).__sniff_n == null) (globalThis as any).__sniff_n = 0;
+    if ((globalThis as any).__sniff_n < 8) {
+      (globalThis as any).__sniff_n++;
+      console.log('[sniff buy/sell]', Object.keys(ev).join(','), 'name=', ev.name, 'sym=', ev.symbol, 'uri=', ev.uri, 'img=', ev.imageUri);
+    }
     const directImg = ev.imageUri && looksLikeImage(ev.imageUri) ? ipfsToHttp(ev.imageUri) : ev.imageUri;
     const patch: Partial<Token> = {
       pool: ev.pool ?? undefined,
