@@ -5170,7 +5170,7 @@ export default function SolRefund() {
                         placeholder="0.00"
                         value={stakeAmount}
                         onChange={e => setStakeAmount(e.target.value)}
-                        className="flex-1 bg-transparent text-white text-4xl font-black outline-none placeholder-white/30 text-right min-w-0 leading-none"
+                        className="flex-1 bg-transparent text-white text-3xl font-black outline-none placeholder-white/30 text-right min-w-0"
                       />
                     </div>
                   </div>
@@ -5204,7 +5204,7 @@ export default function SolRefund() {
                           </>
                         )}
                       </div>
-                      <span className="text-white font-black text-4xl leading-none text-right">
+                      <span className="text-white font-black text-3xl leading-none text-right">
                         {stakingMethod === 'direct'
                           ? (stakeAmount && parseFloat(stakeAmount) > 0 ? parseFloat(stakeAmount).toFixed(4) : '0.00')
                           : stakeQuoteLoading
