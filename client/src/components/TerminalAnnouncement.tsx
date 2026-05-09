@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 
-const VERSION = "terminal_v2";
+const VERSION = "terminal_v3";
 
 export function triggerTerminalAnnouncement(walletAddress?: string) {
   const key = walletAddress ? `${VERSION}_${walletAddress}` : `${VERSION}_anon`;
@@ -74,23 +74,21 @@ export function TerminalAnnouncement() {
                 boxShadow: "0 0 30px rgba(168,85,247,0.5)",
               }}
             >
-              {/* Army combat helmet */}
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Trenches green helmet */}
+              <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <linearGradient id="helmShade" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#5a6b3e" />
-                    <stop offset="100%" stopColor="#2f3a1f" />
-                  </linearGradient>
+                  <radialGradient id="helmGrad" cx="40%" cy="35%" r="70%">
+                    <stop offset="0%" stopColor="#6fb86a" />
+                    <stop offset="60%" stopColor="#3d8a4a" />
+                    <stop offset="100%" stopColor="#1f5530" />
+                  </radialGradient>
                 </defs>
-                {/* Helmet dome */}
-                <path d="M8 36 C8 19, 22 10, 32 10 C42 10, 56 19, 56 36 L56 40 L8 40 Z" fill="url(#helmShade)" stroke="#1a2410" strokeWidth="1.5"/>
+                {/* Dome */}
+                <path d="M10 44 C10 22, 22 12, 36 12 C50 12, 62 22, 62 44 Z" fill="url(#helmGrad)" stroke="#0e2c1a" strokeWidth="2"/>
                 {/* Brim */}
-                <path d="M6 40 L58 40 L54 46 L10 46 Z" fill="#3a4a25" stroke="#1a2410" strokeWidth="1.5"/>
-                {/* Strap */}
-                <path d="M16 40 L20 52" stroke="#1a2410" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M48 40 L44 52" stroke="#1a2410" strokeWidth="2" strokeLinecap="round"/>
-                {/* Star insignia */}
-                <path d="M32 20 L34 26 L40 26 L35 30 L37 36 L32 32 L27 36 L29 30 L24 26 L30 26 Z" fill="#ffd84d" stroke="#a06a00" strokeWidth="0.8"/>
+                <ellipse cx="36" cy="44" rx="28" ry="5" fill="#1f5530" stroke="#0e2c1a" strokeWidth="2"/>
+                {/* Top highlight */}
+                <ellipse cx="30" cy="22" rx="9" ry="4" fill="#a8e0a0" opacity="0.45"/>
               </svg>
             </div>
           </div>
