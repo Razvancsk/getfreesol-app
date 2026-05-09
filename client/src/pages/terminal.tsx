@@ -495,7 +495,7 @@ export function TokenPage() {
             {publicKey ? shortAddr : 'Connect Wallet'}
           </Button>
         </div>
-        <TokenContent mint={mint} onBack={() => window.history.length > 1 ? window.history.back() : navigate('/')} />
+        <TokenContent mint={mint} onBack={() => navigate('/terminal')} />
       </div>
     </div>
   );
@@ -565,7 +565,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     <div className="text-white">
       <div>
         <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" size="sm" onClick={() => onBack ? onBack() : navigate('/')} className="text-white/70 hover:text-white" data-testid="button-back">
+          <Button variant="ghost" size="sm" onClick={() => onBack ? onBack() : navigate('/terminal')} className="text-white/70 hover:text-white" data-testid="button-back">
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
         </div>
