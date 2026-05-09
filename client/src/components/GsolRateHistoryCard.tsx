@@ -141,10 +141,16 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                     />
                     <XAxis
                       dataKey="epoch"
+                      type="category"
                       tick={{ fill: '#ffffff', fontSize: 11, fontWeight: 700 }}
                       axisLine={false}
                       tickLine={false}
-                      interval={last25.length > 15 ? 1 : 0}
+                      interval={0}
+                      ticks={
+                        last25.length > 15
+                          ? last25.filter(e => e.epoch % 2 === 1).map(e => e.epoch)
+                          : last25.map(e => e.epoch)
+                      }
                     />
                     <Tooltip cursor={{ fill: 'rgba(255,255,255,0.08)' }} content={() => null} />
                     <Bar dataKey="apyPct" radius={[3, 3, 0, 0]} fill="#16a34a" maxBarSize={40} />
