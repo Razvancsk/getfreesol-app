@@ -247,7 +247,12 @@ export function startPumpStream() {
 }
 
 function serialize(t: Token) {
-  const mcSol = t.marketCapSol;
+  let mcSol = t.marketCapSol;
+  // Fallback: derive market cap from bonding curve reserves if pumpapi didn't
+  // ship marketCapSol on the event. price/token = vSol/vTokens; MC = price × 1B.
+  if ((!mcSol || mcSol <= 0) && t.vSolInBondingCurve && t.vTokensInBondingCurve) {
+    mcSol = (t.vSolInBondingCurve / t.vTokensInBondingCurve) * STANDARD_SUPPLY;
+  }
   const mcUsd = mcSol && solUsd ? mcSol * solUsd : undefined;
   const priceUsd = mcUsd ? mcUsd / STANDARD_SUPPLY : undefined;
   const liqSol = t.vSolInBondingCurve;
