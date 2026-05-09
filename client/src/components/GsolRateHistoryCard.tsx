@@ -202,7 +202,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                     const has = val !== null && val !== undefined && Number.isFinite(n);
                     return (
                       <div>
-                        <div className="text-white/70 text-xs">{label}</div>
+                        <div className="text-white text-sm font-semibold">{label}</div>
                         {has ? (
                           <div className={`font-black text-lg ${n >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {(n >= 0 ? '+' : '') + fmtUsd(n)}
