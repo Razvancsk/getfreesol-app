@@ -250,7 +250,7 @@ export function TerminalView() {
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-white text-base truncate">{t.name || t.symbol || 'Unknown'}</span>
                       </div>
-                      <div className="text-gray-400 text-sm truncate">{t.symbol || shortMint(t.mint)}</div>
+                      <div className="text-white text-sm truncate">{t.symbol || shortMint(t.mint)}</div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -269,19 +269,19 @@ export function TerminalView() {
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                   <div>
-                    <div className="text-gray-400">Market Cap</div>
+                    <div className="text-white">Market Cap</div>
                     <div className="text-white font-medium tabular-nums">{fmtUsd(t.marketCapUsd)}</div>
                   </div>
                   <div>
-                    <div className="text-gray-400">Volume 24h</div>
+                    <div className="text-white">Volume 24h</div>
                     <div className="text-white font-medium tabular-nums">{fmtUsd(t.volumeUsd)}</div>
                   </div>
                   <div>
-                    <div className="text-gray-400">Liquidity</div>
+                    <div className="text-white">Liquidity</div>
                     <div className="text-white font-medium tabular-nums">{fmtUsd(t.liquidityUsd)}</div>
                   </div>
                   <div>
-                    <div className="text-gray-400">Transactions</div>
+                    <div className="text-white">Transactions</div>
                     <div className="text-white font-medium tabular-nums">{fmtCount(totalTx)}</div>
                   </div>
                 </div>
