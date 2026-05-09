@@ -661,17 +661,23 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           const isGraduated = !!graduatedPool || (info as any)?.graduated === true || (info as any)?.firstPool?.graduated === true;
           const launchpad = info?.firstPool?.launchpad || (info as any)?.launchpad;
           return (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 md:gap-3">
-                <InfoStatCard label="Total Supply" value={fmtNum(info?.totalSupply) || '—'} />
-                <InfoStatCard label="Cir Supply" value={fmtNum(info?.circSupply) || '—'} />
+            <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-2 divide-x divide-purple-500/20 border-b border-purple-500/20">
+                <div className="py-5 text-center">
+                  <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Total Supply</div>
+                  <div className="text-white text-2xl font-bold tabular-nums mt-1">{fmtNum(info?.totalSupply) || '—'}</div>
+                </div>
+                <div className="py-5 text-center">
+                  <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Cir Supply</div>
+                  <div className="text-white text-2xl font-bold tabular-nums mt-1">{fmtNum(info?.circSupply) || '—'}</div>
+                </div>
               </div>
-              <InfoAddressCard label="Contract Address" value={mint} />
-              <InfoAddressCard label="Developer Address" value={info?.dev} />
-              {launchpad && <InfoTextCard label="Launchpad" value={launchpad} />}
-              {isGraduated && <InfoTextCard label="Graduated Pool" value={graduatedPool} />}
+              <InfoAddressRow label="Contract Address" value={mint} />
+              <InfoAddressRow label="Developer Address" value={info?.dev} />
+              <InfoTextRow label="Launchpad" value={launchpad} isLast={!isGraduated && !info?.twitter && !info?.website} />
+              {isGraduated && <InfoTextRow label="Graduated Pool" value={graduatedPool} isLast={!info?.twitter && !info?.website} />}
               {(info?.twitter || info?.website) && (
-                <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 p-4 border-t border-purple-500/20">
                   {info?.twitter && <a href={info.twitter} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Twitter <ExternalLink className="h-3 w-3" /></a>}
                   {info?.website && <a href={info.website} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Website <ExternalLink className="h-3 w-3" /></a>}
                   <a href={`https://solscan.io/token/${mint}`} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Solscan <ExternalLink className="h-3 w-3" /></a>
@@ -787,16 +793,7 @@ function shortAddr(s?: string): string {
   return `${s.slice(0, 8)}...${s.slice(-8)}`;
 }
 
-function InfoStatCard({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-2 py-3 md:px-4 md:py-4 text-center min-w-0">
-      <div className="text-purple-300/70 text-[10px] md:text-xs font-semibold tracking-wider uppercase truncate">{label}</div>
-      <div className="text-white text-base md:text-2xl font-bold tabular-nums mt-1 truncate">{value}</div>
-    </div>
-  );
-}
-
-function InfoAddressCard({ label, value }: { label: string; value?: string }) {
+function InfoAddressRow({ label, value, isLast }: { label: string; value?: string; isLast?: boolean }) {
   const { toast } = useToast();
   const onCopy = async () => {
     if (!value) return;
@@ -806,8 +803,8 @@ function InfoAddressCard({ label, value }: { label: string; value?: string }) {
     } catch {}
   };
   return (
-    <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-4 py-3 text-center">
-      <div className="text-purple-300/70 text-[10px] md:text-xs font-semibold tracking-wider uppercase">{label}</div>
+    <div className={`py-5 px-4 text-center ${isLast ? '' : 'border-b border-purple-500/20'}`}>
+      <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">{label}</div>
       <div className="flex items-center justify-center gap-2 mt-2">
         <span className="text-white font-mono text-sm">{value ? shortAddr(value) : '—'}</span>
         {value && (
@@ -820,11 +817,12 @@ function InfoAddressCard({ label, value }: { label: string; value?: string }) {
   );
 }
 
-function InfoTextCard({ label, value }: { label: string; value?: React.ReactNode }) {
+function InfoTextRow({ label, value, isLast }: { label: string; value?: React.ReactNode; isLast?: boolean }) {
+  if (!value) return null;
   return (
-    <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-4 py-3 text-center">
-      <div className="text-purple-300/70 text-[10px] md:text-xs font-semibold tracking-wider uppercase">{label}</div>
-      <div className="text-white text-base mt-1">{value || '—'}</div>
+    <div className={`py-5 px-4 text-center ${isLast ? '' : 'border-b border-purple-500/20'}`}>
+      <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">{label}</div>
+      <div className="text-white text-base mt-2">{value}</div>
     </div>
   );
 }
