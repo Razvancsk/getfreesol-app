@@ -71,15 +71,15 @@ function colorFor(s: string) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
-function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: number; migrated: boolean }) {
+function TokenAvatar({ token, bondPct, migrated, size = 92 }: { token: Token; bondPct: number; migrated: boolean; size?: number }) {
   const [failed, setFailed] = useState(false);
   const initials = (token.symbol || token.name || '?').slice(0, 2).toUpperCase();
   const color = colorFor(token.mint);
   const showImg = token.imageUri && !failed;
-  const SIZE = 92;
-  const IMG = 84;
+  const SIZE = size;
+  const IMG = size - 8;
   const STROKE = 3;
-  const RX = 14;
+  const RX = Math.round(size * 0.16);
   const pct = migrated ? 100 : Math.max(0, Math.min(100, bondPct));
   const ringColor = migrated
     ? '#34d399'
@@ -586,7 +586,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               };
               const bondPct = Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
               const isMigrated = !!t.migrated || (t.bondingPct ?? 0) >= 1 || !!(info as any)?.graduatedPool;
-              return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isMigrated} />;
+              return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isMigrated} size={56} />;
             })()}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
