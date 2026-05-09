@@ -263,12 +263,14 @@ function handleEvent(ev: Event) {
   }
 
   if (ev.txType === 'buy' || ev.txType === 'sell') {
-    if ((globalThis as any).__sniff_n == null) (globalThis as any).__sniff_n = 0;
-    if ((globalThis as any).__sniff_n < 8) {
-      (globalThis as any).__sniff_n++;
-      console.log('[sniff buy/sell]', Object.keys(ev).join(','), 'name=', ev.name, 'sym=', ev.symbol, 'uri=', ev.uri, 'img=', ev.imageUri);
-    }
-    const directImg = ev.imageUri && looksLikeImage(ev.imageUri) ? ipfsToHttp(ev.imageUri) : ev.imageUri;
+    // Token-2022 mints with the metadata extension expose name/symbol/uri inline
+    // on every event under tokenExtensions.tokenMetadata — extract those.
+    const tm: any = ev.tokenExtensions?.tokenMetadata;
+    const evName = ev.name || tm?.name;
+    const evSymbol = ev.symbol || tm?.symbol;
+    const evUri = ev.uri || tm?.uri;
+    const evImg = ev.imageUri || tm?.imageUri;
+    const directImg = evImg && looksLikeImage(evImg) ? ipfsToHttp(evImg) : evImg;
     const patch: Partial<Token> = {
       pool: ev.pool ?? undefined,
       vSolInBondingCurve: ev.vSolInBondingCurve ?? undefined,
@@ -276,14 +278,12 @@ function handleEvent(ev: Event) {
       marketCapSol: ev.marketCapSol ?? undefined,
       bondingPct: bondingPctFor(ev.pool, ev.vSolInBondingCurve),
     };
-    // pumpapi ships name/symbol/uri/imageUri on most buy/sell events too — use them
-    // so tokens we discover mid-stream (no `create` seen) still have full metadata.
     const existing = tokens.get(ev.mint);
-    if (ev.name && !existing?.name) patch.name = ev.name;
-    if (ev.symbol && !existing?.symbol) patch.symbol = ev.symbol;
+    if (evName && !existing?.name) patch.name = evName;
+    if (evSymbol && !existing?.symbol) patch.symbol = evSymbol;
     if (directImg && !existing?.imageUri) patch.imageUri = directImg;
     const t = upsert(ev.mint, patch);
-    const metaUri = ev.uri || (!directImg ? ev.imageUri : undefined);
+    const metaUri = evUri || (!directImg ? evImg : undefined);
     if (metaUri && (!t.imageUri || !looksLikeImage(t.imageUri))) {
       resolveImageFromUri(ev.mint, metaUri).catch(() => {});
     }
