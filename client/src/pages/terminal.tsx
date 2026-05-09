@@ -571,6 +571,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     priceUsd: liveT.priceUsd ?? info?.usdPrice,
     marketCapSol: liveT.marketCapSol,
     priceSol: liveT.priceSol,
+    pool: liveT.pool,
   } as any;
   const [mobileSwapOpen, setMobileSwapOpen] = useState(false);
 
@@ -967,6 +968,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
           amount: amountVal,
           denominatedInQuote,
           slippage: Number(slippage),
+          pool: (token as any).pool,
         }),
       });
       const j = await r.json();

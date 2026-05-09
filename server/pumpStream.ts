@@ -602,6 +602,7 @@ export async function buildTradeTx(opts: {
   priorityFee?: number;
   partnerAddress?: string;
   partnerFeeRatio?: number;
+  pool?: string;
 }): Promise<string> {
   const body: any = {
     publicKey: opts.publicKey,
@@ -614,6 +615,7 @@ export async function buildTradeTx(opts: {
   if (opts.priorityFee !== undefined) body.priorityFee = opts.priorityFee;
   if (opts.partnerAddress) body.partnerAddress = opts.partnerAddress;
   if (opts.partnerFeeRatio !== undefined) body.partnerFeeRatio = opts.partnerFeeRatio;
+  if (opts.pool) body.pool = opts.pool;
 
   const r = await fetch('https://api.pumpapi.io', {
     method: 'POST',

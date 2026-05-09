@@ -12998,9 +12998,33 @@ Claimer: ${walletAddress}`;
 
   app.post('/api/terminal/build-tx', async (req, res) => {
     try {
-      const { publicKey, action, mint, amount, denominatedInQuote, slippage, priorityFee } = req.body || {};
+      const { publicKey, action, mint, amount, denominatedInQuote, slippage, priorityFee, pool } = req.body || {};
       const v = validateTradeInput({ publicKey, action, mint, amount, slippage, priorityFee });
       if (!v.ok) return res.status(400).json({ error: v.error });
+      let resolvedPool: string | undefined = typeof pool === 'string' && pool ? pool : undefined;
+      if (!resolvedPool) {
+        const liveT: any = getPumpTokenLive(String(mint));
+        if (liveT?.pool) resolvedPool = liveT.pool;
+      }
+      if (!resolvedPool) {
+        try {
+          const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${mint}`);
+          if (r.ok) {
+            const j: any = await r.json();
+            const pairs: any[] = (j?.pairs || []).filter((p: any) => p?.chainId === 'solana');
+            if (pairs.length) {
+              const best = pairs.reduce((a, b) => ((b?.liquidity?.usd || 0) > (a?.liquidity?.usd || 0) ? b : a));
+              const dex = String(best?.dexId || '').toLowerCase();
+              if (dex === 'pumpfun' || dex === 'pump') resolvedPool = 'pump';
+              else if (dex === 'pumpswap') resolvedPool = 'pump-amm';
+              else if (dex === 'raydium') resolvedPool = 'raydium-cpmm';
+              else if (dex === 'meteora') resolvedPool = 'meteora-damm-v2';
+              else if (dex === 'launchlab' || dex === 'raydium-launchpad' || dex === 'bonk') resolvedPool = 'raydium-launchpad';
+              else if (dex === 'moonshot') resolvedPool = 'moonshot';
+            }
+          }
+        } catch {}
+      }
       const tx = await buildPumpTradeTx({
         publicKey: String(publicKey),
         action,
@@ -13011,6 +13035,7 @@ Claimer: ${walletAddress}`;
         priorityFee: priorityFee !== undefined ? Number(priorityFee) : undefined,
         partnerAddress: 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
         partnerFeeRatio: 0.005,
+        pool: resolvedPool,
       });
       res.json({ tx });
     } catch (e: any) {
