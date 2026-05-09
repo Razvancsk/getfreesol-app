@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import helmetImg from "@/assets/trenches_helmet.png";
 
-const VERSION = "terminal_v3";
+const VERSION = "terminal_v4";
 
 export function triggerTerminalAnnouncement(walletAddress?: string) {
   const key = walletAddress ? `${VERSION}_${walletAddress}` : `${VERSION}_anon`;
@@ -67,30 +68,11 @@ export function TerminalAnnouncement() {
 
         <div className="p-6 pt-7 text-center">
           <div className="flex justify-center mb-3">
-            <div
-              className="w-24 h-24 rounded-2xl flex items-center justify-center shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, #a855f7, #6d28d9)",
-                boxShadow: "0 0 30px rgba(168,85,247,0.5)",
-              }}
-            >
-              {/* Trenches green helmet */}
-              <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <radialGradient id="helmGrad" cx="40%" cy="35%" r="70%">
-                    <stop offset="0%" stopColor="#6fb86a" />
-                    <stop offset="60%" stopColor="#3d8a4a" />
-                    <stop offset="100%" stopColor="#1f5530" />
-                  </radialGradient>
-                </defs>
-                {/* Dome */}
-                <path d="M10 44 C10 22, 22 12, 36 12 C50 12, 62 22, 62 44 Z" fill="url(#helmGrad)" stroke="#0e2c1a" strokeWidth="2"/>
-                {/* Brim */}
-                <ellipse cx="36" cy="44" rx="28" ry="5" fill="#1f5530" stroke="#0e2c1a" strokeWidth="2"/>
-                {/* Top highlight */}
-                <ellipse cx="30" cy="22" rx="9" ry="4" fill="#a8e0a0" opacity="0.45"/>
-              </svg>
-            </div>
+            <img
+              src={helmetImg}
+              alt="Trenches"
+              className="w-28 h-28 object-contain drop-shadow-[0_6px_20px_rgba(168,85,247,0.5)]"
+            />
           </div>
 
           <div className="inline-block bg-purple-400/20 text-purple-200 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3 border border-purple-400/30">
