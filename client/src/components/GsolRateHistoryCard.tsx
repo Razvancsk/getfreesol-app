@@ -62,7 +62,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
       <div className="px-0 py-4">
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
-            <h2 className="text-green-400 font-black text-3xl">
+            <h2 className="text-white font-black text-3xl">
               {displayApy !== null ? `${displayApy.toFixed(2)}%` : '—'}
             </h2>
             {view === 'overview' && (
