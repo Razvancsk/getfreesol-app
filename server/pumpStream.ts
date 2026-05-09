@@ -86,6 +86,18 @@ function isBondingPool(pool: string | undefined): boolean {
   return !!pool && pool in BOND_TARGETS;
 }
 
+// Pools that only exist AFTER a token has migrated/graduated to a full AMM.
+// Detecting these on a buy/sell event lets us mark a token as migrated even
+// if we never received an explicit `migrate`/`createPool` event for it.
+function isMigratedPool(pool: string | undefined): boolean {
+  if (!pool) return false;
+  if (pool === 'pump-amm') return true;
+  if (pool === 'raydium-cpmm' || pool === 'raydium-clmm' || pool === 'raydium-amm') return true;
+  if (pool.startsWith('meteora-damm')) return true;
+  if (pool === 'meteora-dlmm' || pool === 'meteora-dyn') return true;
+  return false;
+}
+
 function bondingPctFor(pool: string | undefined, vSol: number | undefined): number | undefined {
   if (!vSol || !pool) return undefined;
   const target = BOND_TARGETS[pool];
@@ -306,6 +318,17 @@ function handleEvent(ev: Event) {
     }
     if (typeof ev.marketCapSol === 'number' && t.firstMarketCapSol == null) {
       t.firstMarketCapSol = ev.marketCapSol;
+    }
+    // If we see this token trading on a post-graduation AMM pool, mark migrated
+    // even when we never received an explicit `migrate`/`createPool` event.
+    if (!t.migrated && isMigratedPool(ev.pool)) {
+      t.migrated = true;
+      t.migratedAt = ts;
+      t.bondingPct = 1;
+      if (!migratedOrder.includes(ev.mint)) {
+        migratedOrder.unshift(ev.mint);
+        while (migratedOrder.length > MAX_MIGRATED) migratedOrder.pop();
+      }
     }
     const solSize = typeof ev.solAmount === 'number' ? ev.solAmount
       : typeof ev.sol === 'number' ? ev.sol : 0;
