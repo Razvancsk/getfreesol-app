@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
+import { computeGsolLstPnl } from './gsolLstPnl';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -854,10 +855,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
       const gsolPos = positions.find((p: any) => p.mint === GSOL_MINT);
-      const gsolRealizedSol = pnl?.realizedByMint?.[GSOL_MINT] ?? 0;
-      const realizedUsd = pnl && solPx > 0 ? gsolRealizedSol * solPx : null;
-      const unrealizedUsdTotal = gsolPos?.unrealizedUsd ?? null;
-      const totalUsd = realizedUsd !== null && unrealizedUsdTotal !== null ? realizedUsd + unrealizedUsdTotal : realizedUsd;
+
+      // GSOL is an LST: PnL = current SOL value of holdings - SOL value at acquisition
+      // (using historical GSOL/SOL exchange rate at each acquisition timestamp).
+      const currentGsolRate = solPx > 0 && gsolPos ? Number(gsolPos.currentPrice) / solPx : 1.0;
+      let lst: any = null;
+      try {
+        lst = await computeGsolLstPnl(address, currentGsolRate, solPx);
+      } catch (e: any) {
+        console.error('GSOL LST PnL failed:', e?.message || e);
+      }
+
+      const hasLstData = lst && lst.movements > 0 && solPx > 0;
+      const realizedUsd = hasLstData ? lst.realizedSol * solPx : null;
+      const unrealizedUsdTotal = hasLstData && lst.qty > 0 ? lst.unrealizedSol * solPx : null;
+      const totalUsd = hasLstData
+        ? (lst.realizedSol + (lst.qty > 0 ? lst.unrealizedSol : 0)) * solPx
+        : null;
+
+      if (gsolPos && lst && solPx > 0 && lst.qty > 0) {
+        gsolPos.unrealizedUsd = lst.unrealizedSol * solPx;
+        gsolPos.unrealizedPct = lst.costSol > 0 ? (lst.unrealizedSol / lst.costSol) * 100 : null;
+        gsolPos.avgCostUsd = lst.avgCostRate !== null ? lst.avgCostRate * solPx : null;
+      }
 
       res.json({
         wallet: address,
