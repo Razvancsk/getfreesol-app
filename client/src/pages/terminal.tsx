@@ -643,6 +643,23 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           ))}
         </div>
 
+        <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 mb-4 flex gap-2">
+          <Button
+            onClick={() => setTradeFor('buy')}
+            className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold"
+            data-testid="button-buy"
+          >
+            Buy
+          </Button>
+          <Button
+            onClick={() => setTradeFor('sell')}
+            className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold"
+            data-testid="button-sell"
+          >
+            Sell
+          </Button>
+        </div>
+
         <div className="flex gap-2 mb-3">
           {(['chart', 'info', 'holders'] as const).map((id) => (
             <button
