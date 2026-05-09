@@ -573,7 +573,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           <div className="text-center text-white/50 py-16">Loading token…</div>
         )}
 
-        <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-4 py-3 md:px-5 md:py-3 mb-4 inline-flex max-w-full">
+        <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-4 py-3 md:px-5 md:py-3 mb-4 w-full md:w-auto md:min-w-[420px] md:inline-flex md:max-w-full">
           <div className="flex items-center gap-3">
             {(() => {
               const t: Token = (liveData?.live as Token) || readCachedToken(mint) || ({ mint } as Token);
