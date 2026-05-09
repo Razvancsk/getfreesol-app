@@ -180,31 +180,40 @@ function readCachedToken(mint: string): Token | undefined {
   return undefined;
 }
 
-function SocialIcons({ socials }: { socials: { twitter?: string; website?: string; telegram?: string; discord?: string } }) {
-  const items: { href: string; icon: any; label: string }[] = [];
-  if (socials.twitter) items.push({ href: socials.twitter, icon: SiX, label: 'X' });
-  if (socials.website) items.push({ href: socials.website, icon: Globe, label: 'Website' });
-  if (socials.telegram) items.push({ href: socials.telegram, icon: SiTelegram, label: 'Telegram' });
-  if (socials.discord) items.push({ href: socials.discord, icon: SiDiscord, label: 'Discord' });
+function SocialIcons({ socials, mint }: { socials: { twitter?: string; website?: string; telegram?: string; discord?: string }; mint?: string }) {
+  const items: { href: string; render: () => React.ReactNode; label: string }[] = [];
+  if (socials.twitter) items.push({ href: socials.twitter, label: 'X', render: () => <SiX className="h-5 w-5" /> });
+  if (socials.website) items.push({ href: socials.website, label: 'Website', render: () => <Globe className="h-5 w-5" /> });
+  if (socials.telegram) items.push({ href: socials.telegram, label: 'Telegram', render: () => <SiTelegram className="h-5 w-5" /> });
+  if (socials.discord) items.push({ href: socials.discord, label: 'Discord', render: () => <SiDiscord className="h-5 w-5" /> });
+  if (mint) {
+    items.push({
+      href: `https://solscan.io/token/${mint}`,
+      label: 'Solscan',
+      render: () => <img src="https://solscan.io/favicon.ico" alt="" className="h-5 w-5 rounded" />,
+    });
+    items.push({
+      href: `https://dexscreener.com/solana/${mint}`,
+      label: 'DexScreener',
+      render: () => <img src="https://dexscreener.com/favicon.png" alt="" className="h-5 w-5 rounded" />,
+    });
+  }
   if (items.length === 0) return null;
   return (
     <div className="flex items-center gap-2 mt-2">
-      {items.map((it) => {
-        const Icon = it.icon;
-        return (
-          <a
-            key={it.label}
-            href={it.href}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={it.label}
-            className="text-white/70 hover:text-white p-1.5 rounded-md hover:bg-white/10"
-            data-testid={`link-social-${it.label.toLowerCase()}`}
-          >
-            <Icon className="h-5 w-5" />
-          </a>
-        );
-      })}
+      {items.map((it) => (
+        <a
+          key={it.label}
+          href={it.href}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={it.label}
+          className="text-white/70 hover:text-white p-1.5 rounded-md hover:bg-white/10 inline-flex items-center"
+          data-testid={`link-social-${it.label.toLowerCase()}`}
+        >
+          {it.render()}
+        </a>
+      ))}
     </div>
   );
 }
@@ -611,7 +620,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   <Copy className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <SocialIcons socials={pickSocials(info)} />
+              <SocialIcons socials={pickSocials(info)} mint={mint} />
             </div>
           </div>
         </div>
