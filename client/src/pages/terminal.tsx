@@ -188,7 +188,7 @@ function SocialIcons({ socials }: { socials: { twitter?: string; website?: strin
   if (socials.discord) items.push({ href: socials.discord, icon: SiDiscord, label: 'Discord' });
   if (items.length === 0) return null;
   return (
-    <div className="flex items-center gap-1.5 ml-1">
+    <div className="flex items-center gap-2 mt-2">
       {items.map((it) => {
         const Icon = it.icon;
         return (
@@ -198,10 +198,10 @@ function SocialIcons({ socials }: { socials: { twitter?: string; website?: strin
             target="_blank"
             rel="noreferrer"
             aria-label={it.label}
-            className="text-white/60 hover:text-white p-1 rounded-md hover:bg-white/10"
+            className="text-white/70 hover:text-white p-1.5 rounded-md hover:bg-white/10"
             data-testid={`link-social-${it.label.toLowerCase()}`}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <Icon className="h-5 w-5" />
           </a>
         );
       })}
