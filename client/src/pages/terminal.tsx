@@ -45,6 +45,24 @@ function fmtUsd(n?: number): string {
   if (n > 0) return `$${n.toPrecision(3)}`;
   return '$0';
 }
+
+// Crypto-style subscript notation for tiny prices, e.g. 0.00004016 → $0.0₄4016
+function fmtPriceUsd(n?: number): JSX.Element {
+  if (n == null || !Number.isFinite(n) || n <= 0) return <>—</>;
+  if (n >= 1) return <>${n.toFixed(2)}</>;
+  if (n >= 0.01) return <>${n.toFixed(4)}</>;
+  // Count leading zeros after "0."
+  const s = n.toFixed(20);
+  const dot = s.indexOf('.');
+  let zeros = 0;
+  let i = dot + 1;
+  while (i < s.length && s[i] === '0') { zeros++; i++; }
+  const sig = s.slice(i, i + 4).replace(/0+$/, '') || '0';
+  if (zeros < 4) {
+    return <>${'0.' + '0'.repeat(zeros) + sig}</>;
+  }
+  return <>$0.0<sub className="text-[0.7em]">{zeros}</sub>{sig}</>;
+}
 function fmtCount(n?: number): string {
   if (!n) return '0';
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -216,7 +234,7 @@ export function TerminalView() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="font-bold text-white text-base tabular-nums">{fmtUsd(t.priceUsd)}</div>
+                    <div className="font-bold text-white text-base tabular-nums">{fmtPriceUsd(t.priceUsd)}</div>
                     {pct != null && Number.isFinite(pct) ? (
                       <div className={`flex items-center justify-end text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
                         {pctUp ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
