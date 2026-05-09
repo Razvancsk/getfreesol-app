@@ -31,6 +31,7 @@ function formatDate(iso: string): string {
 export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalance = 0, gsolApy = null, connected = false }: Props) {
   const [view, setView] = useState<'overview' | 'position'>('overview');
   const [period, setPeriod] = useState<'30d' | 'all'>('30d');
+  const [hovered, setHovered] = useState<{ epoch: number; apy: number; date: string } | null>(null);
 
   const { data, isLoading } = useQuery<RateHistory>({
     queryKey: ['/api/staking/rate-history'],
@@ -50,7 +51,9 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
   const maxApy = apyValues.length ? Math.max(...apyValues) : 6;
   const yMax = Math.ceil(maxApy * 1.2);
   const lastEpochApy = last25.length ? (last25[last25.length - 1].apy ?? 0) * 100 : 0;
-  const displayApy = lastEpochApy > 0 ? lastEpochApy : (gsolApy ?? null);
+  const lastEpochObj = last25.length ? last25[last25.length - 1] : null;
+  const activeEpoch = hovered ?? (lastEpochObj ? { epoch: lastEpochObj.epoch, apy: lastEpochApy, date: lastEpochObj.date } : null);
+  const displayApy = activeEpoch ? activeEpoch.apy : (gsolApy ?? null);
   const solEquivalent = gsolBalance * currentRate;
   const yearlyEarnings = displayApy && gsolBalance > 0 ? (solEquivalent * displayApy) / 100 : 0;
 
@@ -64,7 +67,9 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
             </h2>
             {view === 'overview' && (
               <p className="text-sm mt-0.5 text-white">
-                Last Epoch's APY
+                {activeEpoch
+                  ? `${formatDate(activeEpoch.date)}, Epoch ${activeEpoch.epoch}`
+                  : "Last Epoch's APY"}
               </p>
             )}
           </div>
@@ -117,6 +122,11 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                     data={last25.map(e => ({ ...e, apyPct: (e.apy ?? 0) * 100 }))}
                     margin={{ top: 10, right: 4, left: 0, bottom: 5 }}
                     barCategoryGap="15%"
+                    onMouseMove={(state: any) => {
+                      const p = state?.activePayload?.[0]?.payload;
+                      if (p) setHovered({ epoch: p.epoch, apy: p.apyPct, date: p.date });
+                    }}
+                    onMouseLeave={() => setHovered(null)}
                   >
                     <YAxis
                       type="number"
@@ -136,21 +146,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                       tickLine={false}
                       interval={0}
                     />
-                    <Tooltip
-                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                      contentStyle={{
-                        backgroundColor: 'rgba(20,5,40,0.95)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '8px',
-                        color: '#fff',
-                        fontSize: '12px',
-                      }}
-                      formatter={(v: any) => [`${Number(v).toFixed(2)}%`, 'APY']}
-                      labelFormatter={(label: any, payload: any) => {
-                        const item = payload?.[0]?.payload;
-                        return `Epoch ${label}${item ? ` · ${formatDate(item.date)}` : ''}`;
-                      }}
-                    />
+                    <Tooltip cursor={{ fill: 'rgba(255,255,255,0.08)' }} content={() => null} />
                     <Bar dataKey="apyPct" radius={[3, 3, 0, 0]} fill="#16a34a" maxBarSize={40} />
                   </BarChart>
                 </ResponsiveContainer>
