@@ -11,7 +11,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Twitter, Droplet, Hammer } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer } from 'lucide-react';
+import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 
 type FeedType = 'new' | 'bonding' | 'migrated';
 
@@ -181,10 +182,10 @@ function readCachedToken(mint: string): Token | undefined {
 
 function SocialIcons({ socials }: { socials: { twitter?: string; website?: string; telegram?: string; discord?: string } }) {
   const items: { href: string; icon: any; label: string }[] = [];
-  if (socials.twitter) items.push({ href: socials.twitter, icon: Twitter, label: 'Twitter' });
+  if (socials.twitter) items.push({ href: socials.twitter, icon: SiX, label: 'X' });
   if (socials.website) items.push({ href: socials.website, icon: Globe, label: 'Website' });
-  if (socials.telegram) items.push({ href: socials.telegram, icon: Send, label: 'Telegram' });
-  if (socials.discord) items.push({ href: socials.discord, icon: MessageCircle, label: 'Discord' });
+  if (socials.telegram) items.push({ href: socials.telegram, icon: SiTelegram, label: 'Telegram' });
+  if (socials.discord) items.push({ href: socials.discord, icon: SiDiscord, label: 'Discord' });
   if (items.length === 0) return null;
   return (
     <div className="flex items-center gap-1.5 ml-1">
