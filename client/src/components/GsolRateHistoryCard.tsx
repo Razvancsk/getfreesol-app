@@ -187,56 +187,87 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 </div>
                 {(() => {
                   const fmtUsd = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(Math.abs(n) >= 100 ? 2 : 4)}`;
+                  const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
                   const totalValue = Number(jupPortfolio?.currentValue ?? 0);
+                  const pnl24h = Number(jupPortfolio?.pnl24h ?? NaN);
+                  const pnl24hPct = Number(jupPortfolio?.pnl24hPct ?? NaN);
                   const positions: any[] = Array.isArray(jupPortfolio?.positions) ? jupPortfolio.positions : [];
 
                   return (
                     <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="text-white text-sm font-semibold">Holdings</div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-white font-bold text-base">{fmtUsd(totalValue)}</div>
-                          {walletAddress && (
-                            <a
-                              href={`https://jup.ag/portfolio/${walletAddress}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[11px] text-purple-200 hover:text-white underline"
-                            >
-                              PnL on Jupiter ↗
-                            </a>
-                          )}
-                        </div>
+                        <div className="text-white text-sm font-semibold">Portfolio · 24h PnL</div>
+                        {walletAddress && (
+                          <a
+                            href={`https://jup.ag/portfolio/${walletAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] text-purple-200 hover:text-white underline"
+                          >
+                            All-time on Jupiter ↗
+                          </a>
+                        )}
                       </div>
                       {jupPortfolioLoading ? (
-                        <div className="text-white/70 text-sm">Loading holdings…</div>
-                      ) : positions.length === 0 ? (
-                        <div className="text-white/70 text-xs">No tokens held.</div>
+                        <div className="text-white/70 text-sm">Loading…</div>
                       ) : (
-                        <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-                          {positions.map((p: any) => {
-                            const qty = Number(p.qty);
-                            const val = Number(p.currentValue);
-                            const px = Number(p.currentPrice);
-                            const sym = p.symbol || `${String(p.mint).slice(0, 4)}…${String(p.mint).slice(-4)}`;
-                            const qtyStr = qty >= 1 ? qty.toLocaleString(undefined, { maximumFractionDigits: 4 }) : qty.toFixed(6);
-                            return (
-                              <div key={p.mint} className="flex items-center justify-between text-xs bg-black/20 rounded-lg px-3 py-2">
-                                <div className="min-w-0">
-                                  <div className="text-white font-semibold truncate">{sym}</div>
-                                  <div className="text-white/50 text-[10px]">{qtyStr} @ {fmtUsd(px)}</div>
-                                </div>
-                                <div className="text-right shrink-0 ml-2">
-                                  <div className="text-white font-bold">{fmtUsd(val)}</div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                        <>
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <div className="text-white/70 text-xs">Total Value</div>
+                              <div className="text-white font-black text-lg">{fmtUsd(totalValue)}</div>
+                            </div>
+                            <div>
+                              <div className="text-white/70 text-xs">24h PnL</div>
+                              {Number.isFinite(pnl24h) ? (
+                                <>
+                                  <div className={`font-black text-lg ${pnl24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {(pnl24h >= 0 ? '+' : '') + fmtUsd(pnl24h)}
+                                  </div>
+                                  {Number.isFinite(pnl24hPct) && (
+                                    <div className={`text-[11px] ${pnl24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPct(pnl24hPct)}</div>
+                                  )}
+                                </>
+                              ) : <div className="text-white/70 text-sm">—</div>}
+                            </div>
+                          </div>
+                          {positions.length > 0 && (
+                            <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1 border-t border-white/10 pt-3">
+                              {positions.map((p: any) => {
+                                const qty = Number(p.qty);
+                                const val = Number(p.currentValue);
+                                const px = Number(p.currentPrice);
+                                const u = Number(p.pnl24h);
+                                const pct = Number(p.pnl24hPct);
+                                const sym = p.symbol || `${String(p.mint).slice(0, 4)}…${String(p.mint).slice(-4)}`;
+                                const qtyStr = qty >= 1 ? qty.toLocaleString(undefined, { maximumFractionDigits: 4 }) : qty.toFixed(6);
+                                return (
+                                  <div key={p.mint} className="flex items-center justify-between text-xs bg-black/20 rounded-lg px-3 py-2">
+                                    <div className="min-w-0">
+                                      <div className="text-white font-semibold truncate">{sym}</div>
+                                      <div className="text-white/50 text-[10px]">{qtyStr} · {fmtUsd(val)}</div>
+                                    </div>
+                                    <div className="text-right shrink-0 ml-2">
+                                      {Number.isFinite(u) ? (
+                                        <>
+                                          <div className={`font-bold ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            {(u >= 0 ? '+' : '') + fmtUsd(u)}
+                                          </div>
+                                          {Number.isFinite(pct) && (
+                                            <div className={`text-[10px] ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPct(pct)}</div>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <div className="text-white/40">—</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
                       )}
-                      <div className="text-white/40 text-[10px] mt-3 leading-snug">
-                        For accurate PnL with cost basis, view on Jupiter →
-                      </div>
                     </div>
                   );
                 })()}

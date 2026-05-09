@@ -781,11 +781,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let currentValue = 0;
+      let pnl24h = 0;
+      let valueYesterday = 0;
       const positions: any[] = [];
       for (const h of heldTokens) {
-        const px = Number(prices[h.mint]?.usdPrice ?? 0);
+        const p: any = prices[h.mint] || {};
+        const px = Number(p.usdPrice ?? 0);
+        const chg = Number(p.priceChange24h);
         const val = px * h.qty;
-        if (val < 0.01) continue; // hide dust
+        if (val < 0.01) continue;
+        let tokenPnl24h: number | null = null;
+        let pxYesterday: number | null = null;
+        if (Number.isFinite(chg)) {
+          pxYesterday = px / (1 + chg / 100);
+          const valYesterday = pxYesterday * h.qty;
+          tokenPnl24h = val - valYesterday;
+          pnl24h += tokenPnl24h;
+          valueYesterday += valYesterday;
+        }
         currentValue += val;
         positions.push({
           mint: h.mint,
@@ -793,22 +806,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           qty: h.qty,
           currentPrice: px,
           currentValue: val,
-          unrealizedPnl: null,
-          unrealizedPnlPct: null,
-          hasCostBasis: false,
+          priceChange24h: Number.isFinite(chg) ? chg : null,
+          pnl24h: tokenPnl24h,
+          pnl24hPct: tokenPnl24h !== null && pxYesterday ? ((px - pxYesterday) / pxYesterday) * 100 : null,
         });
       }
       positions.sort((a, b) => b.currentValue - a.currentValue);
 
       res.json({
         wallet: address,
-        swapsCount: 0,
-        realized: null,
-        unrealized: null,
-        total: null,
         currentValue,
-        totalCostBasis: null,
-        unrealizedPct: null,
+        valueYesterday,
+        pnl24h,
+        pnl24hPct: valueYesterday > 0 ? (pnl24h / valueYesterday) * 100 : null,
         positions,
       });
     } catch (e: any) {
