@@ -541,9 +541,9 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-5 py-5 md:px-6 md:py-6 mb-4">
           <div className="flex items-center gap-4">
             {info?.icon ? (
-              <img src={info.icon} className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover flex-shrink-0" alt="" />
+              <img src={info.icon} className="w-16 h-16 md:w-20 md:h-20 rounded-2xl object-cover flex-shrink-0" alt="" />
             ) : (
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-purple-700 flex-shrink-0" />
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-purple-700 flex-shrink-0" />
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
