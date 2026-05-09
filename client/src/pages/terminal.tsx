@@ -636,22 +636,24 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               </div>
             </div>
 
-            <div className="grid grid-cols-4 lg:grid-cols-2 gap-2 md:gap-3">
-              {(() => {
-                const live: any = liveData?.live || {};
-                const tx = (Number(live.buys)||0) + (Number(live.sells)||0);
-                return [
-                  { label: 'LIQUIDITY', value: fmtUsd(live.liquidityUsd) },
-                  { label: 'MARKET CAP', value: fmtUsd(live.marketCapUsd) },
-                  { label: 'VOLUME', value: fmtUsd(live.volumeUsd) },
-                  { label: 'TXNS', value: fmtCount(tx || undefined) },
-                ];
-              })().map((s) => (
-                <div key={s.label} className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-2 py-3 md:px-4 md:py-4 text-center min-w-0">
-                  <div className="text-purple-300/70 text-[10px] md:text-xs font-semibold tracking-wider uppercase truncate">{s.label}</div>
-                  <div className="text-white text-base md:text-2xl font-bold tabular-nums mt-1 truncate">{s.value}</div>
-                </div>
-              ))}
+            <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
+                {(() => {
+                  const live: any = liveData?.live || {};
+                  const tx = (Number(live.buys)||0) + (Number(live.sells)||0);
+                  return [
+                    { label: 'LIQUIDITY', value: fmtUsd(live.liquidityUsd) },
+                    { label: 'MARKET CAP', value: fmtUsd(live.marketCapUsd) },
+                    { label: 'VOLUME', value: fmtUsd(live.volumeUsd) },
+                    { label: 'TXNS', value: fmtCount(tx || undefined) },
+                  ];
+                })().map((s) => (
+                  <div key={s.label} className="px-3 py-3 md:px-4 md:py-4 text-center min-w-0">
+                    <div className="text-purple-300/70 text-[10px] md:text-xs font-semibold tracking-wider uppercase truncate">{s.label}</div>
+                    <div className="text-white text-base md:text-2xl font-bold tabular-nums mt-1 truncate">{s.value}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <SwapCard token={tokenForTrade} />
