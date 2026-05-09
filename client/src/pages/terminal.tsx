@@ -330,15 +330,6 @@ export function TerminalView() {
                   </div>
                 </div>
 
-                {/* Footer: actions */}
-                <div className="flex items-center justify-end gap-2">
-                  <Button size="sm" className="h-8 px-4 text-xs font-bold bg-green-600 hover:bg-green-500" onClick={() => setTradeFor({ token: t, action: 'buy' })} data-testid={`buy-${t.mint}`}>
-                    Buy
-                  </Button>
-                  <Button size="sm" className="h-8 px-4 text-xs font-bold bg-red-600 hover:bg-red-500" onClick={() => setTradeFor({ token: t, action: 'sell' })} data-testid={`sell-${t.mint}`}>
-                    Sell
-                  </Button>
-                </div>
               </div>
             );
           })}
