@@ -573,8 +573,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           <div className="text-center text-white/50 py-16">Loading token…</div>
         )}
 
-        <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-5 py-5 md:px-6 md:py-6 mb-4">
-          <div className="flex items-center gap-4">
+        <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-4 py-3 md:px-5 md:py-3 mb-4">
+          <div className="flex items-center gap-3">
             {(() => {
               const t: Token = (liveData?.live as Token) || readCachedToken(mint) || ({ mint } as Token);
               const tokenForAvatar: Token = {
@@ -590,13 +590,13 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             })()}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-2xl md:text-3xl font-bold text-white">{info?.symbol || '—'}</span>
-                <span className="text-base md:text-lg text-white/60 truncate">{info?.name || 'Unknown'}</span>
+                <span className="text-xl md:text-2xl font-bold text-white leading-tight">{info?.symbol || '—'}</span>
+                <span className="text-sm md:text-base text-white/60 truncate">{info?.name || 'Unknown'}</span>
                 {info?.isVerified && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-2 text-sm text-white/50">
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-white/50">
                 {info?.firstPool?.createdAt && (
                   <span>{relAge(info.firstPool.createdAt)}</span>
                 )}
@@ -607,10 +607,10 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   data-testid="button-copy-mint"
                   aria-label="Copy mint"
                 >
-                  <Copy className="h-4 w-4" />
+                  <Copy className="h-3.5 w-3.5" />
                 </button>
+                <SocialIcons socials={pickSocials(info)} />
               </div>
-              <SocialIcons socials={pickSocials(info)} />
             </div>
           </div>
         </div>
