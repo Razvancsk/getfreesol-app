@@ -1012,19 +1012,8 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
         const allPresets = [...presets, 'MAX'];
         return (
           <>
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center text-sm">
               <span className="text-white">Balance: <span className="text-white">{balText}</span></span>
-              <button
-                onClick={() => {
-                  if (side === 'buy') {
-                    if (balance != null) setAmount(Math.max(0, balance - 0.01).toFixed(4));
-                  } else if (tokenBalance != null) {
-                    setAmount(String(tokenBalance));
-                  }
-                }}
-                className="text-white font-semibold text-sm hover:opacity-80"
-                data-testid="swap-max-top"
-              >MAX</button>
             </div>
             <div className="bg-purple-950/50 rounded-lg border border-purple-500/40 px-3 py-2 flex items-center gap-3">
               <div className="text-white text-sm font-semibold">{paySym}</div>
