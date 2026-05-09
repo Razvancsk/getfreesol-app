@@ -12975,6 +12975,8 @@ Claimer: ${walletAddress}`;
         denominatedInQuote: !!denominatedInQuote,
         slippage: slippage !== undefined ? Number(slippage) : undefined,
         priorityFee: priorityFee !== undefined ? Number(priorityFee) : undefined,
+        partnerAddress: 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
+        partnerFeeRatio: 0.005,
       });
       res.json({ tx });
     } catch (e: any) {
