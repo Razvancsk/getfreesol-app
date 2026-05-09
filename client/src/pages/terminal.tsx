@@ -491,7 +491,7 @@ export function TokenPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
-      <div className="container mx-auto max-w-4xl px-4 pt-3 pb-6 flex-1">
+      <div className="container mx-auto max-w-4xl lg:max-w-7xl px-4 pt-3 pb-6 flex-1">
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-2" data-testid="link-home">
             <img src={logoImage} alt="Get your SOL back!" className="h-10 w-auto" />
@@ -625,39 +625,52 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 md:gap-3 mb-4">
-          {(() => {
-            const live: any = liveData?.live || {};
-            const tx = (Number(live.buys)||0) + (Number(live.sells)||0);
-            return [
-              { label: 'LIQUIDITY', value: fmtUsd(live.liquidityUsd) },
-              { label: 'MARKET CAP', value: fmtUsd(live.marketCapUsd) },
-              { label: 'VOLUME', value: fmtUsd(live.volumeUsd) },
-              { label: 'TXNS', value: fmtCount(tx || undefined) },
-            ];
-          })().map((s) => (
-            <div key={s.label} className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-2 py-3 md:px-4 md:py-4 text-center min-w-0">
-              <div className="text-purple-300/70 text-[10px] md:text-xs font-semibold tracking-wider uppercase truncate">{s.label}</div>
-              <div className="text-white text-base md:text-2xl font-bold tabular-nums mt-1 truncate">{s.value}</div>
-            </div>
-          ))}
-        </div>
+        <div className="lg:flex lg:gap-4 mb-4">
+          <div className="hidden lg:block flex-1 min-w-0 rounded-xl overflow-hidden border border-white/10 bg-black">
+            <iframe
+              src={`https://dexscreener.com/solana/${mint}?embed=1&theme=dark&trades=1&info=0`}
+              className="w-full"
+              style={{ height: 600, border: 0 }}
+              title="chart"
+            />
+          </div>
 
-        <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 mb-4 flex gap-2">
-          <Button
-            onClick={() => setTradeFor('buy')}
-            className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold"
-            data-testid="button-buy"
-          >
-            Buy
-          </Button>
-          <Button
-            onClick={() => setTradeFor('sell')}
-            className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold"
-            data-testid="button-sell"
-          >
-            Sell
-          </Button>
+          <div className="lg:w-[360px] lg:shrink-0 space-y-3">
+            <div className="grid grid-cols-4 lg:grid-cols-2 gap-2 md:gap-3">
+              {(() => {
+                const live: any = liveData?.live || {};
+                const tx = (Number(live.buys)||0) + (Number(live.sells)||0);
+                return [
+                  { label: 'LIQUIDITY', value: fmtUsd(live.liquidityUsd) },
+                  { label: 'MARKET CAP', value: fmtUsd(live.marketCapUsd) },
+                  { label: 'VOLUME', value: fmtUsd(live.volumeUsd) },
+                  { label: 'TXNS', value: fmtCount(tx || undefined) },
+                ];
+              })().map((s) => (
+                <div key={s.label} className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-2 py-3 md:px-4 md:py-4 text-center min-w-0">
+                  <div className="text-purple-300/70 text-[10px] md:text-xs font-semibold tracking-wider uppercase truncate">{s.label}</div>
+                  <div className="text-white text-base md:text-2xl font-bold tabular-nums mt-1 truncate">{s.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 flex gap-2">
+              <Button
+                onClick={() => setTradeFor('buy')}
+                className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold"
+                data-testid="button-buy"
+              >
+                Buy
+              </Button>
+              <Button
+                onClick={() => setTradeFor('sell')}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold"
+                data-testid="button-sell"
+              >
+                Sell
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-2 mb-3">
@@ -665,14 +678,14 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`px-4 py-2 rounded-lg text-sm capitalize ${tab === id ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
+              className={`px-4 py-2 rounded-lg text-sm capitalize ${id === 'chart' ? 'lg:hidden' : ''} ${tab === id ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
               data-testid={`detail-tab-${id}`}
             >{id}</button>
           ))}
         </div>
 
         {tab === 'chart' && (
-          <div className="rounded-xl overflow-hidden border border-white/10 bg-black">
+          <div className="rounded-xl overflow-hidden border border-white/10 bg-black lg:hidden">
             <iframe
               src={`https://dexscreener.com/solana/${mint}?embed=1&theme=dark&trades=1&info=0`}
               className="w-full"
