@@ -540,7 +540,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         )}
 
         {tab === 'info' && (
-          <div className="space-y-2 text-sm bg-black/20 rounded-xl p-4">
+          <div className="text-sm bg-black/20 rounded-xl p-4 divide-y divide-purple-500/20 [&>*]:py-2.5 first:[&>*]:pt-0 last:[&>*]:pb-0">
             <Row k="Symbol" v={info?.symbol} />
             <Row k="Decimals" v={info?.decimals != null ? String(info.decimals) : undefined} />
             <Row k="Circulating Supply" v={fmtNum(info?.circSupply)} />
