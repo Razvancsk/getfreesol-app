@@ -19,6 +19,7 @@ type Token = {
   symbol?: string;
   imageUri?: string;
   pool?: string;
+  launchpad?: string;
   vSolInBondingCurve?: number;
   marketCapSol?: number;
   bondingPct?: number;
@@ -30,9 +31,9 @@ type Token = {
 };
 
 const TABS: { id: FeedType; label: string; icon: any; sub: string }[] = [
-  { id: 'new',       label: 'New',           icon: Sparkles, sub: 'Just minted' },
+  { id: 'new',       label: 'New',           icon: Sparkles, sub: 'All launchpads' },
   { id: 'bonding',   label: 'Almost Bonding', icon: Flame,    sub: '60%+ to bond' },
-  { id: 'migrated',  label: 'Migrated',      icon: Rocket,   sub: 'On Pumpswap' },
+  { id: 'migrated',  label: 'Migrated',      icon: Rocket,   sub: 'Graduated to AMM' },
 ];
 
 function ago(ts?: number) {
@@ -67,7 +68,7 @@ export default function TerminalPage() {
           </Link>
           <div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight">Terminal</h1>
-            <p className="text-white/60 text-xs">Live pump.fun screener · powered by pumpapi.io</p>
+            <p className="text-white/60 text-xs">Live Solana launchpad screener · Pump.fun · LetsBonk · Meteora · Bags · Moonshot</p>
           </div>
         </div>
         <TerminalView />
@@ -183,16 +184,24 @@ export function TerminalView() {
                       : <span className="text-xs font-bold">{(t.symbol || '?').slice(0, 2)}</span>}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold truncate">
-                      {t.symbol || 'UNKN'} <span className="text-white/40 font-normal">· {t.name || shortMint(t.mint)}</span>
+                    <div className="text-sm font-semibold truncate flex items-center gap-1.5">
+                      <span>{t.symbol || 'UNKN'}</span>
+                      <span className="text-white/40 font-normal truncate">· {t.name || shortMint(t.mint)}</span>
                     </div>
-                    <a
-                      href={`https://solscan.io/token/${t.mint}`}
-                      target="_blank" rel="noreferrer"
-                      className="text-[10px] text-white/40 font-mono hover:text-white/70 inline-flex items-center gap-1"
-                    >
-                      {shortMint(t.mint)} <ExternalLink className="h-2.5 w-2.5" />
-                    </a>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {t.launchpad && (
+                        <span className="text-[9px] px-1.5 py-px rounded bg-purple-500/20 border border-purple-400/30 text-purple-200 font-semibold uppercase tracking-wide shrink-0">
+                          {t.launchpad}
+                        </span>
+                      )}
+                      <a
+                        href={`https://solscan.io/token/${t.mint}`}
+                        target="_blank" rel="noreferrer"
+                        className="text-[10px] text-white/40 font-mono hover:text-white/70 inline-flex items-center gap-1"
+                      >
+                        {shortMint(t.mint)} <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
+                    </div>
                   </div>
                 </div>
                 <div className="col-span-2 text-right text-sm tabular-nums">{fmtSol(t.marketCapSol)}</div>

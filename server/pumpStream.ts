@@ -40,7 +40,19 @@ type Token = {
 const MAX_NEW = 200;
 const MAX_MIGRATED = 200;
 const MAX_TRACKED = 5000;
-const PUMP_BOND_SOL = 85; // pump.fun bonds at ~85 virtual SOL
+// Bonding-curve launchpads & their target virtual SOL before migration.
+// pumpapi.io supports: pump, pump-amm, raydium-launchpad (bonk), raydium-cpmm,
+// meteora-launchpad (bags, moonshot), meteora-damm-v1/v2.
+// Only the *launchpad* pools have a bonding curve; the *-amm/-damm/-cpmm pools
+// are already full AMMs so progress isn't meaningful there.
+const BOND_TARGETS: Record<string, number> = {
+  'pump': 85,
+  'raydium-launchpad': 85,
+  'bonk': 85,
+  'meteora-launchpad': 85,
+  'bags': 85,
+  'moonshot': 85,
+};
 const ALMOST_BOND_THRESHOLD = 0.6; // 60%+ progress
 
 const tokens = new Map<string, Token>();
@@ -52,10 +64,29 @@ let connected = false;
 let reconnectTimer: NodeJS.Timeout | null = null;
 let lastEventAt = 0;
 
+function isBondingPool(pool: string | undefined): boolean {
+  return !!pool && pool in BOND_TARGETS;
+}
+
 function bondingPctFor(pool: string | undefined, vSol: number | undefined): number | undefined {
   if (!vSol || !pool) return undefined;
-  if (pool === 'pump') return Math.min(1, vSol / PUMP_BOND_SOL);
-  return undefined;
+  const target = BOND_TARGETS[pool];
+  if (!target) return undefined;
+  return Math.min(1, vSol / target);
+}
+
+function launchpadLabel(pool: string | undefined): string {
+  if (!pool) return 'Unknown';
+  if (pool === 'pump') return 'Pump.fun';
+  if (pool === 'pump-amm') return 'PumpSwap';
+  if (pool === 'raydium-launchpad' || pool === 'bonk') return 'LetsBonk';
+  if (pool === 'raydium-cpmm') return 'Raydium';
+  if (pool === 'meteora-launchpad') return 'Meteora';
+  if (pool === 'bags') return 'Bags';
+  if (pool === 'moonshot') return 'Moonshot';
+  if (pool.startsWith('meteora')) return 'Meteora';
+  if (pool.startsWith('raydium')) return 'Raydium';
+  return pool;
 }
 
 function upsert(mint: string, patch: Partial<Token>): Token {
@@ -101,26 +132,24 @@ function handleEvent(ev: Event) {
       bondingPct: bondingPctFor(ev.pool, ev.vSolInBondingCurve),
       createdAt: ts,
     });
-    // Only surface pump.fun mints in the "New" tab (this is a pump.fun screener)
-    if (ev.pool === 'pump') {
-      newOrder.unshift(ev.mint);
-      while (newOrder.length > MAX_NEW) newOrder.pop();
-    }
+    // Surface ALL launchpad mints in "New" — pump.fun, LetsBonk, Meteora, Bags,
+    // Moonshot, etc. (the pumpapi.io stream covers every supported launchpad).
+    newOrder.unshift(ev.mint);
+    while (newOrder.length > MAX_NEW) newOrder.pop();
     return;
   }
 
-  // Migration signals:
-  // - `migrate` action lands → migration initiated
-  // - `createPool` with poolCreatedBy='pump' (pool='pump-amm') → migration completed on PumpSwap
+  // Migration / graduation signals across all supported launchpads:
+  // - `migrate` action lands → migration initiated (any launchpad)
+  // - `createPool` event → a token graduated to a full AMM
+  //   (pump→pump-amm, raydium-launchpad→raydium-cpmm, meteora-launchpad→damm, …)
   const isMigrate = ev.txType === 'migrate';
-  const isPumpAmmCreatePool =
-    ev.txType === 'createPool' &&
-    (ev.pool === 'pump-amm' || ev.poolCreatedBy === 'pump');
-  if (isMigrate || isPumpAmmCreatePool) {
+  const isCreatePool = ev.txType === 'createPool';
+  if (isMigrate || isCreatePool) {
     upsert(ev.mint, {
       migrated: true,
       migratedAt: ts,
-      pool: ev.pool || 'pump-amm',
+      pool: ev.pool || undefined,
       bondingPct: 1,
     });
     if (!migratedOrder.includes(ev.mint)) {
@@ -198,6 +227,7 @@ function serialize(t: Token) {
     symbol: t.symbol,
     imageUri: t.imageUri,
     pool: t.pool,
+    launchpad: launchpadLabel(t.pool),
     vSolInBondingCurve: t.vSolInBondingCurve,
     marketCapSol: t.marketCapSol,
     bondingPct: t.bondingPct,
@@ -217,9 +247,9 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
   if (type === 'migrated') {
     return migratedOrder.slice(0, limit).map((m) => tokens.get(m)).filter((t): t is Token => !!t).map(serialize);
   }
-  // bonding: pump pool, not migrated, bondingPct >= threshold, sorted by pct desc
+  // bonding: any bonding-curve launchpad, not migrated, ≥ threshold, sorted desc
   const arr = [...tokens.values()]
-    .filter((t) => !t.migrated && t.pool === 'pump' && (t.bondingPct ?? 0) >= ALMOST_BOND_THRESHOLD)
+    .filter((t) => !t.migrated && isBondingPool(t.pool) && (t.bondingPct ?? 0) >= ALMOST_BOND_THRESHOLD)
     .sort((a, b) => (b.bondingPct ?? 0) - (a.bondingPct ?? 0))
     .slice(0, limit)
     .map(serialize);
