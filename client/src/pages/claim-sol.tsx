@@ -783,6 +783,8 @@ export default function SolRefund() {
     const tabParam = urlParams.get('tab');
     if (tabParam === 'docs') {
       setActiveTab('docs');
+    } else if (tabParam === 'terminal') {
+      setActiveTab('terminal');
     }
     
     // Check for query parameter format: ?ref=CODE
