@@ -1018,8 +1018,8 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
                 onClick={() => {
                   if (side === 'buy') {
                     if (balance != null) setAmount(Math.max(0, balance - 0.01).toFixed(4));
-                  } else {
-                    setAmount('100%');
+                  } else if (tokenBalance != null) {
+                    setAmount(String(tokenBalance));
                   }
                 }}
                 className="text-white font-semibold text-sm hover:opacity-80"
@@ -1044,7 +1044,10 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
                   onClick={() => {
                     if (p === 'MAX') {
                       if (side === 'buy' && balance != null) setAmount(Math.max(0, balance - 0.01).toFixed(4));
-                      else setAmount('100%');
+                      else if (tokenBalance != null) setAmount(String(tokenBalance));
+                    } else if (p.endsWith('%')) {
+                      const pct = parseFloat(p) / 100;
+                      if (tokenBalance != null) setAmount(String(tokenBalance * pct));
                     } else setAmount(p);
                   }}
                   className="py-1.5 rounded-md text-xs bg-purple-950/50 border border-purple-500/20 text-white hover:bg-purple-600/40"
