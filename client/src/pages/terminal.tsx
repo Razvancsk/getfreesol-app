@@ -268,6 +268,39 @@ export function TerminalView() {
                   </div>
                 </div>
 
+                {/* Bonding progress bar */}
+                {!isMigrated && (t.bondingPct ?? 0) > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between text-[11px] mb-1">
+                      <span className="text-white/70">Bonding</span>
+                      <span className="text-white font-medium tabular-nums">{bondPct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${
+                          bondPct >= 80
+                            ? 'bg-gradient-to-r from-orange-400 to-red-500'
+                            : bondPct >= 60
+                              ? 'bg-gradient-to-r from-yellow-400 to-orange-500'
+                              : 'bg-gradient-to-r from-purple-400 to-purple-600'
+                        }`}
+                        style={{ width: `${bondPct}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {isMigrated && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between text-[11px] mb-1">
+                      <span className="text-emerald-300">Migrated</span>
+                      <span className="text-emerald-300 font-medium">100%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-emerald-500/30 overflow-hidden">
+                      <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500" />
+                    </div>
+                  </div>
+                )}
+
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                   <div>
