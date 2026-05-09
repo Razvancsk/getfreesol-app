@@ -654,22 +654,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               ))}
             </div>
 
-            <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 flex gap-2">
-              <Button
-                onClick={() => setTradeFor('buy')}
-                className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold"
-                data-testid="button-buy"
-              >
-                Buy
-              </Button>
-              <Button
-                onClick={() => setTradeFor('sell')}
-                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold"
-                data-testid="button-sell"
-              >
-                Sell
-              </Button>
-            </div>
+            <SwapCard token={tokenForTrade} />
           </div>
         </div>
 
@@ -854,6 +839,101 @@ function InfoTextRow({ label, value, isLast }: { label: string; value?: React.Re
     <div className={`py-5 px-4 text-center ${isLast ? '' : 'border-b border-purple-500/20'}`}>
       <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">{label}</div>
       <div className="text-white text-base mt-2">{value}</div>
+    </div>
+  );
+}
+
+function SwapCard({ token }: { token: Token }) {
+  const { publicKey, signTransaction } = useWallet();
+  const { toast } = useToast();
+  const [side, setSide] = useState<'buy' | 'sell'>('buy');
+  const [amount, setAmount] = useState('');
+  const [slippage] = useState('20');
+  const [busy, setBusy] = useState(false);
+  const buyPresets = ['0.1', '0.3', '0.5', '1'];
+  const sellPresets = ['25%', '50%', '75%', '100%'];
+  const presets = side === 'buy' ? buyPresets : sellPresets;
+  const display = amount || '0';
+
+  async function submit() {
+    if (!publicKey) { toast({ title: 'Connect wallet first' }); return; }
+    if (!signTransaction) { toast({ title: 'Wallet does not support signing', variant: 'destructive' }); return; }
+    const amt = amount.trim();
+    if (!amt) { toast({ title: 'Enter amount' }); return; }
+    setBusy(true);
+    try {
+      const denominatedInQuote = side === 'buy';
+      const amountVal = side === 'sell' && amt.endsWith('%') ? amt : Number(amt);
+      const r = await fetch('/api/terminal/build-tx', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          publicKey: publicKey.toBase58(),
+          action: side, mint: token.mint,
+          amount: amountVal,
+          denominatedInQuote,
+          slippage: Number(slippage),
+        }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'build failed');
+      const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(j.tx), c => c.charCodeAt(0)));
+      const signed = await signTransaction(tx);
+      const heliusKey = (import.meta as any).env?.VITE_HELIUS_API_KEY;
+      const rpc = heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com';
+      const conn = new Connection(rpc, 'confirmed');
+      const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: false, maxRetries: 3 });
+      toast({ title: `${side === 'buy' ? 'Buy' : 'Sell'} sent`, description: signature.slice(0, 12) + '…' });
+      setAmount('');
+    } catch (e: any) {
+      toast({ title: 'Trade failed', description: e?.message || String(e), variant: 'destructive' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 space-y-3">
+      <div className="grid grid-cols-2 bg-black/30 rounded-lg p-1">
+        <button
+          onClick={() => { setSide('buy'); setAmount(''); }}
+          className={`py-2 rounded-md text-sm font-semibold transition ${side === 'buy' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
+          data-testid="swap-tab-buy"
+        >Buy</button>
+        <button
+          onClick={() => { setSide('sell'); setAmount(''); }}
+          className={`py-2 rounded-md text-sm font-semibold transition ${side === 'sell' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
+          data-testid="swap-tab-sell"
+        >Sell</button>
+      </div>
+      <div className="bg-black/30 rounded-lg px-3 py-2">
+        <div className="text-[10px] text-white/50 uppercase tracking-wider">Amount {side === 'buy' ? '(SOL)' : '(tokens / %)'}</div>
+        <input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.0"
+          inputMode="decimal"
+          className="w-full bg-transparent text-white text-xl font-bold outline-none mt-1"
+          data-testid="input-swap-amount"
+        />
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {presets.map((p) => (
+          <button
+            key={p}
+            onClick={() => setAmount(p)}
+            className="py-1.5 rounded-md text-xs bg-black/30 text-white/80 hover:bg-purple-600/40"
+            data-testid={`swap-preset-${p}`}
+          >{p}</button>
+        ))}
+      </div>
+      <Button
+        onClick={submit}
+        disabled={busy || !publicKey}
+        className={`w-full font-bold ${side === 'buy' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-90'}`}
+        data-testid="button-quick-swap"
+      >
+        {busy ? 'Sending…' : !publicKey ? 'Connect Wallet' : side === 'buy' ? `Quick Buy ${display} SOL` : `Quick Sell ${display}`}
+      </Button>
     </div>
   );
 }
