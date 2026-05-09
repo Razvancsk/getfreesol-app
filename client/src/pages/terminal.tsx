@@ -300,8 +300,7 @@ export function TerminalView() {
                   <div className="text-right flex-shrink-0">
                     <div className="font-bold text-white text-base tabular-nums">{fmtPriceUsd(t.priceUsd)}</div>
                     {pct != null && Number.isFinite(pct) ? (
-                      <div className={`flex items-center justify-end text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
-                        {pctUp ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+                      <div className={`text-right text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
                         {pctUp ? '+' : ''}{(pct ?? 0).toFixed(2)}%
                       </div>
                     ) : (
