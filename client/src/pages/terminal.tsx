@@ -289,7 +289,12 @@ export function TerminalView() {
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-white text-base truncate">{t.name || t.symbol || 'Unknown'}</span>
                       </div>
-                      <div className="text-white text-sm truncate">{t.symbol || shortMint(t.mint)}</div>
+                      <div className="text-sm truncate flex items-center gap-2">
+                        <span className="text-white">{t.symbol || shortMint(t.mint)}</span>
+                        {t.createdAt && (
+                          <span className="text-cyan-400 font-medium tabular-nums">{ago(t.createdAt)}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
