@@ -231,8 +231,6 @@ export function TerminalView() {
                               strokeDasharray={`${pct} 100`}
                               style={{
                                 transition: 'stroke-dasharray 1200ms cubic-bezier(0.4,0,0.2,1)',
-                                filter: `drop-shadow(0 0 4px ${stroke})`,
-                                animation: isMigrated ? 'none' : 'pulse-stroke 2s ease-in-out infinite',
                               }}
                             />
                           </svg>
