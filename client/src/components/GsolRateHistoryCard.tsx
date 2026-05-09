@@ -59,7 +59,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
 
   return (
     <div className="w-full rounded-2xl bg-purple-900/20 border border-white/20 backdrop-blur-sm overflow-hidden mt-6">
-      <div className="px-0 py-4">
+      <div className="px-0 pt-4 pb-1">
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
             <h2 className="text-green-400 font-black text-3xl">
