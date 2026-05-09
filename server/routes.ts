@@ -11220,14 +11220,22 @@ Claimer: ${walletAddress}`;
         const v = ld?.data?.[0]?.latestApy;
         if (typeof v === 'number' && v > 0 && v < 1) latestApy = v;
       }
-      const apyRows: { epoch: number; epochEndTs: number; apy: number }[] = (sanctumData?.data ?? [])
-        .map((r: any) => ({
-          epoch: r.epoch,
-          epochEndTs: r.epochEndTs,
-          // Cap obviously bogus APY values (Sanctum occasionally returns outliers)
-          apy: r.apy > 1 || r.apy < 0 || !Number.isFinite(r.apy) ? 0 : r.apy,
-        }));
-      apyRows.sort((a, b) => a.epoch - b.epoch);
+      const rawRows: { epoch: number; epochEndTs: number; apy: number; bad: boolean }[] = (sanctumData?.data ?? [])
+        .map((r: any) => {
+          const bad = !Number.isFinite(r.apy) || r.apy > 1 || r.apy < 0;
+          return { epoch: r.epoch, epochEndTs: r.epochEndTs, apy: bad ? 0 : r.apy, bad };
+        });
+      rawRows.sort((a, b) => a.epoch - b.epoch);
+      // Interpolate outliers from nearest valid neighbours so chart matches Sanctum UI
+      for (let i = 0; i < rawRows.length; i++) {
+        if (!rawRows[i].bad) continue;
+        let prev = i - 1; while (prev >= 0 && rawRows[prev].bad) prev--;
+        let next = i + 1; while (next < rawRows.length && rawRows[next].bad) next++;
+        const a = prev >= 0 ? rawRows[prev].apy : null;
+        const b = next < rawRows.length ? rawRows[next].apy : null;
+        rawRows[i].apy = a !== null && b !== null ? (a + b) / 2 : (a ?? b ?? 0);
+      }
+      const apyRows = rawRows.map(({ epoch, epochEndTs, apy }) => ({ epoch, epochEndTs, apy }));
 
       const epochs: { epoch: number; rate: number; apy: number; date: string }[] = [];
       let compound = 1.0;
