@@ -435,7 +435,7 @@ export function TokenPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
       <div className="max-w-5xl mx-auto px-4 py-6">
         <div className="flex items-center gap-3 mb-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/terminal')} className="text-white/70 hover:text-white" data-testid="button-back">
