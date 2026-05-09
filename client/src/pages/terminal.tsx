@@ -689,7 +689,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         })()}
 
         {tab === 'holders' && (
-          <div className="bg-black/40 rounded-2xl border border-purple-500/20 p-4">
+          <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-white font-semibold">Top holders</h3>
               <a
