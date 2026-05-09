@@ -144,7 +144,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                       tick={{ fill: '#ffffff', fontSize: 11, fontWeight: 700 }}
                       axisLine={false}
                       tickLine={false}
-                      interval={last25.length > 20 ? Math.ceil(last25.length / 8) - 1 : 0}
+                      interval={last25.length > 15 ? 1 : 0}
                     />
                     <Tooltip cursor={{ fill: 'rgba(255,255,255,0.08)' }} content={() => null} />
                     <Bar dataKey="apyPct" radius={[3, 3, 0, 0]} fill="#16a34a" maxBarSize={40} />
