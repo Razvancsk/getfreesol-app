@@ -619,13 +619,12 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         <div className="grid grid-cols-4 gap-2 md:gap-3 mb-4">
           {(() => {
             const live: any = liveData?.live || {};
-            const vol24 = ((Number(s24.buyVolume)||0) + (Number(s24.sellVolume)||0)) || live.volumeUsd;
-            const tx24 = ((Number(s24.numBuys)||0) + (Number(s24.numSells)||0)) || ((Number(live.buys)||0) + (Number(live.sells)||0)) || info?.holderCount;
+            const tx = (Number(live.buys)||0) + (Number(live.sells)||0);
             return [
-              { label: 'LIQUIDITY', value: fmtUsd(info?.liquidity ?? live.liquidityUsd) },
-              { label: 'MARKET CAP', value: fmtUsd(info?.mcap ?? live.marketCapUsd) },
-              { label: '24H VOL', value: fmtUsd(vol24 || undefined) },
-              { label: '24H TXNS', value: fmtCount(tx24) },
+              { label: 'LIQUIDITY', value: fmtUsd(live.liquidityUsd) },
+              { label: 'MARKET CAP', value: fmtUsd(live.marketCapUsd) },
+              { label: 'VOLUME', value: fmtUsd(live.volumeUsd) },
+              { label: 'TXNS', value: fmtCount(tx || undefined) },
             ];
           })().map((s) => (
             <div key={s.label} className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-2 py-3 md:px-4 md:py-4 text-center min-w-0">
