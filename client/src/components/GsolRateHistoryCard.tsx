@@ -9,7 +9,12 @@ interface Props {
   gsolBalance?: number;
   gsolApy?: number | null;
   connected?: boolean;
+  jupPortfolio?: any;
+  jupPortfolioLoading?: boolean;
+  walletAddress?: string | null;
 }
+
+const GSOL_MINT_ADDR = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
 
 interface RateHistory {
   epochs: { epoch: number; rate: number; apy: number; date: string }[];
@@ -29,7 +34,7 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalance = 0, gsolApy = null, connected = false }: Props) {
+export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalance = 0, gsolApy = null, connected = false, jupPortfolio, jupPortfolioLoading = false, walletAddress = null }: Props) {
   const [view, setView] = useState<'overview' | 'position'>('overview');
   const [period, setPeriod] = useState<'30d' | 'all'>('30d');
   const [hovered, setHovered] = useState<{ epoch: number; apy: number; date: string } | null>(null);
@@ -186,6 +191,88 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                     +{yearlyEarnings.toFixed(4)} SOL
                   </div>
                 </div>
+                {(() => {
+                  const elements: any[] = jupPortfolio?.elements ?? [];
+                  const findGsol = (el: any): any => {
+                    if (!el) return null;
+                    const d = el.data || {};
+                    if (Array.isArray(d.assets)) {
+                      const hit = d.assets.find((a: any) => a?.address === GSOL_MINT_ADDR || a?.mint === GSOL_MINT_ADDR);
+                      if (hit) return hit;
+                    }
+                    if (d.address === GSOL_MINT_ADDR || d.mint === GSOL_MINT_ADDR) return d;
+                    return null;
+                  };
+                  let gsolPos: any = null;
+                  for (const el of elements) {
+                    const hit = findGsol(el);
+                    if (hit) { gsolPos = hit; break; }
+                  }
+                  const fmtUsd = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(Math.abs(n) >= 100 ? 2 : 4)}`;
+                  const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+                  const unrealized = Number(gsolPos?.unrealizedPnl ?? gsolPos?.pnl?.unrealized ?? gsolPos?.unrealized ?? NaN);
+                  const unrealizedPct = Number(gsolPos?.unrealizedPnlPercentage ?? gsolPos?.pnl?.unrealizedPercentage ?? NaN);
+                  const realized = Number(gsolPos?.realizedPnl ?? gsolPos?.pnl?.realized ?? NaN);
+                  const totalPnl = Number(gsolPos?.totalPnl ?? gsolPos?.pnl?.total ?? (Number.isFinite(unrealized) && Number.isFinite(realized) ? unrealized + realized : NaN));
+                  const hasPnl = Number.isFinite(unrealized) || Number.isFinite(realized) || Number.isFinite(totalPnl);
+
+                  return (
+                    <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-white text-sm font-semibold">PnL</div>
+                        {walletAddress && (
+                          <a
+                            href={`https://jup.ag/portfolio/${walletAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] text-purple-200 hover:text-white underline"
+                          >
+                            via Jupiter ↗
+                          </a>
+                        )}
+                      </div>
+                      {jupPortfolioLoading ? (
+                        <div className="text-white/70 text-sm">Loading PnL…</div>
+                      ) : hasPnl ? (
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <div className="text-white/70 text-xs">Unrealized</div>
+                            {Number.isFinite(unrealized) ? (
+                              <>
+                                <div className={`font-black text-lg ${unrealized >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {(unrealized >= 0 ? '+' : '') + fmtUsd(unrealized)}
+                                </div>
+                                {Number.isFinite(unrealizedPct) && (
+                                  <div className={`text-[11px] ${unrealized >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPct(unrealizedPct)}</div>
+                                )}
+                              </>
+                            ) : <div className="text-white/70 text-sm">—</div>}
+                          </div>
+                          <div>
+                            <div className="text-white/70 text-xs">Realized</div>
+                            {Number.isFinite(realized) ? (
+                              <div className={`font-black text-lg ${realized >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {(realized >= 0 ? '+' : '') + fmtUsd(realized)}
+                              </div>
+                            ) : <div className="text-white/70 text-sm">—</div>}
+                          </div>
+                          <div>
+                            <div className="text-white/70 text-xs">Total</div>
+                            {Number.isFinite(totalPnl) ? (
+                              <div className={`font-black text-lg ${totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {(totalPnl >= 0 ? '+' : '') + fmtUsd(totalPnl)}
+                              </div>
+                            ) : <div className="text-white/70 text-sm">—</div>}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-white/70 text-xs">
+                          PnL not yet indexed by Jupiter for this wallet.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>

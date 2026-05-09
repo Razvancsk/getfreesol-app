@@ -5319,100 +5319,6 @@ export default function SolRefund() {
               </div>
 
 
-              {/* My Position (PnL via Jupiter Portfolio API) */}
-              {publicKey && isConnected && (() => {
-                const elements: any[] = jupPortfolio?.elements ?? [];
-                const findGsol = (el: any): any => {
-                  if (!el) return null;
-                  const d = el.data || {};
-                  if (Array.isArray(d.assets)) {
-                    const hit = d.assets.find((a: any) => a?.address === GSOL_MINT || a?.mint === GSOL_MINT);
-                    if (hit) return hit;
-                  }
-                  if (d.address === GSOL_MINT || d.mint === GSOL_MINT) return d;
-                  return null;
-                };
-                let gsolPos: any = null;
-                let parentValue: number | undefined;
-                for (const el of elements) {
-                  const hit = findGsol(el);
-                  if (hit) { gsolPos = hit; parentValue = el.value; break; }
-                }
-                const fmtUsd = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(n >= 100 ? 2 : 4)}`;
-                const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
-                const holdingValue = Number(gsolPos?.value ?? parentValue ?? (gsolBalance * gsolSolValue * (gsolApy ? 1 : 1)));
-                const unrealized = Number(gsolPos?.unrealizedPnl ?? gsolPos?.pnl?.unrealized ?? gsolPos?.unrealized ?? NaN);
-                const unrealizedPct = Number(gsolPos?.unrealizedPnlPercentage ?? gsolPos?.pnl?.unrealizedPercentage ?? NaN);
-                const realized = Number(gsolPos?.realizedPnl ?? gsolPos?.pnl?.realized ?? NaN);
-                const totalPnl = Number(gsolPos?.totalPnl ?? gsolPos?.pnl?.total ?? (Number.isFinite(unrealized) && Number.isFinite(realized) ? unrealized + realized : NaN));
-                const hasPnl = Number.isFinite(unrealized) || Number.isFinite(realized) || Number.isFinite(totalPnl);
-
-                return (
-                  <div className="rounded-2xl border border-purple-500/40 bg-gradient-to-br from-purple-800/30 to-purple-900/40 p-5 mb-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-bold text-lg">My Position</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-100 font-semibold">GSOL</span>
-                      </div>
-                      <a href={`https://jup.ag/portfolio/${pointsWalletAddress}`} target="_blank" rel="noopener noreferrer" className="text-xs text-purple-300 hover:text-white underline">
-                        View on Jupiter ↗
-                      </a>
-                    </div>
-
-                    {jupPortfolioLoading ? (
-                      <div className="text-purple-200 text-sm">Loading position…</div>
-                    ) : gsolBalance <= 0 ? (
-                      <div className="text-purple-200 text-sm">Stake SOL to open a GSOL position.</div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-xl bg-purple-950/40 border border-purple-500/20 p-3">
-                          <div className="text-purple-300 text-xs mb-1">Holdings</div>
-                          <div className="text-white font-black text-lg">{gsolBalance.toFixed(4)} GSOL</div>
-                          <div className="text-purple-200 text-xs mt-0.5">
-                            ≈ {(gsolBalance * gsolSolValue).toFixed(4)} SOL
-                            {Number.isFinite(holdingValue) && holdingValue > 0 ? ` · ${fmtUsd(holdingValue)}` : ''}
-                          </div>
-                        </div>
-                        <div className="rounded-xl bg-purple-950/40 border border-purple-500/20 p-3">
-                          <div className="text-purple-300 text-xs mb-1">Unrealized PnL</div>
-                          {Number.isFinite(unrealized) ? (
-                            <>
-                              <div className={`font-black text-lg ${unrealized >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(unrealized >= 0 ? '+' : '') + fmtUsd(unrealized)}</div>
-                              {Number.isFinite(unrealizedPct) && (
-                                <div className={`text-xs mt-0.5 ${unrealized >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPct(unrealizedPct)}</div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="text-purple-200 text-sm">—</div>
-                          )}
-                        </div>
-                        <div className="rounded-xl bg-purple-950/40 border border-purple-500/20 p-3">
-                          <div className="text-purple-300 text-xs mb-1">Realized PnL</div>
-                          {Number.isFinite(realized) ? (
-                            <div className={`font-black text-lg ${realized >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(realized >= 0 ? '+' : '') + fmtUsd(realized)}</div>
-                          ) : (
-                            <div className="text-purple-200 text-sm">—</div>
-                          )}
-                        </div>
-                        <div className="rounded-xl bg-purple-950/40 border border-purple-500/20 p-3">
-                          <div className="text-purple-300 text-xs mb-1">Total PnL</div>
-                          {Number.isFinite(totalPnl) ? (
-                            <div className={`font-black text-lg ${totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(totalPnl >= 0 ? '+' : '') + fmtUsd(totalPnl)}</div>
-                          ) : (
-                            <div className="text-purple-200 text-sm">—</div>
-                          )}
-                        </div>
-                        {!hasPnl && (
-                          <div className="col-span-2 text-purple-300 text-xs">
-                            PnL data not yet available from Jupiter for this wallet. It will appear here once Jupiter indexes your trades.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
               <GsolRateHistoryCard
                 tvl={gsolTvl}
                 holders={gsolHolders}
@@ -5420,6 +5326,9 @@ export default function SolRefund() {
                 gsolBalance={gsolBalance}
                 gsolApy={gsolApy}
                 connected={!!publicKey && isConnected}
+                jupPortfolio={jupPortfolio}
+                jupPortfolioLoading={jupPortfolioLoading}
+                walletAddress={pointsWalletAddress}
               />
 
               {/* GSOL FAQ Accordion */}
