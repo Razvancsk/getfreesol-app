@@ -74,7 +74,8 @@ function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: numb
   const initials = (token.symbol || token.name || '?').slice(0, 2).toUpperCase();
   const color = colorFor(token.mint);
   const showImg = token.imageUri && !failed;
-  const SIZE = 80;
+  const SIZE = 92;
+  const IMG = 76;
   const STROKE = 4;
   const R = (SIZE - STROKE) / 2;
   const C = 2 * Math.PI * R;
@@ -85,7 +86,7 @@ function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: numb
     : pct >= 60 ? '#facc15'
     : '#a78bfa';
   return (
-    <div className="relative flex-shrink-0 w-20 h-20">
+    <div className="relative flex-shrink-0" style={{ width: SIZE, height: SIZE }}>
       <svg className="absolute inset-0 -rotate-90 pointer-events-none" width={SIZE} height={SIZE}>
         <circle
           cx={SIZE / 2} cy={SIZE / 2} r={R}
@@ -102,7 +103,10 @@ function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: numb
           />
         )}
       </svg>
-      <div className="absolute inset-1">
+      <div
+        className="absolute"
+        style={{ width: IMG, height: IMG, left: (SIZE - IMG) / 2, top: (SIZE - IMG) / 2 }}
+      >
         {showImg ? (
           <img
             src={token.imageUri}
