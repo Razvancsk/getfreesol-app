@@ -481,7 +481,7 @@ export function TokenPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
-      <div className="container mx-auto max-w-6xl md:max-w-7xl px-4 pt-3 pb-6 flex-1">
+      <div className="container mx-auto max-w-4xl px-4 pt-3 pb-6 flex-1">
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-2" data-testid="link-home">
             <img src={logoImage} alt="Get your SOL back!" className="h-10 w-auto" />
