@@ -69,25 +69,58 @@ function colorFor(s: string) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
-function TokenAvatar({ token }: { token: Token }) {
+function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: number; migrated: boolean }) {
   const [failed, setFailed] = useState(false);
   const initials = (token.symbol || token.name || '?').slice(0, 2).toUpperCase();
   const color = colorFor(token.mint);
   const showImg = token.imageUri && !failed;
+  const SIZE = 80;
+  const STROKE = 4;
+  const R = (SIZE - STROKE) / 2;
+  const C = 2 * Math.PI * R;
+  const pct = migrated ? 100 : Math.max(0, Math.min(100, bondPct));
+  const ringColor = migrated
+    ? '#34d399'
+    : pct >= 80 ? '#fb923c'
+    : pct >= 60 ? '#facc15'
+    : '#a78bfa';
   return (
     <div className="relative flex-shrink-0 w-20 h-20">
-      {showImg ? (
-        <img
-          src={token.imageUri}
-          alt={`${token.symbol} logo`}
-          width={80}
-          height={80}
-          className="block w-20 h-20 min-w-[80px] min-h-[80px] rounded-xl object-cover"
-          onError={() => setFailed(true)}
+      <svg className="absolute inset-0 -rotate-90 pointer-events-none" width={SIZE} height={SIZE}>
+        <circle
+          cx={SIZE / 2} cy={SIZE / 2} r={R}
+          stroke="rgba(255,255,255,0.1)" strokeWidth={STROKE} fill="none"
         />
-      ) : (
-        <div className={`${color} w-20 h-20 min-w-[80px] min-h-[80px] text-xl rounded-xl flex items-center justify-center text-white font-bold`}>
-          {initials}
+        {pct > 0 && (
+          <circle
+            cx={SIZE / 2} cy={SIZE / 2} r={R}
+            stroke={ringColor} strokeWidth={STROKE} fill="none"
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={C * (1 - pct / 100)}
+            style={{ transition: 'stroke-dashoffset 600ms ease' }}
+          />
+        )}
+      </svg>
+      <div className="absolute inset-1">
+        {showImg ? (
+          <img
+            src={token.imageUri}
+            alt={`${token.symbol} logo`}
+            className="block w-full h-full rounded-xl object-cover"
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <div className={`${color} w-full h-full text-xl rounded-xl flex items-center justify-center text-white font-bold`}>
+            {initials}
+          </div>
+        )}
+      </div>
+      {pct > 0 && (
+        <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-black/70 border border-white/10 text-[9px] font-bold tabular-nums leading-none"
+          style={{ color: ringColor }}
+        >
+          {migrated ? '✓' : `${Math.round(pct)}%`}
         </div>
       )}
     </div>
@@ -247,7 +280,7 @@ export function TerminalView() {
               >
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <TokenAvatar token={t} />
+                    <TokenAvatar token={t} bondPct={bondPct} migrated={isMigrated} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-white text-base truncate">{t.name || t.symbol || 'Unknown'}</span>
@@ -267,39 +300,6 @@ export function TerminalView() {
                     )}
                   </div>
                 </div>
-
-                {/* Bonding progress bar */}
-                {!isMigrated && (t.bondingPct ?? 0) > 0 && (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="text-white/70">Bonding</span>
-                      <span className="text-white font-medium tabular-nums">{bondPct}%</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${
-                          bondPct >= 80
-                            ? 'bg-gradient-to-r from-orange-400 to-red-500'
-                            : bondPct >= 60
-                              ? 'bg-gradient-to-r from-yellow-400 to-orange-500'
-                              : 'bg-gradient-to-r from-purple-400 to-purple-600'
-                        }`}
-                        style={{ width: `${bondPct}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-                {isMigrated && (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="text-emerald-300">Migrated</span>
-                      <span className="text-emerald-300 font-medium">100%</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-emerald-500/30 overflow-hidden">
-                      <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500" />
-                    </div>
-                  </div>
-                )}
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
