@@ -166,7 +166,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               </div>
               <div className="bg-purple-900/20 border border-white/20 rounded-xl p-3">
                 <div className="text-white text-xs">1 GSOL =</div>
-                <div className="text-white font-bold text-base mt-1">{currentRate.toFixed(3)} SOL</div>
+                <div className="text-white font-bold text-base mt-1">{currentRate.toFixed(6)} SOL</div>
               </div>
             </div>
 
