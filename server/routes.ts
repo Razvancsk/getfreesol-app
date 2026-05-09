@@ -768,48 +768,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If sold more than known cost basis (no prior buy in our records) we just skip remaining → realized counted only against known basis
       }
 
-      // Open positions = remaining lots
-      const open: { mint: string; symbol?: string; qty: number; costUsd: number }[] = [];
+      // Per-mint avg cost from FIFO remaining lots
+      const avgCost: Record<string, number> = {};
       for (const [mint, queue] of Object.entries(lots)) {
         const qty = queue.reduce((a, l) => a + l.qty, 0);
         const costUsd = queue.reduce((a, l) => a + l.costUsd, 0);
-        if (qty > 1e-9 && costUsd > 0) open.push({ mint, symbol: symbols[mint], qty, costUsd });
+        if (qty > 1e-9 && costUsd > 0) avgCost[mint] = costUsd / qty;
+      }
+
+      // Fetch ACTUAL on-chain holdings via Jupiter Ultra Holdings
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      if (process.env.JUPITER_API_KEY) headers['x-api-key'] = process.env.JUPITER_API_KEY;
+      const WSOL = 'So11111111111111111111111111111111111111112';
+      type Holding = { mint: string; qty: number };
+      const heldTokens: Holding[] = [];
+      try {
+        const hr = await fetch(`https://api.jup.ag/ultra/v1/holdings/${address}`, { headers });
+        if (hr.ok) {
+          const hd: any = await hr.json();
+          // Native SOL
+          const solQty = Number(hd?.uiAmount ?? 0);
+          if (solQty > 0) heldTokens.push({ mint: WSOL, qty: solQty });
+          const tokens = hd?.tokens || {};
+          for (const [mint, accs] of Object.entries<any>(tokens)) {
+            if (!Array.isArray(accs)) continue;
+            const qty = accs.reduce((a: number, v: any) => a + Number(v?.uiAmount ?? 0), 0);
+            if (qty > 0) heldTokens.push({ mint, qty });
+          }
+        }
+      } catch (e) {
+        console.error('Holdings fetch failed:', e);
+      }
+
+      // Symbol fallback for held tokens not in our swap records
+      const knownSymbols: Record<string, string> = {
+        [WSOL]: 'SOL',
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
+        'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
+        'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3': 'GSOL',
+        'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': 'BONK',
+        'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN': 'JUP',
+      };
+
+      // Fetch current prices for everything held
+      let prices: Record<string, { usdPrice?: number }> = {};
+      if (heldTokens.length > 0) {
+        const ids = heldTokens.map(h => h.mint).join(',');
+        try {
+          const r = await fetch(`https://api.jup.ag/price/v3?ids=${ids}`, { headers });
+          if (r.ok) prices = await r.json();
+        } catch {}
       }
 
       let unrealized = 0;
       let currentValue = 0;
       const positions: any[] = [];
-      if (open.length > 0) {
-        const ids = open.map(o => o.mint).join(',');
-        const headers: Record<string, string> = { 'Accept': 'application/json' };
-        if (process.env.JUPITER_API_KEY) headers['x-api-key'] = process.env.JUPITER_API_KEY;
-        let prices: Record<string, { usdPrice?: number }> = {};
-        try {
-          const r = await fetch(`https://api.jup.ag/price/v3?ids=${ids}`, { headers });
-          if (r.ok) prices = await r.json();
-        } catch {}
-        for (const o of open) {
-          const px = Number(prices[o.mint]?.usdPrice ?? 0);
-          const val = px * o.qty;
-          const u = val - o.costUsd;
-          if (Number.isFinite(val)) currentValue += val;
-          if (Number.isFinite(u)) unrealized += u;
-          positions.push({
-            mint: o.mint,
-            symbol: o.symbol,
-            qty: o.qty,
-            costUsd: o.costUsd,
-            avgCostUsd: o.costUsd / o.qty,
-            currentPrice: px,
-            currentValue: val,
-            unrealizedPnl: u,
-            unrealizedPnlPct: o.costUsd > 0 ? (u / o.costUsd) * 100 : null,
-          });
-        }
+      for (const h of heldTokens) {
+        const px = Number(prices[h.mint]?.usdPrice ?? 0);
+        const val = px * h.qty;
+        if (val < 0.01) continue; // hide dust
+        const ac = avgCost[h.mint];
+        const costUsd = ac ? ac * h.qty : 0;
+        const u = ac ? val - costUsd : 0;
+        currentValue += val;
+        unrealized += u;
+        positions.push({
+          mint: h.mint,
+          symbol: symbols[h.mint] || knownSymbols[h.mint],
+          qty: h.qty,
+          costUsd,
+          avgCostUsd: ac ?? null,
+          currentPrice: px,
+          currentValue: val,
+          unrealizedPnl: u,
+          unrealizedPnlPct: costUsd > 0 ? (u / costUsd) * 100 : null,
+          hasCostBasis: !!ac,
+        });
       }
+      positions.sort((a, b) => b.currentValue - a.currentValue);
 
       const total = realized + unrealized;
-      const totalCost = open.reduce((a, o) => a + o.costUsd, 0);
+      const totalCost = positions.reduce((a, p) => a + (p.costUsd || 0), 0);
       res.json({
         wallet: address,
         swapsCount: swaps.length,
@@ -819,7 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentValue,
         totalCostBasis: totalCost,
         unrealizedPct: totalCost > 0 ? (unrealized / totalCost) * 100 : null,
-        positions: positions.sort((a, b) => Math.abs(b.unrealizedPnl) - Math.abs(a.unrealizedPnl)),
+        positions,
       });
     } catch (e: any) {
       console.error('Wallet PnL error:', e);
