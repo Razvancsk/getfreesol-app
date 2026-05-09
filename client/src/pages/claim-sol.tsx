@@ -788,8 +788,11 @@ export default function SolRefund() {
     // Check for query parameter format: ?ref=CODE
     const queryRefCode = urlParams.get('ref');
 
-    // Check for path format: /CODE
-    const pathRefCode = window.location.pathname.replace('/', '');
+    // Check for path format: /CODE (skip known app routes)
+    const path = window.location.pathname;
+    const reservedPrefixes = ['/terminal', '/claim-sol', '/referrals', '/developer', '/admin', '/docs', '/api-docs', '/profile', '/swap', '/design', '/privacy', '/terms', '/partners', '/x-admin'];
+    const isReserved = reservedPrefixes.some(p => path === p || path.startsWith(p + '/'));
+    const pathRefCode = (!isReserved && path !== '/') ? path.replace('/', '') : '';
 
     const refCode = queryRefCode || (pathRefCode && pathRefCode !== '' ? pathRefCode : null);
 

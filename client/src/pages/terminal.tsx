@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import logoImage from '@assets/image_1757882056840.png';
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -397,7 +399,34 @@ function fmtNum(n?: number): string {
 export function TokenPage() {
   const [, params] = useRoute('/terminal/token/:mint');
   const [, navigate] = useLocation();
+  const { publicKey } = useWallet();
+  const { setVisible } = useWalletModal();
   const mint = params?.mint || '';
+  const shortAddr = publicKey ? `${publicKey.toString().slice(0, 4)}…${publicKey.toString().slice(-4)}` : '';
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
+      <div className="container mx-auto max-w-6xl md:max-w-7xl px-4 pt-3 pb-6 flex-1">
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={() => navigate('/')} className="flex items-center gap-2" data-testid="link-home">
+            <img src={logoImage} alt="Get your SOL back!" className="h-10 w-auto" />
+          </button>
+          <Button
+            onClick={() => setVisible(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+            data-testid="button-connect-wallet"
+          >
+            {publicKey ? shortAddr : 'Connect Wallet'}
+          </Button>
+        </div>
+        <TokenContent mint={mint} onBack={() => window.history.length > 1 ? window.history.back() : navigate('/')} />
+      </div>
+    </div>
+  );
+}
+
+export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => void }) {
+  const [, navigate] = useLocation();
   const [tab, setTab] = useState<'chart' | 'info' | 'holders'>('chart');
   const [tradeFor, setTradeFor] = useState<'buy' | 'sell' | null>(null);
 
@@ -435,10 +464,10 @@ export function TokenPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-      <div className="max-w-5xl mx-auto px-4 py-6">
+    <div className="text-white">
+      <div>
         <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/terminal')} className="text-white/70 hover:text-white" data-testid="button-back">
+          <Button variant="ghost" size="sm" onClick={() => onBack ? onBack() : navigate('/')} className="text-white/70 hover:text-white" data-testid="button-back">
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
         </div>
