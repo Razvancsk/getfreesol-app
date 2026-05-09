@@ -807,10 +807,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                 {info?.icon && <img src={info.icon} className="h-7 w-7 rounded-full" alt="" />}
                 <div className="text-white font-bold text-lg">Trade {info?.symbol || ''}</div>
               </div>
-              <div className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-white" />
-                <button onClick={() => setMobileSwapOpen(false)} className="text-white text-xl px-2">×</button>
-              </div>
+              <button onClick={() => setMobileSwapOpen(false)} className="text-white text-3xl leading-none px-2" data-testid="button-close-swap">×</button>
             </div>
             <SwapCard token={tokenForTrade} flat />
           </div>
