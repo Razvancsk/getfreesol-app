@@ -540,24 +540,31 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         )}
 
         {tab === 'info' && (
-          <div className="text-sm bg-black/20 rounded-xl p-4 divide-y divide-purple-500/20 [&>*]:py-2.5 first:[&>*]:pt-0 last:[&>*]:pb-0">
-            <Row k="Symbol" v={info?.symbol} />
-            <Row k="Decimals" v={info?.decimals != null ? String(info.decimals) : undefined} />
-            <Row k="Circulating Supply" v={fmtNum(info?.circSupply)} />
-            <Row k="Total Supply" v={fmtNum(info?.totalSupply)} />
-            <Row k="FDV" v={fmtUsd(info?.fdv)} />
-            <Row k="Holders" v={fmtCount(info?.holderCount)} />
-            <Row k="Mint Authority Disabled" v={info?.audit?.mintAuthorityDisabled == null ? undefined : (info.audit.mintAuthorityDisabled ? 'Yes' : 'No')} />
-            <Row k="Freeze Authority Disabled" v={info?.audit?.freezeAuthorityDisabled == null ? undefined : (info.audit.freezeAuthorityDisabled ? 'Yes' : 'No')} />
-            <Row k="Top Holders %" v={info?.audit?.topHoldersPercentage != null ? `${info.audit.topHoldersPercentage.toFixed(2)}%` : undefined} />
-            <Row k="Created" v={info?.firstPool?.createdAt ? new Date(info.firstPool.createdAt).toLocaleString() : undefined} />
-            <Row k="Dev Wallet" v={info?.dev ? <a className="text-purple-300 underline font-mono text-xs" href={`https://solscan.io/account/${info.dev}`} target="_blank" rel="noreferrer">{shortMint(info.dev)}</a> : undefined} />
-            <div className="flex flex-wrap gap-2 pt-2">
-              {info?.twitter && <a href={info.twitter} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Twitter <ExternalLink className="h-3 w-3" /></a>}
-              {info?.website && <a href={info.website} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Website <ExternalLink className="h-3 w-3" /></a>}
-              <a href={`https://solscan.io/token/${mint}`} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Solscan <ExternalLink className="h-3 w-3" /></a>
-              <a href={`https://dexscreener.com/solana/${mint}`} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">DexScreener <ExternalLink className="h-3 w-3" /></a>
+          <div className="bg-black/40 rounded-2xl border border-purple-500/20 overflow-hidden">
+            <div className="grid grid-cols-2 divide-x divide-purple-500/20 border-b border-purple-500/20">
+              <div className="py-5 text-center">
+                <div className="text-white/60 text-sm">Total Supply</div>
+                <div className="text-white text-2xl font-bold tabular-nums mt-1">{fmtNum(info?.totalSupply) || '—'}</div>
+              </div>
+              <div className="py-5 text-center">
+                <div className="text-white/60 text-sm">Cir Supply</div>
+                <div className="text-white text-2xl font-bold tabular-nums mt-1">{fmtNum(info?.circSupply) || '—'}</div>
+              </div>
             </div>
+
+            <InfoAddressRow label="Contract Address" value={mint} />
+            <InfoAddressRow label="Developer Address" value={info?.dev} />
+            <InfoTextRow label="Launchpad" value={info?.firstPool?.launchpad || info?.launchpad} />
+            <InfoTextRow label="Graduated Pool" value={info?.graduatedPool || info?.firstPool?.id} isLast />
+
+            {(info?.twitter || info?.website) && (
+              <div className="flex flex-wrap gap-2 p-4 border-t border-purple-500/20">
+                {info?.twitter && <a href={info.twitter} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Twitter <ExternalLink className="h-3 w-3" /></a>}
+                {info?.website && <a href={info.website} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Website <ExternalLink className="h-3 w-3" /></a>}
+                <a href={`https://solscan.io/token/${mint}`} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">Solscan <ExternalLink className="h-3 w-3" /></a>
+                <a href={`https://dexscreener.com/solana/${mint}`} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 inline-flex items-center gap-1">DexScreener <ExternalLink className="h-3 w-3" /></a>
+              </div>
+            )}
           </div>
         )}
 
@@ -603,6 +610,45 @@ function Row({ k, v }: { k: string; v?: React.ReactNode }) {
     <div className="flex justify-between gap-3">
       <span className="text-white/50">{k}</span>
       <span className="text-white text-right">{v}</span>
+    </div>
+  );
+}
+
+function shortAddr(s?: string): string {
+  if (!s) return '';
+  if (s.length <= 16) return s;
+  return `${s.slice(0, 8)}...${s.slice(-8)}`;
+}
+
+function InfoAddressRow({ label, value, isLast }: { label: string; value?: string; isLast?: boolean }) {
+  const { toast } = useToast();
+  const onCopy = async () => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({ title: 'Copied', description: shortAddr(value) });
+    } catch {}
+  };
+  return (
+    <div className={`py-5 px-4 text-center ${isLast ? '' : 'border-b border-purple-500/20'}`}>
+      <div className="text-white/60 text-sm">{label}</div>
+      <div className="flex items-center justify-center gap-2 mt-2">
+        <span className="text-white font-mono text-sm">{value ? shortAddr(value) : '—'}</span>
+        {value && (
+          <button onClick={onCopy} className="text-xs px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-white" data-testid={`button-copy-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+            Copy
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InfoTextRow({ label, value, isLast }: { label: string; value?: React.ReactNode; isLast?: boolean }) {
+  return (
+    <div className={`py-5 px-4 text-center ${isLast ? '' : 'border-b border-purple-500/20'}`}>
+      <div className="text-white/60 text-sm">{label}</div>
+      <div className="text-white text-base mt-2">{value || '—'}</div>
     </div>
   );
 }
