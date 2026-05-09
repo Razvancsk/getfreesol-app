@@ -12806,6 +12806,34 @@ Claimer: ${walletAddress}`;
       const arr: any[] = await r.json();
       const m = (Array.isArray(arr) ? arr : []).find((x: any) => x?.id === mint) || arr?.[0];
       if (!m) return res.status(404).json({ error: 'not found' });
+      // Fallback: pull socials from Helius DAS off-chain metadata if missing
+      if (!m.twitter && !m.website && !m.telegram && !m.discord) {
+        try {
+          const hk = process.env.HELIUS_API_KEY;
+          if (hk) {
+            const dr = await fetch(`https://mainnet.helius-rpc.com/?api-key=${hk}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ jsonrpc: '2.0', id: 'das', method: 'getAsset', params: { id: mint } }),
+            });
+            const dj = await dr.json();
+            const uri = dj?.result?.content?.json_uri;
+            if (uri) {
+              const httpUri = uri.startsWith('ipfs://')
+                ? `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`
+                : uri;
+              const mr = await fetch(httpUri, { signal: AbortSignal.timeout(4000) });
+              if (mr.ok) {
+                const meta = await mr.json();
+                m.twitter = m.twitter || meta.twitter || meta.x || meta.twitter_url;
+                m.website = m.website || meta.website || meta.external_url || meta.site;
+                m.telegram = m.telegram || meta.telegram;
+                m.discord = m.discord || meta.discord;
+              }
+            }
+          }
+        } catch {}
+      }
       res.json(m);
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'token info failed' });
