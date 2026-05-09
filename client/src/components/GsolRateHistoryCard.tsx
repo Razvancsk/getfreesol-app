@@ -66,7 +66,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               {displayApy !== null ? `${displayApy.toFixed(2)}%` : '—'}
             </h2>
             {view === 'overview' && (
-              <p className="text-xs mt-1 text-white">
+              <p className="text-base font-bold mt-1 text-white">
                 {activeEpoch
                   ? `${formatDate(activeEpoch.date)}, Epoch ${activeEpoch.epoch}`
                   : "Last Epoch's APY"}
