@@ -6,3 +6,4 @@ vite.config.ts.*
 *.tar.gz
 .fee_encryption_key
 .coinflip_vault_key
+.replay-cache/

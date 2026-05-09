@@ -1,5 +1,10 @@
 import WebSocket from 'ws';
 import { Decompress as ZstdDecompress } from 'fzstd';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const REPLAY_CACHE_DIR = path.join(process.cwd(), '.replay-cache');
+try { fs.mkdirSync(REPLAY_CACHE_DIR, { recursive: true }); } catch { /* ignore */ }
 
 // Historical replay metadata cache — populated by streaming the previous
 // UTC hour's pumpapi archive on startup. Lets us recover name/symbol/uri
@@ -40,11 +45,25 @@ async function loadHistoricalReplay(hoursBack = 1) {
     const mm = String(h.getUTCMonth() + 1).padStart(2, '0');
     const dd = String(h.getUTCDate()).padStart(2, '0');
     const hh = String(h.getUTCHours()).padStart(2, '0');
+    const cacheFile = path.join(REPLAY_CACHE_DIR, `${yyyy}-${mm}-${dd}-${hh}.json`);
+    // Try disk cache first — instant on restart
+    if (fs.existsSync(cacheFile)) {
+      try {
+        const arr: Array<[string, MetaEntry]> = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+        for (const [mint, m] of arr) {
+          setReplayMeta(mint, m);
+          applyMetaToToken(mint, m);
+        }
+        console.log(`[pumpStream] replay cached: ${arr.length} creates from ${hh}:00 UTC (cache=${replayMeta.size})`);
+        continue;
+      } catch { /* fall through to download */ }
+    }
     const url = `https://replay.pumpapi.io/${yyyy}/${mm}/${dd}/${hh}.jsonl.zst`;
     console.log('[pumpStream] replay loading', url);
     try {
       const res = await fetch(url);
       if (!res.ok || !res.body) { console.warn('[pumpStream] replay miss', res.status, url); continue; }
+      const hourEntries: Array<[string, MetaEntry]> = [];
       let creates = 0;
       let lineBuf = '';
       const decoder = new TextDecoder();
@@ -67,6 +86,7 @@ async function loadHistoricalReplay(hoursBack = 1) {
               imageUri: ev.imageUri,
             };
             setReplayMeta(ev.mint, m);
+            hourEntries.push([ev.mint, m]);
             creates++;
             // If we already track this mint live, fill it in immediately.
             applyMetaToToken(ev.mint, m);
@@ -88,11 +108,14 @@ async function loadHistoricalReplay(hoursBack = 1) {
           if (ev?.txType === 'create' && ev?.mint) {
             const m: MetaEntry = { name: ev.name, symbol: ev.symbol, uri: ev.uri, imageUri: ev.imageUri };
             setReplayMeta(ev.mint, m);
+            hourEntries.push([ev.mint, m]);
             creates++;
             applyMetaToToken(ev.mint, m);
           }
         } catch { /* ignore */ }
       }
+      // Persist parsed hour to disk so future restarts skip the download.
+      try { fs.writeFileSync(cacheFile, JSON.stringify(hourEntries)); } catch { /* ignore */ }
       console.log(`[pumpStream] replay done: ${creates} creates from ${hh}:00 UTC (cache=${replayMeta.size})`);
     } catch (e) {
       console.warn('[pumpStream] replay error', (e as Error).message);
@@ -355,6 +378,13 @@ function handleEvent(ev: Event) {
     if (metaUri && (!t.imageUri || !looksLikeImage(t.imageUri))) {
       resolveImageFromUri(ev.mint, metaUri).catch(() => {});
     }
+    // Migrate events rarely include the original token metadata. If we still
+    // don't know the name/symbol/image, look it up in the historical-replay
+    // cache (the original `create` event from earlier on the bonding curve).
+    if (!t.name || !t.symbol || !t.imageUri) {
+      const m = replayMeta.get(ev.mint);
+      if (m) applyMetaToToken(ev.mint, m);
+    }
     if (!migratedOrder.includes(ev.mint)) {
       migratedOrder.unshift(ev.mint);
       while (migratedOrder.length > MAX_MIGRATED) migratedOrder.pop();
@@ -449,7 +479,7 @@ export function startPumpStream() {
   connect();
   // Backfill metadata for tokens already alive when we started, by streaming
   // the previous UTC hour archive from replay.pumpapi.io. Runs in background.
-  loadHistoricalReplay(6).catch((e) => console.warn('[pumpStream] replay failed', e?.message));
+  loadHistoricalReplay(24).catch((e) => console.warn('[pumpStream] replay failed', e?.message));
   // watchdog: if no events for 60s, force reconnect
   if (watchdogTimer) clearInterval(watchdogTimer);
   watchdogTimer = setInterval(() => {
