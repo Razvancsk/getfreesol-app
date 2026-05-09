@@ -56,7 +56,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
 
   return (
     <div className="w-full rounded-2xl bg-purple-900/20 border border-white/20 backdrop-blur-sm overflow-hidden mt-6">
-      <div className="p-5">
+      <div className="px-2 py-4">
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
             <h2 className="text-green-400 font-black text-3xl">
@@ -115,7 +115,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={last25.map(e => ({ ...e, apyPct: (e.apy ?? 0) * 100 }))}
-                    margin={{ top: 10, right: 0, left: 20, bottom: 25 }}
+                    margin={{ top: 10, right: 0, left: 8, bottom: 25 }}
                     barCategoryGap="15%"
                   >
                     <YAxis
