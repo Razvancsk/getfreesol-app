@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings } from 'lucide-react';
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 
 type FeedType = 'new' | 'bonding' | 'migrated';
@@ -802,12 +802,15 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         <div className="lg:hidden fixed inset-0 z-50 flex items-end" data-testid="mobile-swap-sheet">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileSwapOpen(false)} />
           <div className="relative w-full bg-slate-900 border-t border-purple-500/30 rounded-t-2xl p-4 pb-6 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 {info?.icon && <img src={info.icon} className="h-7 w-7 rounded-full" alt="" />}
-                <div className="text-white font-bold">Trade {info?.symbol || ''}</div>
+                <div className="text-white font-bold text-lg">Trade {info?.symbol || ''}</div>
               </div>
-              <button onClick={() => setMobileSwapOpen(false)} className="text-white/60 hover:text-white text-xl px-2">×</button>
+              <div className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-white/50" />
+                <button onClick={() => setMobileSwapOpen(false)} className="text-white/60 hover:text-white text-xl px-2">×</button>
+              </div>
             </div>
             <SwapCard token={tokenForTrade} flat />
           </div>
@@ -882,11 +885,27 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
   const { toast } = useToast();
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [amount, setAmount] = useState('');
-  const [slippage] = useState('20');
+  const [slippage] = useState('3');
   const [busy, setBusy] = useState(false);
-  const buyPresets = ['0.1', '0.3', '0.5', '1'];
+  const [balance, setBalance] = useState<number | null>(null);
+  const buyPresets = ['0.1', '0.3', '0.5', '0.7'];
   const sellPresets = ['25%', '50%', '75%', '100%'];
   const presets = side === 'buy' ? buyPresets : sellPresets;
+
+  useEffect(() => {
+    if (!publicKey) { setBalance(null); return; }
+    let active = true;
+    (async () => {
+      try {
+        const heliusKey = (import.meta as any).env?.VITE_HELIUS_API_KEY;
+        const rpc = heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com';
+        const conn = new Connection(rpc, 'confirmed');
+        const lamports = await conn.getBalance(publicKey);
+        if (active) setBalance(lamports / 1e9);
+      } catch { /* ignore */ }
+    })();
+    return () => { active = false; };
+  }, [publicKey, busy]);
 
   const live: any = token || {};
   const STANDARD_SUPPLY = 1_000_000_000;
@@ -953,14 +972,14 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       <div className="grid grid-cols-2 bg-black/30 rounded-xl p-1.5 gap-1">
         <button
           onClick={() => { setSide('buy'); setAmount(''); }}
-          className={`py-3 rounded-lg text-base font-semibold transition ${side === 'buy' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
+          className={`py-3 rounded-lg text-base font-semibold transition flex items-center justify-center gap-2 ${side === 'buy' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
           data-testid="swap-tab-buy"
-        >Buy</button>
+        ><Zap className="h-4 w-4" /> Buy</button>
         <button
           onClick={() => { setSide('sell'); setAmount(''); }}
-          className={`py-3 rounded-lg text-base font-semibold transition ${side === 'sell' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
+          className={`py-3 rounded-lg text-base font-semibold transition flex items-center justify-center gap-2 ${side === 'sell' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
           data-testid="swap-tab-sell"
-        >Sell</button>
+        ><ArrowDownUp className="h-4 w-4" /> Sell</button>
       </div>
       {(() => {
         const paySym = side === 'buy' ? 'SOL' : sym;
@@ -969,32 +988,63 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
         if (priceSol && amount && !amount.endsWith('%') && isFinite(amtNum) && amtNum > 0) {
           recvVal = side === 'buy' ? fmtNum(amtNum / priceSol, 2) : fmtNum(amtNum * priceSol, 6);
         }
+        const balText = balance != null ? balance.toFixed(4) : '0.0000';
+        const allPresets = [...presets, 'MAX'];
         return (
           <>
-            <div className="bg-black/30 rounded-xl border border-purple-500/20 px-4 py-4 flex items-center gap-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-white/60">Balance: <span className="text-white">{balText} SOL</span></span>
+              <button
+                onClick={() => {
+                  if (side === 'buy') {
+                    if (balance != null) setAmount(Math.max(0, balance - 0.01).toFixed(4));
+                  } else {
+                    setAmount('100%');
+                  }
+                }}
+                className="text-purple-400 font-semibold text-sm hover:text-purple-300"
+                data-testid="swap-max-top"
+              >MAX</button>
+            </div>
+            <div className="bg-black/30 rounded-xl border border-purple-500/40 ring-1 ring-purple-500/30 px-4 py-3 flex items-center gap-3">
               <div className="text-white/70 text-base font-semibold">{paySym}</div>
               <input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.0"
                 inputMode="decimal"
-                className="flex-1 bg-transparent text-white text-2xl font-bold outline-none text-right"
+                className="flex-1 bg-transparent text-white text-xl font-bold outline-none"
                 data-testid="input-swap-amount"
               />
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              {presets.map((p) => (
+            <div className="grid grid-cols-5 gap-2">
+              {allPresets.map((p) => (
                 <button
                   key={p}
-                  onClick={() => setAmount(p)}
-                  className="py-2.5 rounded-lg text-sm bg-black/30 text-white/80 hover:bg-purple-600/40"
+                  onClick={() => {
+                    if (p === 'MAX') {
+                      if (side === 'buy' && balance != null) setAmount(Math.max(0, balance - 0.01).toFixed(4));
+                      else setAmount('100%');
+                    } else setAmount(p);
+                  }}
+                  className="py-2.5 rounded-lg text-sm bg-black/30 border border-white/5 text-white hover:bg-purple-600/40"
                   data-testid={`swap-preset-${p}`}
                 >{p}</button>
               ))}
             </div>
-            <div className="flex items-center justify-between text-base pt-1">
+            <div className="flex items-center justify-between text-sm pt-1">
               <span className="text-white/60">You receive:</span>
               <span className="text-emerald-400 font-semibold tabular-nums">{recvVal} {recvSym}</span>
+            </div>
+            <div className="space-y-1 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-white/50">Referral Fee</span>
+                <span className="text-purple-400 font-semibold">0.10%</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white/50">Slippage</span>
+                <span className="text-white/70">{slippage}.0%</span>
+              </div>
             </div>
           </>
         );
@@ -1002,10 +1052,10 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       <Button
         onClick={submit}
         disabled={busy || !publicKey}
-        className={`w-full py-6 text-base font-bold ${side === 'buy' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-90'}`}
+        className={`w-full py-6 text-base font-bold rounded-xl ${side === 'buy' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-90'}`}
         data-testid="button-quick-swap"
       >
-        {busy ? 'Sending…' : !publicKey ? 'Connect Wallet' : side === 'buy' ? 'Buy' : 'Sell'}
+        {busy ? 'Sending…' : !publicKey ? 'Connect Wallet in Header' : side === 'buy' ? 'Buy' : 'Sell'}
       </Button>
     </div>
   );
