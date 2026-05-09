@@ -590,8 +590,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             })()}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-2xl md:text-3xl font-bold text-white leading-tight">{info?.symbol || '—'}</span>
-                <span className="text-base md:text-lg text-white/60 truncate">{info?.name || 'Unknown'}</span>
+                <span className="text-xl md:text-2xl font-bold text-white leading-tight">{info?.symbol || '—'}</span>
+                <span className="text-sm md:text-base text-white/60 truncate">{info?.name || 'Unknown'}</span>
                 {info?.isVerified && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
                 )}
