@@ -6,6 +6,12 @@ uri = "file://attached_assets/generated_images/a_cute_3d_rendered_67f7.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "FL2UJRh4awHq70YPAC4RC"
+uri = "file://attached_assets/generated_images/a_cute_3d_rendered_c803.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "nG42daxEn3-jWmD4nnype"
 uri = "file://gsol-token-logo-512.png"
