@@ -5135,33 +5135,31 @@ export default function SolRefund() {
                     <button onClick={() => setStakeMode('unstake')} className={`relative z-10 flex-1 py-3.5 text-base font-black rounded-xl transition-colors duration-300 ${stakeMode === 'unstake' ? 'text-white' : 'text-purple-400'}`}>Unstake</button>
                   </div>
 
-                  {/* Amount input */}
-                  <div className={`rounded-2xl p-5 mb-4 ${'bg-purple-900/20 border border-white/30'}`}>
-                    {/* Top row: label + balance + HALF/MAX */}
+                  {/* You're staking card */}
+                  <div className="rounded-2xl p-5 mb-4 bg-purple-900/20 border border-white/30">
                     <div className="flex justify-between items-center mb-3">
-                      <span className="text-white text-sm font-semibold">{stakeMode === 'stake' ? 'Stake SOL' : 'Unstake GSOL'}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white text-sm">
+                      <span className="text-white font-medium text-base">{stakeMode === 'stake' ? "You're staking" : "You're unstaking"}</span>
+                      <div className="flex items-center gap-1.5 text-white text-xs">
+                        <span>
                           {stakeMode === 'stake'
-                            ? `≈ ${walletTokenBalance.toFixed(4)} SOL`
-                            : `≈ ${gsolBalance.toFixed(4)} GSOL`}
+                            ? `≈ ${publicKey ? walletTokenBalance.toFixed(4) : '—'} SOL`
+                            : `≈ ${publicKey ? gsolBalance.toFixed(4) : '—'} GSOL`}
                         </span>
-                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (gsolBalance * 0.5).toFixed(9).replace(/\.?0+$/, ''))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
-                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.005).toFixed(4) : (Math.floor(gsolBalance * 1e9) / 1e9).toString())} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (gsolBalance * 0.5).toFixed(9).replace(/\.?0+$/, ''))} data-testid="button-half" className="text-xs text-white font-bold px-2 py-0.5 rounded-md bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.005).toFixed(4) : (Math.floor(gsolBalance * 1e9) / 1e9).toString())} data-testid="button-max" className="text-xs text-white font-bold px-2 py-0.5 rounded-md bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
                       </div>
                     </div>
-                    {/* Bottom row: token badge left, amount right */}
                     <div className="flex items-center gap-3">
-                      <div className="flex gap-1.5 items-center shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         {stakeMode === 'stake' ? (
                           <>
-                            <img alt="SOL" className="w-7 h-7 rounded-full shrink-0" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
-                            <span className="text-white font-semibold text-sm">SOL</span>
+                            <img alt="SOL" width={28} height={28} className="rounded-full" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
+                            <span className="font-semibold text-white text-base">SOL</span>
                           </>
                         ) : (
                           <>
-                            <img alt="GSOL" className="w-7 h-7 rounded-full shrink-0 object-cover" src="/gsol-token-logo.png?v=6" />
-                            <span className="text-white font-semibold text-sm">GSOL</span>
+                            <img alt="GSOL" width={28} height={28} className="rounded-full object-cover" src="/gsol-token-logo.png?v=6" />
+                            <span className="font-semibold text-white text-base">GSOL</span>
                           </>
                         )}
                       </div>
@@ -5170,43 +5168,47 @@ export default function SolRefund() {
                         placeholder="0.00"
                         value={stakeAmount}
                         onChange={e => setStakeAmount(e.target.value)}
-                        className="flex-1 bg-transparent text-white text-3xl font-black outline-none placeholder-white/30 text-right min-w-0 leading-none h-auto p-0"
+                        className="flex-1 bg-transparent text-white text-3xl font-black outline-none text-right min-w-0 placeholder:text-white/30"
                       />
                     </div>
                   </div>
 
-                  {/* To Receive card — Sanctum style */}
-                  <div className={`rounded-2xl px-5 pt-4 pb-5 mb-5 ${'bg-purple-900/20 border border-white/30'}`}>
-                    {/* Top row */}
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-white text-sm font-medium">To receive</span>
-                      <span className="text-white text-sm">
-                        You have{' '}
-                        <span className="text-white font-semibold">
-                          {stakeMode === 'stake'
-                            ? `${gsolBalance.toFixed(4)} GSOL`
-                            : `${walletTokenBalance.toFixed(4)} SOL`}
-                        </span>
-                      </span>
+                  {/* Exchange rate inline row */}
+                  <div className="flex justify-between items-center px-1 mb-4 text-white text-sm">
+                    <span>Exchange rate</span>
+                    <span>
+                      {stakeMode === 'stake'
+                        ? `1 SOL ≈ ${gsolSolValue > 0 ? (1 / gsolSolValue).toFixed(6) : '—'} GSOL`
+                        : `1 GSOL ≈ ${gsolSolValue > 0 ? gsolSolValue.toFixed(6) : '—'} SOL`}
+                    </span>
+                  </div>
+
+                  {/* You receive card */}
+                  <div className="rounded-2xl p-5 mb-5 bg-purple-900/20 border border-white/30">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-white font-medium text-base">You receive</span>
                     </div>
-                    {/* Token pill left, amount right */}
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex gap-1.5 items-center shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 shrink-0">
                         {stakeMode === 'stake' ? (
                           <>
-                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-7 h-7 rounded-full object-contain shrink-0" />
-                            <span className="text-white font-semibold text-sm">GSOL</span>
+                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" width={28} height={28} className="rounded-full object-contain" />
+                            <span className="font-semibold text-white text-base">GSOL</span>
                           </>
                         ) : (
                           <>
-                            <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" className="w-7 h-7 rounded-full shrink-0" />
-                            <span className="text-white font-semibold text-sm">SOL</span>
+                            <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" width={28} height={28} className="rounded-full" />
+                            <span className="font-semibold text-white text-base">SOL</span>
                           </>
                         )}
                       </div>
-                      <span className="text-white font-black text-3xl leading-none text-right">
+                      <span className="flex-1 text-white text-3xl font-black text-right min-w-0">
                         {stakingMethod === 'direct'
-                          ? (stakeAmount && parseFloat(stakeAmount) > 0 ? parseFloat(stakeAmount).toFixed(4) : '0.00')
+                          ? (stakeAmount && parseFloat(stakeAmount) > 0
+                              ? (stakeMode === 'stake'
+                                  ? (parseFloat(stakeAmount) / (gsolSolValue > 0 ? gsolSolValue : 1)).toFixed(6)
+                                  : (parseFloat(stakeAmount) * gsolSolValue).toFixed(6))
+                              : '0.00')
                           : stakeQuoteLoading
                             ? <span className="text-purple-300 text-2xl animate-pulse">...</span>
                             : stakeQuote
