@@ -515,10 +515,6 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             ))}
           </div>
 
-          <div className="flex gap-2 mt-4">
-            <Button onClick={() => setTradeFor('buy')} className="flex-1 bg-green-600 hover:bg-green-500" data-testid="button-buy">Buy</Button>
-            <Button onClick={() => setTradeFor('sell')} className="flex-1 bg-red-600 hover:bg-red-500" data-testid="button-sell">Sell</Button>
-          </div>
         </div>
 
         <div className="flex gap-2 mb-3">
