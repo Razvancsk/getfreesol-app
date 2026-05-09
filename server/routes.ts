@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
-import { startPumpStream, getFeed as getPumpFeed, getStreamStatus as getPumpStatus, buildTradeTx as buildPumpTradeTx, validateTradeInput } from './pumpStream';
+import { startPumpStream, getFeed as getPumpFeed, getStreamStatus as getPumpStatus, buildTradeTx as buildPumpTradeTx, validateTradeInput, getTokenImageUri } from './pumpStream';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -12746,36 +12746,73 @@ Claimer: ${walletAddress}`;
   // Browser-side image fallback: when an IPFS image fails to load in the
   // <img> tag, the frontend points its src at this endpoint, which queries
   // Helius DAS for a fresh CDN URL and 302-redirects to it.
-  const heliusImgCache = new Map<string, { url: string | null; ts: number }>();
+  const heliusImgCache = new Map<string, { url: string; ts: number }>();
+  const heliusInflight = new Map<string, Promise<string | null>>();
+  async function resolveHeliusImage(mint: string): Promise<string | null> {
+    const cached = heliusImgCache.get(mint);
+    if (cached && Date.now() - cached.ts < 10 * 60_000) return cached.url;
+    let p = heliusInflight.get(mint);
+    if (p) return p;
+    const key = process.env.HELIUS_API_KEY;
+    if (!key) return null;
+    p = (async () => {
+      try {
+        const r = await fetch(`https://mainnet.helius-rpc.com/?api-key=${key}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: '1', method: 'getAsset',
+            params: { id: mint, displayOptions: { showFungible: true } } }),
+        });
+        const j: any = await r.json().catch(() => null);
+        if (!j?.result?.content?.files?.length && !j?.result?.content?.links?.image) {
+          console.warn(`[terminal/image] empty Helius result for ${mint}`,
+            JSON.stringify(j).slice(0, 800));
+        }
+        const files = (j?.result?.content?.files || []) as any[];
+        const cdn = files.find((f) => typeof f?.cdn_uri === 'string')?.cdn_uri as string | undefined;
+        const link = j?.result?.content?.links?.image as string | undefined;
+        const raw = files.find((f) => typeof f?.uri === 'string')?.uri as string | undefined;
+        let url = cdn || link || raw || null;
+        // Some assets have no `files`/`links.image` but the `json_uri` points
+        // at off-chain JSON metadata that contains an `image` field. Fetch it.
+        if (!url) {
+          const jsonUri = j?.result?.content?.json_uri as string | undefined;
+          if (jsonUri) {
+            try {
+              const mr = await fetch(jsonUri, { signal: AbortSignal.timeout(4000) });
+              const mj: any = await mr.json().catch(() => null);
+              const img = (mj?.image || mj?.image_url) as string | undefined;
+              if (typeof img === 'string' && img) url = img;
+            } catch {}
+          }
+        }
+        if (url) {
+          heliusImgCache.set(mint, { url, ts: Date.now() });
+          if (heliusImgCache.size > 5000) {
+            const cutoff = Date.now() - 10 * 60_000;
+            for (const [k, v] of heliusImgCache) if (v.ts < cutoff) heliusImgCache.delete(k);
+          }
+        } else {
+          console.warn(`[terminal/image] no image found for ${mint}`,
+            JSON.stringify({ files, link, json_uri: j?.result?.content?.json_uri }).slice(0, 300));
+        }
+        return url;
+      } catch (e: any) {
+        console.error(`[terminal/image] fetch failed ${mint}`, e?.message);
+        return null;
+      } finally {
+        heliusInflight.delete(mint);
+      }
+    })();
+    heliusInflight.set(mint, p);
+    return p;
+  }
   app.get('/api/terminal/image/:mint', async (req, res) => {
     const mint = String(req.params.mint || '');
     if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint)) return res.status(400).end();
-    const cached = heliusImgCache.get(mint);
-    if (cached && Date.now() - cached.ts < 5 * 60_000) {
-      if (cached.url) return res.redirect(302, cached.url);
-      return res.status(404).end();
-    }
-    const key = process.env.HELIUS_API_KEY;
-    if (!key) return res.status(503).end();
-    try {
-      const r = await fetch(`https://mainnet.helius-rpc.com/?api-key=${key}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: '1', method: 'getAsset',
-          params: { id: mint, displayOptions: { showFungible: true } } }),
-      });
-      const j: any = await r.json().catch(() => null);
-      const files = (j?.result?.content?.files || []) as any[];
-      const cdn = files.find((f) => typeof f?.cdn_uri === 'string')?.cdn_uri as string | undefined;
-      const link = j?.result?.content?.links?.image as string | undefined;
-      const raw = files.find((f) => typeof f?.uri === 'string')?.uri as string | undefined;
-      const url = cdn || link || raw || null;
-      heliusImgCache.set(mint, { url, ts: Date.now() });
-      if (!url) return res.status(404).end();
-      res.redirect(302, url);
-    } catch {
-      res.status(502).end();
-    }
+    const url = (await resolveHeliusImage(mint)) || getTokenImageUri(mint);
+    if (!url) return res.status(404).end();
+    res.redirect(302, url);
   });
 
   app.get('/api/terminal/feed', (req, res) => {

@@ -542,6 +542,10 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
     .map(serialize);
 }
 
+export function getTokenImageUri(mint: string): string | undefined {
+  return tokens.get(mint)?.imageUri;
+}
+
 export function getStreamStatus() {
   return {
     connected,
