@@ -157,71 +157,110 @@ export function TerminalView() {
           />
         </div>
 
-        <div className="bg-purple-900/20 border border-white/10 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] uppercase tracking-wider text-white/50 border-b border-white/10">
-            <div className="col-span-5">Token</div>
-            <div className="col-span-2 text-right">MC (SOL)</div>
-            <div className="col-span-2 text-right">{tab === 'bonding' ? 'Bond' : tab === 'migrated' ? 'Migrated' : 'Age'}</div>
-            <div className="col-span-3 text-right">Action</div>
-          </div>
-          <div className="max-h-[64vh] overflow-y-auto">
-            {tokens.length === 0 && (
-              <div className="px-4 py-12 text-center text-white/50 text-sm">
-                {isFetching ? 'Loading feed…' : 'No tokens yet — waiting for stream events.'}
-              </div>
-            )}
-            {tokens.map((t) => (
+        <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+          {tokens.length === 0 && (
+            <div className="px-4 py-16 text-center text-white/50 text-sm bg-purple-900/20 border border-white/10 rounded-2xl">
+              {isFetching ? 'Loading feed…' : 'No tokens yet — waiting for stream events.'}
+            </div>
+          )}
+          {tokens.map((t) => {
+            const totalTx = (t.buys ?? 0) + (t.sells ?? 0);
+            const rightLabel = tab === 'bonding' ? 'Bonding' : tab === 'migrated' ? 'Migrated' : 'Created';
+            const rightValue = tab === 'bonding'
+              ? `${Math.round((t.bondingPct ?? 0) * 100)}%`
+              : tab === 'migrated'
+                ? `${ago(t.lastSeen)} ago`
+                : `${ago(t.createdAt)} ago`;
+            const rightColor = tab === 'bonding' ? 'text-orange-300' : tab === 'migrated' ? 'text-green-300' : 'text-white';
+            return (
               <div
                 key={t.mint}
-                className="grid grid-cols-12 gap-2 px-3 py-2 border-b border-white/5 hover:bg-purple-800/20 items-center"
+                className="bg-purple-900/30 border border-purple-500/20 rounded-2xl p-4 hover:border-purple-400/40 hover:bg-purple-900/40 transition-colors"
                 data-testid={`row-${t.mint}`}
               >
-                <div className="col-span-5 flex items-center gap-2 min-w-0">
-                  <div className="h-8 w-8 rounded-full bg-purple-700/40 flex items-center justify-center overflow-hidden shrink-0">
-                    {t.imageUri
-                      ? <img src={t.imageUri} alt="" className="h-full w-full object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
-                      : <span className="text-xs font-bold">{(t.symbol || '?').slice(0, 2)}</span>}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold truncate flex items-center gap-1.5">
-                      <span>{t.symbol || 'UNKN'}</span>
-                      <span className="text-white/40 font-normal truncate">· {t.name || shortMint(t.mint)}</span>
+                {/* Top: identity + price/badge */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="h-10 w-10 rounded-full bg-purple-700/40 flex items-center justify-center overflow-hidden shrink-0 ring-1 ring-white/10">
+                      {t.imageUri
+                        ? <img src={t.imageUri} alt="" className="h-full w-full object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+                        : <span className="text-sm font-bold">{(t.symbol || '?').slice(0, 2)}</span>}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      {t.launchpad && (
-                        <span className="text-[9px] px-1.5 py-px rounded bg-purple-500/20 border border-purple-400/30 text-purple-200 font-semibold uppercase tracking-wide shrink-0">
-                          {t.launchpad}
-                        </span>
-                      )}
-                      <a
-                        href={`https://solscan.io/token/${t.mint}`}
-                        target="_blank" rel="noreferrer"
-                        className="text-[10px] text-white/40 font-mono hover:text-white/70 inline-flex items-center gap-1"
-                      >
-                        {shortMint(t.mint)} <ExternalLink className="h-2.5 w-2.5" />
-                      </a>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base font-bold text-white truncate">{t.symbol || 'UNKN'}</span>
+                        {t.launchpad && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/30 border border-purple-400/40 text-purple-100 font-semibold uppercase tracking-wide shrink-0">
+                            {t.launchpad}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-white/50 truncate">{t.name || shortMint(t.mint)}</div>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className={`text-base font-bold ${rightColor} tabular-nums`}>{rightValue}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-white/40">{rightLabel}</div>
+                  </div>
+                </div>
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-white/40">Market Cap</div>
+                    <div className="text-sm font-semibold text-white tabular-nums">{fmtSol(t.marketCapSol)} SOL</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-white/40">Liquidity</div>
+                    <div className="text-sm font-semibold text-white tabular-nums">{fmtSol(t.vSolInBondingCurve)} SOL</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-white/40">Transactions</div>
+                    <div className="text-sm font-semibold text-white tabular-nums">{totalTx}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-white/40">Buys / Sells</div>
+                    <div className="text-sm font-semibold tabular-nums">
+                      <span className="text-green-400">{t.buys ?? 0}</span>
+                      <span className="text-white/30"> / </span>
+                      <span className="text-red-400">{t.sells ?? 0}</span>
                     </div>
                   </div>
                 </div>
-                <div className="col-span-2 text-right text-sm tabular-nums">{fmtSol(t.marketCapSol)}</div>
-                <div className="col-span-2 text-right text-sm tabular-nums">
-                  {tab === 'bonding'
-                    ? <span className="text-orange-300 font-bold">{Math.round((t.bondingPct ?? 0) * 100)}%</span>
-                    : tab === 'migrated'
-                      ? <span className="text-green-300">{ago(t.lastSeen)} ago</span>
-                      : <span className="text-white/70">{ago(t.createdAt)}</span>}
-                </div>
-                <div className="col-span-3 flex justify-end gap-1.5">
-                  <Button size="sm" className="h-7 px-2.5 text-xs bg-green-600 hover:bg-green-500" onClick={() => setTradeFor({ token: t, action: 'buy' })} data-testid={`buy-${t.mint}`}>
-                    Buy
-                  </Button>
-                  <Button size="sm" className="h-7 px-2.5 text-xs bg-red-600 hover:bg-red-500" onClick={() => setTradeFor({ token: t, action: 'sell' })} data-testid={`sell-${t.mint}`}>
-                    Sell
-                  </Button>
+
+                {/* Bonding progress bar (when applicable) */}
+                {tab !== 'migrated' && (t.bondingPct ?? 0) > 0 && (
+                  <div className="mb-3">
+                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all"
+                        style={{ width: `${Math.round((t.bondingPct ?? 0) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer: mint + actions */}
+                <div className="flex items-center justify-between gap-2">
+                  <a
+                    href={`https://solscan.io/token/${t.mint}`}
+                    target="_blank" rel="noreferrer"
+                    className="text-[10px] text-white/40 font-mono hover:text-white/70 inline-flex items-center gap-1"
+                  >
+                    {shortMint(t.mint)} <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="h-8 px-4 text-xs font-bold bg-green-600 hover:bg-green-500" onClick={() => setTradeFor({ token: t, action: 'buy' })} data-testid={`buy-${t.mint}`}>
+                      Buy
+                    </Button>
+                    <Button size="sm" className="h-8 px-4 text-xs font-bold bg-red-600 hover:bg-red-500" onClick={() => setTradeFor({ token: t, action: 'sell' })} data-testid={`sell-${t.mint}`}>
+                      Sell
+                    </Button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         <div className="text-[10px] text-white/40 text-center mt-3">
