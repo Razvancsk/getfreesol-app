@@ -1,4 +1,104 @@
 import WebSocket from 'ws';
+import { Decompress as ZstdDecompress } from 'fzstd';
+
+// Historical replay metadata cache — populated by streaming the previous
+// UTC hour's pumpapi archive on startup. Lets us recover name/symbol/uri
+// for tokens whose `create` event happened BEFORE our live WS connected.
+// 100% pumpapi.io — no RPC, no Helius, no Jupiter.
+type MetaEntry = { name?: string; symbol?: string; uri?: string; imageUri?: string };
+const replayMeta = new Map<string, MetaEntry>();
+const REPLAY_META_MAX = 200_000;
+function setReplayMeta(mint: string, m: MetaEntry) {
+  if (replayMeta.has(mint)) replayMeta.delete(mint);
+  replayMeta.set(mint, m);
+  if (replayMeta.size > REPLAY_META_MAX) {
+    const firstKey = replayMeta.keys().next().value;
+    if (firstKey) replayMeta.delete(firstKey);
+  }
+}
+
+function applyMetaToToken(mint: string, m: MetaEntry) {
+  const t = tokens.get(mint);
+  if (!t) return;
+  if (m.name && !t.name) t.name = m.name;
+  if (m.symbol && !t.symbol) t.symbol = m.symbol;
+  const directImg = m.imageUri && looksLikeImage(m.imageUri) ? ipfsToHttp(m.imageUri) : m.imageUri;
+  if (directImg && !t.imageUri) t.imageUri = directImg;
+  const metaUri = m.uri || (!directImg ? m.imageUri : undefined);
+  if (metaUri && (!t.imageUri || !looksLikeImage(t.imageUri))) {
+    resolveImageFromUri(mint, metaUri).catch(() => {});
+  }
+}
+
+async function loadHistoricalReplay(hoursBack = 1) {
+  const now = new Date();
+  // Use the last fully-completed UTC hour
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours()));
+  for (let i = 1; i <= hoursBack; i++) {
+    const h = new Date(start.getTime() - i * 3600_000);
+    const yyyy = h.getUTCFullYear();
+    const mm = String(h.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(h.getUTCDate()).padStart(2, '0');
+    const hh = String(h.getUTCHours()).padStart(2, '0');
+    const url = `https://replay.pumpapi.io/${yyyy}/${mm}/${dd}/${hh}.jsonl.zst`;
+    console.log('[pumpStream] replay loading', url);
+    try {
+      const res = await fetch(url);
+      if (!res.ok || !res.body) { console.warn('[pumpStream] replay miss', res.status, url); continue; }
+      let creates = 0;
+      let lineBuf = '';
+      const decoder = new TextDecoder();
+      const dec = new ZstdDecompress((chunk: Uint8Array) => {
+        lineBuf += decoder.decode(chunk, { stream: true });
+        let nl: number;
+        while ((nl = lineBuf.indexOf('\n')) >= 0) {
+          const line = lineBuf.slice(0, nl);
+          lineBuf = lineBuf.slice(nl + 1);
+          if (!line) continue;
+          // Cheap pre-filter: only parse lines that LOOK like create events.
+          if (line.indexOf('"txType":"create"') < 0 && line.indexOf('"create"') < 0) continue;
+          try {
+            const ev = JSON.parse(line);
+            if (ev?.txType !== 'create' || !ev?.mint) continue;
+            const m: MetaEntry = {
+              name: ev.name,
+              symbol: ev.symbol,
+              uri: ev.uri,
+              imageUri: ev.imageUri,
+            };
+            setReplayMeta(ev.mint, m);
+            creates++;
+            // If we already track this mint live, fill it in immediately.
+            applyMetaToToken(ev.mint, m);
+          } catch { /* ignore */ }
+        }
+      });
+      const reader = (res.body as any).getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value && value.length) dec.push(value, false);
+      }
+      dec.push(new Uint8Array(0), true);
+      // Parse trailing line if file did not end with newline
+      const tail = lineBuf.trim();
+      if (tail && tail.indexOf('"txType":"create"') >= 0) {
+        try {
+          const ev = JSON.parse(tail);
+          if (ev?.txType === 'create' && ev?.mint) {
+            const m: MetaEntry = { name: ev.name, symbol: ev.symbol, uri: ev.uri, imageUri: ev.imageUri };
+            setReplayMeta(ev.mint, m);
+            creates++;
+            applyMetaToToken(ev.mint, m);
+          }
+        } catch { /* ignore */ }
+      }
+      console.log(`[pumpStream] replay done: ${creates} creates from ${hh}:00 UTC (cache=${replayMeta.size})`);
+    } catch (e) {
+      console.warn('[pumpStream] replay error', (e as Error).message);
+    }
+  }
+}
 
 type Event = {
   txType?: string;
@@ -287,6 +387,14 @@ function handleEvent(ev: Event) {
     if (metaUri && (!t.imageUri || !looksLikeImage(t.imageUri))) {
       resolveImageFromUri(ev.mint, metaUri).catch(() => {});
     }
+    // pumpapi only ships name/symbol/uri in `create` events. For tokens whose
+    // create happened before our live WS connected, look it up in the
+    // historical-replay metadata cache (loaded on startup from
+    // replay.pumpapi.io). 100% pumpapi.io — no extra services.
+    if (!t.name || !t.symbol || !t.imageUri) {
+      const m = replayMeta.get(ev.mint);
+      if (m) applyMetaToToken(ev.mint, m);
+    }
     if (typeof ev.marketCapSol === 'number' && t.firstMarketCapSol == null) {
       t.firstMarketCapSol = ev.marketCapSol;
     }
@@ -339,6 +447,9 @@ export function startPumpStream() {
   if (started) return;
   started = true;
   connect();
+  // Backfill metadata for tokens already alive when we started, by streaming
+  // the previous UTC hour archive from replay.pumpapi.io. Runs in background.
+  loadHistoricalReplay(6).catch((e) => console.warn('[pumpStream] replay failed', e?.message));
   // watchdog: if no events for 60s, force reconnect
   if (watchdogTimer) clearInterval(watchdogTimer);
   watchdogTimer = setInterval(() => {

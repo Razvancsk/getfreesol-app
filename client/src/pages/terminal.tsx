@@ -193,7 +193,7 @@ export function TerminalView() {
   const { data, isFetching } = useQuery<{ tokens: Token[]; status: any }>({
     queryKey: ['/api/terminal/feed', tab],
     queryFn: async () => {
-      const r = await fetch(`/api/terminal/feed?type=${tab}&limit=80`);
+      const r = await fetch(`/api/terminal/feed?type=${tab}&limit=25`);
       if (!r.ok) throw new Error('feed failed');
       return r.json();
     },
