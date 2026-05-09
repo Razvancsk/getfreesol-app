@@ -97,12 +97,12 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
 
         {view === 'overview' ? (
           <>
-            <div className="flex items-center gap-1 mb-3 bg-purple-900/30 rounded-lg p-1 border border-white/20 w-fit">
+            <div className="flex items-center mb-3 bg-purple-900/30 rounded-lg border border-white/20 w-fit overflow-hidden">
               {(['30d', 'all'] as const).map(p => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
                     period === p ? 'bg-purple-600 text-white' : 'text-white hover:text-white'
                   }`}
                 >
