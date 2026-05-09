@@ -570,6 +570,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     imageUri: info?.icon,
     priceUsd: liveT.priceUsd ?? info?.usdPrice,
     marketCapSol: liveT.marketCapSol,
+    priceSol: liveT.priceSol,
   } as any;
   const [mobileSwapOpen, setMobileSwapOpen] = useState(false);
 
@@ -927,7 +928,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
 
   const live: any = token || {};
   const STANDARD_SUPPLY = 1_000_000_000;
-  const priceSol = live.marketCapSol ? live.marketCapSol / STANDARD_SUPPLY : undefined;
+  const priceSol = live.priceSol ?? (live.marketCapSol ? live.marketCapSol / STANDARD_SUPPLY : undefined);
   const sym = (live.symbol || 'TOKEN').toString().slice(0, 8);
 
   function fmtNum(n: number, max = 6) {

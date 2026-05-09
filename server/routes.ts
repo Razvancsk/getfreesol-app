@@ -12854,6 +12854,9 @@ Claimer: ${walletAddress}`;
             const sol = pairs.filter((p) => p?.chainId === 'solana');
             if (sol.length) {
               const best = sol.reduce((a, b) => ((b?.liquidity?.usd || 0) > (a?.liquidity?.usd || 0) ? b : a));
+              const SOL_MINT = 'So11111111111111111111111111111111111111112';
+              const solPair = sol.find((p) => p?.quoteToken?.address === SOL_MINT) || best;
+              const priceSol = Number(solPair?.priceNative) || undefined;
               const buys = sol.reduce((s, p) => s + (Number(p?.txns?.h24?.buys) || 0), 0);
               const sells = sol.reduce((s, p) => s + (Number(p?.txns?.h24?.sells) || 0), 0);
               const volumeUsd = sol.reduce((s, p) => s + (Number(p?.volume?.h24) || 0), 0);
@@ -12864,6 +12867,7 @@ Claimer: ${walletAddress}`;
                 name: live?.name || best?.baseToken?.name,
                 symbol: live?.symbol || best?.baseToken?.symbol,
                 priceUsd: live?.priceUsd ?? (Number(best?.priceUsd) || undefined),
+                priceSol: (live as any)?.priceSol ?? priceSol,
                 marketCapUsd: live?.marketCapUsd ?? (Number(best?.marketCap) || Number(best?.fdv) || undefined),
                 liquidityUsd: live?.liquidityUsd ?? (liquidityUsd || undefined),
                 volumeUsd: live?.volumeUsd ?? (volumeUsd || undefined),
