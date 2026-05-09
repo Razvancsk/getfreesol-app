@@ -703,6 +703,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter Portfolio API - Get positions (incl. PnL where available)
+  app.get("/api/jupiter/portfolio/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      if (!address) return res.status(400).json({ error: 'Missing wallet address' });
+
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      if (process.env.JUPITER_API_KEY) headers['x-api-key'] = process.env.JUPITER_API_KEY;
+
+      const r = await fetch(`https://api.jup.ag/portfolio/v1/positions/${address}`, { headers });
+      if (!r.ok) {
+        const t = await r.text();
+        console.error('Jupiter Portfolio API error:', r.status, t);
+        return res.status(r.status).json({ error: 'Failed to fetch portfolio' });
+      }
+      const data = await r.json();
+      res.json(data);
+    } catch (e: any) {
+      console.error('Jupiter Portfolio proxy error:', e);
+      res.status(500).json({ error: 'Failed to fetch portfolio' });
+    }
+  });
+
   // Jupiter Ultra Holdings API - Get token balances
   app.get("/api/jupiter/ultra/holdings/:address", async (req, res) => {
     try {
