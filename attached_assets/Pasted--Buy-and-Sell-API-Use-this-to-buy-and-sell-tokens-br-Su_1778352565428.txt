@@ -1,0 +1,696 @@
+# Buy and Sell – API
+
+Use this to buy and sell tokens.<br />**Supported pools**
+
+* `Pump.fun`
+* `Raydium LaunchPad (including bonk)`
+* `Meteora LaunchPad (including Bags.fm, moonshot)`
+* `PumpSwap`
+* `Raydium CPMM`
+* `Meteora DAMM V1`
+* `Meteora DAMM V2`
+
+## Endpoint[​](#endpoint "Direct link to Endpoint")
+
+`POST https://api.pumpapi.io`
+
+* Local transactions (No private key required)
+* Lightning transactions⚡ (EASIER AND FASTER)
+
+## How Local Transactions Work[​](#how-local-transactions-work "Direct link to How Local Transactions Work")
+
+Local transactions keep your private key **100% on your machine**. The flow is:
+
+1. You send us a request with only your `publicKey` (no private key).
+2. Our server builds the transaction and returns it to you **unsigned**, as raw bytes.
+3. You sign the transaction locally on your machine.
+4. You broadcast it to the Solana network yourself (via any RPC).
+
+This method is for users who prioritize **key security** over speed and simplicity. If you want the **fastest and simplest** path — where we sign and broadcast on your behalf — switch to the **⚡ Lightning transactions** tab above (recommended).
+
+***
+
+## Request Body[​](#request-body "Direct link to Request Body")
+
+| Field                                                                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publicKey`                                                                                | Your public key (the wallet address)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `action`                                                                                   | `"buy"` or `"sell"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `mint`                                                                                     | Mint address of the token                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `quoteMint`                                                                                | **Optional. Not required.** It works only if such pools exist. By default, the quote mint is `So11111111111111111111111111111111111111112`, so you don’t need to set it — we handle it automatically. But if you trade in pools where Solana is not the second token (for example, a Memecoin–USDC pair), then quoteMint should be the USDC address (or the address of any other quote token).                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `poolId`                                                                                   | **Optional. Not required.** provide this if you need to trade token from the specific pool.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `amount`                                                                                   | Amount to trade. Use `'100%'` to sell all and get a 0.002 sol refund from the network                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `denominatedInQuote`                                                                       | `"true"` if amount is in SOL (or any other quote token), `"false"` for token amount                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `slippage`                                                                                 | Slippage in percent (recommended: 20)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `maxQuoteAmountIn`<br />`minBaseAmountOut`<br />`maxBaseAmountIn`<br />`minQuoteAmountOut` | **Optional. Not required.** Pre-calculate exact bounds and pass them directly. Unlike `slippage` (a percent applied to the current market price — so if the price shifts before your tx lands, your effective bounds shift with it), these fields are absolute values that stay exactly as you set them. Useful when the price may move between your decision and your tx landing on-chain. **Buy:** `maxQuoteAmountIn` (max quote spent), `minBaseAmountOut` (min tokens received). **Sell:** `maxBaseAmountIn` (max tokens spent), `minQuoteAmountOut` (min quote received). `slippage` must always be present in the request: if you provide only one of the two fields, the other is derived from `slippage`; if you provide both, `slippage` is not used but still required. We recommend providing both fields. |
+| `priorityFee`                                                                              | **Optional. Not required.** Priority fee in SOL                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `partnerAddress`                                                                           | Optional. Run your own service and want to receive a fee from your users? Set this field. The fee defined in `partnerFeeRatio` + `partnerFeeFixed` will be sent to this address.<br />You can also use it if your strategy requires sending funds somewhere after the operation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `partnerFeeRatio`                                                                          | Optional. Percentage of the trade you want to send to `partnerAddress`. Example: `0.005` = 0.5%, `0.01` = 1%.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `partnerFeeFixed`                                                                          | Optional. A fixed amount (in SOL) you want to send to `partnerAddress` for the operation. Example: `0.0001`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `mintRef`                                                                                  | Optional. When using Jito Bundles or Actions and creating tokens, you don’t yet know the token address assigned to you (unless you provide mintPrivateKey). To handle this, within a single request you can set "mintRef": "any value" (the default is "0") and reuse it across related transactions inside the same Jito Bundle or Actions. When buying the token, specify "mintRef": "the value you set earlier", and the backend will understand which token you’re referring to. Works within a single request; a second request requires providing the mint address.                                                                                                                                                                                                                                             |
+
+***
+
+* Python
+* JavaScript
+* Rust
+* Go
+
+```python
+import requests
+from solders.transaction import VersionedTransaction
+from solders.keypair import Keypair
+from solders.message import to_bytes_versioned
+from solders.commitment_config import CommitmentLevel
+from solders.rpc.requests import SendVersionedTransaction
+from solders.rpc.config import RpcSendTransactionConfig
+import base64
+
+
+response = requests.post(url="https://api.pumpapi.io", json={
+    "publicKey": "your_public_key",
+    "action": "buy",  # or sell
+    "mint": "token_address",
+    "amount": 0.01, # When you're selling, you can pass "100%" to sell everything
+    "denominatedInQuote": "true",
+    "slippage": 20,
+    "priorityFee": 0.0001,
+})
+
+
+keypairs = [
+    Keypair.from_base58_string("your_private_key_1"), # stays on your computer
+    # Keypair.from_base58_string("your_private_key_2"), # If you are using actions or jito bundles, add all private keys involved in the transaction here.
+]
+
+try: # jito bundle branch (multiple transactions)
+    b64_txs = response.json()
+    txs = []
+    all_signatures = []
+    for base64_encoded_tx in b64_txs:
+
+        tx = VersionedTransaction.from_bytes(base64.b64decode(base64_encoded_tx))
+        required_signers = list(tx.message.account_keys)[:tx.message.header.num_required_signatures]
+        signatures = list(tx.signatures)
+        for keypair in keypairs:
+            if keypair.pubkey() not in required_signers:
+                continue
+            signer_index = required_signers.index(keypair.pubkey())
+            signatures[signer_index] = keypair.sign_message(to_bytes_versioned(tx.message))
+
+        tx = VersionedTransaction.populate(tx.message, signatures)
+        all_signatures.append(tx.signatures[0])
+        txs.append(base64.b64encode(bytes(tx)).decode("ascii"))
+    jito_response = requests.post(
+        "https://mainnet.block-engine.jito.wtf:443/api/v1/bundles?uuid=PLACE_YOUR_UUID_HERE_TO_USE_JITO_BUNDLES", # if you want to send multiple txs via Jito bundles get your UUID here: https://discord.com/invite/jito , without a UUID it won't land
+        headers={"Content-Type": "application/json"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "sendBundle",
+            "params": [txs, {"encoding": "base64"}]
+        }
+    )
+    print(jito_response.content)
+    print(all_signatures)
+except requests.exceptions.JSONDecodeError: # single tx branch
+    tx = VersionedTransaction.from_bytes(response.content)
+    required_signers = list(tx.message.account_keys)[:tx.message.header.num_required_signatures]
+    signatures = list(tx.signatures)
+
+    for keypair in keypairs:
+        if keypair.pubkey() not in required_signers:
+            continue
+        signer_index = required_signers.index(keypair.pubkey())
+        signatures[signer_index] = keypair.sign_message(to_bytes_versioned(tx.message))
+
+    tx = VersionedTransaction.populate(tx.message, signatures)
+
+    commitment = CommitmentLevel.Confirmed
+    config = RpcSendTransactionConfig(preflight_commitment=commitment)
+    txPayload = SendVersionedTransaction(tx, config)
+
+    response = requests.post(
+        url="https://api.mainnet-beta.solana.com/",  # it's better to use Helius RPC endpoint
+        headers={"Content-Type": "application/json"},
+        data=SendVersionedTransaction(tx, config).to_json()
+    )
+    txSignature = response.json()['result']
+    print(f'Transaction: https://solscan.io/tx/{txSignature}')
+
+```
+
+```javascript
+import { Connection, Keypair, VersionedTransaction } from "@solana/web3.js";
+import bs58 from "bs58";
+
+const response = await fetch("https://api.pumpapi.io", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+        publicKey: "your_public_key",
+        action: "buy", // or sell
+        mint: "token_address",
+        amount: 0.01, // When you're selling, you can pass "100%" to sell everything
+        denominatedInQuote: "true",
+        slippage: 20,
+        priorityFee: 0.0001,
+    }),
+});
+
+const keypairs = [
+    Keypair.fromSecretKey(bs58.decode("your_private_key_1")), // stays on your computer
+    // Keypair.fromSecretKey(bs58.decode("your_private_key_2")), // If you are using actions or jito bundles, add all private keys involved in the transaction here.
+];
+
+const responseBuffer = Buffer.from(await response.arrayBuffer());
+
+try { // jito bundle branch (multiple transactions)
+    const b64Txs = JSON.parse(responseBuffer.toString("utf8"));
+    const txs = [];
+    const allSignatures = [];
+    for (const base64EncodedTx of b64Txs) {
+
+        const tx = VersionedTransaction.deserialize(
+            new Uint8Array(Buffer.from(base64EncodedTx, "base64"))
+        );
+        const requiredSigners = tx.message.staticAccountKeys.slice(
+            0,
+            tx.message.header.numRequiredSignatures
+        );
+        const matchingKeypairs = keypairs.filter((kp) =>
+            requiredSigners.some((pk) => pk.equals(kp.publicKey))
+        );
+        tx.sign(matchingKeypairs);
+
+        allSignatures.push(bs58.encode(tx.signatures[0]));
+        txs.push(Buffer.from(tx.serialize()).toString("base64"));
+    }
+    const jitoResponse = await fetch(
+        "https://mainnet.block-engine.jito.wtf:443/api/v1/bundles?uuid=PLACE_YOUR_UUID_HERE_TO_USE_JITO_BUNDLES", // if you want to send multiple txs via Jito bundles get your UUID here: https://discord.com/invite/jito , without a UUID it won't land
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: 1,
+                method: "sendBundle",
+                params: [txs, { encoding: "base64" }],
+            }),
+        }
+    );
+    console.log(await jitoResponse.text());
+    console.log(allSignatures);
+} catch (e) { // single tx branch
+    if (!(e instanceof SyntaxError)) throw e;
+    const tx = VersionedTransaction.deserialize(new Uint8Array(responseBuffer));
+
+    const requiredSigners = tx.message.staticAccountKeys.slice(
+        0,
+        tx.message.header.numRequiredSignatures
+    );
+    const matchingKeypairs = keypairs.filter((kp) =>
+        requiredSigners.some((pk) => pk.equals(kp.publicKey))
+    );
+    tx.sign(matchingKeypairs);
+
+    const commitment = "confirmed";
+    const web3Connection = new Connection(
+        "https://api.mainnet-beta.solana.com/", // it's better to use Helius RPC endpoint
+        commitment
+    );
+
+    const txSignature = await web3Connection.sendTransaction(tx, {
+        preflightCommitment: commitment,
+    });
+
+    console.log(`Transaction: https://solscan.io/tx/${txSignature}`);
+}
+
+```
+
+```rust
+use base64::{engine::general_purpose::STANDARD, Engine as _};
+use reqwest::Client;
+use serde_json::json;
+use solana_sdk::{
+    signature::{Keypair, Signer},
+    transaction::VersionedTransaction,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new();
+
+    let response = client
+        .post("https://api.pumpapi.io")
+        .json(&json!({
+            "publicKey": "your_public_key",
+            "action": "buy", // or sell
+            "mint": "token_address",
+            "amount": 0.01, // When you're selling, you can pass "100%" to sell everything
+            "denominatedInQuote": "true",
+            "slippage": 20,
+            "priorityFee": 0.0001,
+        }))
+        .send()
+        .await?;
+
+    let response_bytes = response.bytes().await?;
+
+    let keypairs = vec![
+        Keypair::from_base58_string("your_private_key_1"), // stays on your computer
+        // Keypair::from_base58_string("your_private_key_2"), // If you are using actions or jito bundles, add all private keys involved in the transaction here.
+    ];
+
+    if let Ok(b64_txs) = serde_json::from_slice::<Vec<String>>(&response_bytes) { // jito bundle branch (multiple transactions)
+        let mut txs: Vec<String> = Vec::new();
+        let mut all_signatures: Vec<String> = Vec::new();
+        for base64_encoded_tx in b64_txs {
+
+            let tx_bytes = STANDARD.decode(&base64_encoded_tx)?;
+            let mut tx: VersionedTransaction = bincode::deserialize(&tx_bytes)?;
+            let required_signers = &tx.message.static_account_keys()
+                [..tx.message.header().num_required_signatures as usize];
+            let message_bytes = tx.message.serialize();
+
+            for keypair in &keypairs {
+                if let Some(signer_index) = required_signers
+                    .iter()
+                    .position(|pubkey| pubkey == &keypair.pubkey())
+                {
+                    tx.signatures[signer_index] = keypair.sign_message(&message_bytes);
+                }
+            }
+
+            all_signatures.push(tx.signatures[0].to_string());
+            txs.push(STANDARD.encode(bincode::serialize(&tx)?));
+        }
+        let jito_response = client
+            .post("https://mainnet.block-engine.jito.wtf:443/api/v1/bundles?uuid=PLACE_YOUR_UUID_HERE_TO_USE_JITO_BUNDLES") // if you want to send multiple txs via Jito bundles get your UUID here: https://discord.com/invite/jito , without a UUID it won't land
+            .header("Content-Type", "application/json")
+            .json(&json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "sendBundle",
+                "params": [txs, {"encoding": "base64"}]
+            }))
+            .send()
+            .await?;
+
+        println!("{}", jito_response.text().await?);
+        println!("{:?}", all_signatures);
+    } else { // single tx branch
+        let mut tx: VersionedTransaction = bincode::deserialize(&response_bytes)?;
+        let required_signers = &tx.message.static_account_keys()
+            [..tx.message.header().num_required_signatures as usize];
+        let message_bytes = tx.message.serialize();
+
+        for keypair in &keypairs {
+            if let Some(signer_index) = required_signers
+                .iter()
+                .position(|pubkey| pubkey == &keypair.pubkey())
+            {
+                tx.signatures[signer_index] = keypair.sign_message(&message_bytes);
+            }
+        }
+
+        let commitment = "confirmed";
+        let rpc_payload = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "sendTransaction",
+            "params": [
+                STANDARD.encode(bincode::serialize(&tx)?),
+                {
+                    "encoding": "base64",
+                    "preflightCommitment": commitment
+                }
+            ]
+        });
+
+        let response = client
+            .post("https://api.mainnet-beta.solana.com/") // it's better to use Helius RPC endpoint
+            .header("Content-Type", "application/json")
+            .json(&rpc_payload)
+            .send()
+            .await?;
+
+        let tx_signature: serde_json::Value = response.json().await?;
+        println!(
+            "Transaction: https://solscan.io/tx/{}",
+            tx_signature["result"].as_str().unwrap_or("")
+        );
+    }
+
+    Ok(())
+}
+
+```
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+
+	"github.com/gagliardetto/solana-go"
+)
+
+func main() {
+	payload := map[string]any{
+		"publicKey":          "your_public_key",
+		"action":             "buy", // or sell
+		"mint":               "token_address",
+		"amount":             0.01, // When you're selling, you can pass "100%" to sell everything
+		"denominatedInQuote": "true",
+		"slippage":           20,
+		"priorityFee":        0.0001,
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	response, err := http.Post("https://api.pumpapi.io", "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer response.Body.Close()
+
+	rawResponse, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	keypairs := []solana.PrivateKey{
+		solana.MustPrivateKeyFromBase58("your_private_key_1"), // stays on your computer
+		// solana.MustPrivateKeyFromBase58("your_private_key_2"), // If you are using actions or jito bundles, add all private keys involved in the transaction here.
+	}
+
+	signer := func(key solana.PublicKey) *solana.PrivateKey {
+		for i := range keypairs {
+			if keypairs[i].PublicKey().Equals(key) {
+				return &keypairs[i]
+			}
+		}
+		return nil
+	}
+
+	var b64Txs []string
+	if err := json.Unmarshal(rawResponse, &b64Txs); err == nil { // jito bundle branch (multiple transactions)
+		txs := []string{}
+		allSignatures := []string{}
+		for _, base64EncodedTx := range b64Txs {
+
+			txBytes, err := base64.StdEncoding.DecodeString(base64EncodedTx)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			tx := new(solana.VersionedTransaction)
+			if err := tx.UnmarshalBinary(txBytes); err != nil {
+				log.Fatal(err)
+			}
+
+			if _, err := tx.Sign(signer); err != nil {
+				log.Fatal(err)
+			}
+
+			signedBytes, err := tx.MarshalBinary()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			allSignatures = append(allSignatures, tx.Signatures[0].String())
+			txs = append(txs, base64.StdEncoding.EncodeToString(signedBytes))
+		}
+		jitoPayload := map[string]any{
+			"jsonrpc": "2.0",
+			"id":      1,
+			"method":  "sendBundle",
+			"params": []any{
+				txs,
+				map[string]any{"encoding": "base64"},
+			},
+		}
+
+		jitoBody, err := json.Marshal(jitoPayload)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		jitoResponse, err := http.Post(
+			"https://mainnet.block-engine.jito.wtf:443/api/v1/bundles?uuid=PLACE_YOUR_UUID_HERE_TO_USE_JITO_BUNDLES", // if you want to send multiple txs via Jito bundles get your UUID here: https://discord.com/invite/jito , without a UUID it won't land
+			"application/json",
+			bytes.NewBuffer(jitoBody),
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer jitoResponse.Body.Close()
+
+		jitoRespBody, err := io.ReadAll(jitoResponse.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(jitoRespBody))
+		fmt.Println(allSignatures)
+	} else { // single tx branch
+		tx := new(solana.VersionedTransaction)
+		if err := tx.UnmarshalBinary(rawResponse); err != nil {
+			log.Fatal(err)
+		}
+
+		if _, err := tx.Sign(signer); err != nil {
+			log.Fatal(err)
+		}
+
+		txBytes, err := tx.MarshalBinary()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		commitment := "confirmed"
+		rpcPayload := map[string]any{
+			"jsonrpc": "2.0",
+			"id":      1,
+			"method":  "sendTransaction",
+			"params": []any{
+				base64.StdEncoding.EncodeToString(txBytes),
+				map[string]any{
+					"encoding":            "base64",
+					"preflightCommitment": commitment,
+				},
+			},
+		}
+
+		rpcBody, err := json.Marshal(rpcPayload)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		rpcResponse, err := http.Post(
+			"https://api.mainnet-beta.solana.com/", // it's better to use Helius RPC endpoint
+			"application/json",
+			bytes.NewBuffer(rpcBody),
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rpcResponse.Body.Close()
+
+		var result struct {
+			Result string `json:"result"`
+		}
+		if err := json.NewDecoder(rpcResponse.Body).Decode(&result); err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("Transaction: https://solscan.io/tx/%s\n", result.Result)
+	}
+}
+
+```
+
+***
+
+## Response Format[​](#response-format "Direct link to Response Format")
+
+Local transactions return the **raw, unsigned transaction bytes** — not JSON. You deserialize them, sign locally, and broadcast yourself.
+
+| Request type                                                                               | Response                                                                                        |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| **Single transaction** (regular `buy` / `sell` / `create` / Actions)                       | One raw `VersionedTransaction` in the response body                                             |
+| **[Jito Bundle](/jito-bundles.md)** (multiple transactions inside `"transactions": [...]`) | An array of raw base64 `VersionedTransaction` txs — one per transaction in the bundle (up to 5) |
+
+tip
+
+Want cleaner code and faster execution? Use our ⚡ Lightning transactions
+
+***
+
+## ⚡ Lightning Transaction[​](#-lightning-transaction "Direct link to ⚡ Lightning Transaction")
+
+**Lightning transaction** is a method of sending transactions where we broadcast the transaction on your behalf.<br /><!-- -->This approach allows for:
+
+* 🚀 **Maximum transaction speed**
+* 🧩 **Minimal code complexity**
+
+By handling the transaction process internally, you don’t have to construct the transaction manually — we do it for you.
+
+> To use this feature, simply provide a wallet `privateKey` — it’s needed to sign and broadcast the transaction on your behalf.
+
+## Request Body[​](#request-body-1 "Direct link to Request Body")
+
+| Field                                                                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `privateKey`                                                                               | Private key in Base58 format                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `action`                                                                                   | `"buy"` or `"sell"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `mint`                                                                                     | Mint address of the token                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `quoteMint`                                                                                | **Optional. Not required.** It works only if such pools exist. By default, the quote mint is Solana -> `So11111111111111111111111111111111111111112`, so you don’t need to set it — we handle it automatically. But if you trade in pools where Solana is not the second token (for example, a Memecoin–USDC pair), then quoteMint should be the USDC address (or the address of any other quote token).                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `poolId`                                                                                   | **Optional. Not required.** provide this if you need to trade token from the specific pool.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `amount`                                                                                   | Amount to trade. Use `'100%'` to sell all and get a 0.002 sol refund from the network                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `denominatedInQuote`                                                                       | `"true"` if amount is in SOL (or any other quote token), `"false"` for token amount                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `slippage`                                                                                 | Slippage in percent (recommended: 20)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `maxQuoteAmountIn`<br />`minBaseAmountOut`<br />`maxBaseAmountIn`<br />`minQuoteAmountOut` | **Optional. Not required.** Pre-calculate exact bounds and pass them directly. Unlike `slippage` (a percent applied to the current market price — so if the price shifts before your tx lands, your effective bounds shift with it), these fields are absolute values that stay exactly as you set them. Useful when the price may move between your decision and your tx landing on-chain. **Buy:** `maxQuoteAmountIn` (max quote spent), `minBaseAmountOut` (min tokens received). **Sell:** `maxBaseAmountIn` (max tokens spent), `minQuoteAmountOut` (min quote received). `slippage` must always be present in the request: if you provide only one of the two fields, the other is derived from `slippage`; if you provide both, `slippage` is not used but still required. We recommend providing both fields. |
+| `priorityFee`                                                                              | **Optional. Not required.** Extra fee (in SOL) to speed up your transaction and increase its chance it lands in the current block.<br /><br />There are two modes of operation:<br /><br />**1️⃣ Automatic Jito split (≥ 0.00023 SOL):**<br />If the value is **0.00023 SOL or higher**, PumpAPI automatically splits it:<br />• **90% → `jitoTip`** (used by \~90% of validators)<br />• **10% → `priorityFee`** (for non-Jito validators)<br /><br />**2️⃣ No split (< 0.00023 SOL):**<br />If the value is **less than 0.00023 SOL**, *no split occurs*. The full amount is treated as `priorityFee`, and the transaction is sent via **SWQOS** (fast non-Jito route).                                                                                                                                               |
+| `jitoTip`                                                                                  | Optional. Use this if you don’t want automatic priorityFee split.<br />Example: `'jitoTip': 0.0002`.<br />Minimum required to join Jito auction: **0.0002 SOL**. Anything below that is ignored, and the transaction is sent without Jito participation. When `jitoTip` is provided, your entire `priorityFee` remains intact (not split).                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `guaranteedDelivery`                                                                       | **Optional experimental feature** `"true"` tells the server to rebroadcast the transaction for up to 10 seconds and respond with `confirmed: true` if it appears on-chain within that time. Otherwise, you receive `confirmed: false`. ⚠️ This affects response time: if you want an immediate reply (without confirmation of success), set this to false!                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `partnerAddress`                                                                           | Optional. Run your own service and want to receive a fee from your users? Set this field. The fee defined in `partnerFeeRatio` + `partnerFeeFixed` will be sent to this address.<br />You can also use it if your strategy requires sending funds somewhere after the operation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `partnerFeeRatio`                                                                          | Optional. Percentage of the trade you want to send to `partnerAddress`. Example: `0.005` = 0.5%, `0.01` = 1%.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `partnerFeeFixed`                                                                          | Optional. A fixed amount (in SOL) you want to send to `partnerAddress` for the operation. Example: `0.0001`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `mintRef`                                                                                  | Optional. When using Jito Bundles or Actions and creating tokens, you don’t yet know the token address assigned to you (unless you provide mintPrivateKey). To handle this, within a single request you can set "mintRef": "any value" (the default is "0") and reuse it across related transactions inside the same Jito Bundle or Actions. When buying the token, specify "mintRef": "the value you set earlier", and the backend will understand which token you’re referring to. Works within a single request; a second request requires providing the mint address.                                                                                                                                                                                                                                             |
+
+***
+
+* Python
+* JavaScript
+* Rust
+* Go
+
+```python
+import requests
+
+url = "https://api.pumpapi.io"
+
+data = {
+    "privateKey": "your_private_key",
+    "action": "buy", 
+    "mint": "token_address",
+    "amount": 0.01, 
+    "denominatedInQuote": "true",
+    "slippage": 20,
+    "priorityFee": 0.0001,
+}
+
+response = requests.post(url, json=data)
+print(response.json())
+
+```
+
+```javascript
+import axios from 'axios';
+
+const data = {
+  privateKey: "your_private_key",
+  action: "buy",
+  mint: "token_address",
+  amount: 0.01,
+  denominatedInQuote: "true",
+  slippage: 20,
+  priorityFee: 0.0001
+};
+
+axios.post('https://api.pumpapi.io', data)
+  .then(response => console.log(response.data))
+  .catch(error => console.error(error));
+
+```
+
+```rust
+use reqwest::Client;
+use serde_json::json;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new();
+    let res = client.post("https://api.pumpapi.io")
+        .json(&json!({
+            "privateKey": "your_private_key",
+            "action": "buy",
+            "mint": "token_address",
+            "amount": 0.01,
+            "denominatedInQuote": "true",
+            "slippage": 20,
+            "priorityFee": 0.0001
+        }))
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    println!("{}", res);
+    Ok(())
+}
+
+```
+
+```go
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "net/http"
+)
+
+func main() {
+    data := map[string]interface{}{
+        "privateKey":       "your_private_key",
+        "action":           "buy",
+        "mint":             "token_address",
+        "amount":           0.01,
+        "denominatedInQuote": "true",
+        "slippage":         20,
+        "priorityFee":      0.0001,
+    }
+
+    jsonData, _ := json.Marshal(data)
+    resp, err := http.Post("https://api.pumpapi.io", "application/json", bytes.NewBuffer(jsonData))
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+
+    var result map[string]interface{}
+    json.NewDecoder(resp.Body).Decode(&result)
+    fmt.Println(result)
+}
+
+```
+
+***
+
+## Response Format[​](#response-format-1 "Direct link to Response Format")
+
+| Request type                                      | Response                                                                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Single transaction**                            | `{"signature": "...", "err": "", "timestamp": "timestamp_ms"}`                                          |
+| **[Jito Bundle](/jito-bundles.md)** (up to 5 txs) | `{"signatures": ["...", "..."], "err": "", "timestamp": "timestamp_ms", "bundleUUIDs": ["bundle_uuid]}` |
+
+`err` is an **empty string `""` on success**, or the error message on failure. Extra fields may appear depending on the action (e.g. `createdMints` when creating tokens).
+
+***
+
+Need help? Join our [Telegram group](https://t.me/pumpapi_devs).
