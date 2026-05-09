@@ -187,6 +187,50 @@ async function resolveImageFromUri(mint: string, uri: string) {
   metaInflight.set(uri, p);
 }
 
+// Resolve missing name/symbol/image for tokens that arrived without a `create`
+// event (e.g. when we first see them via a buy/sell already past bonding). Uses
+// Helius DAS getAsset, single-flight + negative cache.
+const assetTried = new Set<string>();
+const assetInflight = new Map<string, Promise<void>>();
+async function resolveAssetMeta(mint: string) {
+  if (assetTried.has(mint) || assetInflight.has(mint)) return;
+  const key = process.env.HELIUS_API_KEY;
+  if (!key) { assetTried.add(mint); return; }
+  const p = (async () => {
+    try {
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 5000);
+      const r = await fetch(`https://mainnet.helius-rpc.com/?api-key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 'a', method: 'getAsset', params: { id: mint } }),
+        signal: ctl.signal,
+      });
+      clearTimeout(to);
+      if (!r.ok) return;
+      const j: any = await r.json();
+      const a = j?.result;
+      if (!a) return;
+      const meta = a?.content?.metadata || {};
+      const name = meta.name as string | undefined;
+      const symbol = meta.symbol as string | undefined;
+      const img = a?.content?.links?.image || a?.content?.files?.[0]?.uri;
+      const t = tokens.get(mint);
+      if (t) {
+        if (!t.name && name) t.name = name;
+        if (!t.symbol && symbol) t.symbol = symbol;
+        if (!t.imageUri && img) t.imageUri = ipfsToHttp(String(img));
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      assetTried.add(mint);
+      assetInflight.delete(mint);
+    }
+  })();
+  assetInflight.set(mint, p);
+}
+
 function handleEvent(ev: Event) {
   if (!ev || !ev.mint) return;
   lastEventAt = Date.now();
@@ -349,20 +393,27 @@ function serialize(t: Token) {
   };
 }
 
+function withMetaFetch(list: Token[]): Token[] {
+  for (const t of list) {
+    if (!t.name || !t.symbol || !t.imageUri) {
+      resolveAssetMeta(t.mint).catch(() => {});
+    }
+  }
+  return list;
+}
 export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
   if (type === 'new') {
-    return newOrder.slice(0, limit).map((m) => tokens.get(m)).filter((t): t is Token => !!t).map(serialize);
+    return withMetaFetch(newOrder.slice(0, limit).map((m) => tokens.get(m)).filter((t): t is Token => !!t)).map(serialize);
   }
   if (type === 'migrated') {
-    return migratedOrder.slice(0, limit).map((m) => tokens.get(m)).filter((t): t is Token => !!t).map(serialize);
+    return withMetaFetch(migratedOrder.slice(0, limit).map((m) => tokens.get(m)).filter((t): t is Token => !!t)).map(serialize);
   }
   // bonding: any bonding-curve launchpad, not migrated, ≥ threshold, sorted desc
   const arr = [...tokens.values()]
     .filter((t) => !t.migrated && isBondingPool(t.pool) && (t.bondingPct ?? 0) >= ALMOST_BOND_THRESHOLD && (t.bondingPct ?? 0) < 1)
     .sort((a, b) => (b.bondingPct ?? 0) - (a.bondingPct ?? 0))
-    .slice(0, limit)
-    .map(serialize);
-  return arr;
+    .slice(0, limit);
+  return withMetaFetch(arr).map(serialize);
 }
 
 export function getStreamStatus() {
