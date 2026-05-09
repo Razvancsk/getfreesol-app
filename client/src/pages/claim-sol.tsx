@@ -7285,7 +7285,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">10% platform fee — you receive 90%</span>
+                  <span className="text-sm">You receive ~0.0018 SOL per account (10% fee)</span>
                 </div>
               </div>
             </div>
