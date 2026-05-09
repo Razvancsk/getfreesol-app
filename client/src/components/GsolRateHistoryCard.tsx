@@ -103,7 +103,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 </button>
               ))}
             </div>
-            <div className="h-[200px] w-full relative">
+            <div className="h-[260px] w-full relative">
               <div className="absolute top-0 right-12 text-[10px] text-white z-10 pointer-events-none">
                 Display limit: 25% APY
               </div>
@@ -116,12 +116,13 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                   <BarChart
                     data={last25.map(e => ({ ...e, apyPct: (e.apy ?? 0) * 100 }))}
                     margin={{ top: 10, right: 0, left: 5, bottom: 25 }}
+                    barCategoryGap="15%"
                   >
                     <YAxis
                       type="number"
                       orientation="right"
-                      domain={[0, 24]}
-                      ticks={[0, 4, 8, 12, 16, 20, 24]}
+                      domain={[0, 8]}
+                      ticks={[0, 2, 4, 6, 8]}
                       tickFormatter={(v) => `${v}%`}
                       tick={{ fill: '#ffffff', fontSize: 11 }}
                       axisLine={false}
@@ -164,7 +165,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                         return `Epoch ${label}${item ? ` · ${formatDate(item.date)}` : ''}`;
                       }}
                     />
-                    <Bar dataKey="apyPct" radius={[3, 3, 0, 0]} fill="#16a34a" />
+                    <Bar dataKey="apyPct" radius={[3, 3, 0, 0]} fill="#16a34a" maxBarSize={40} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
