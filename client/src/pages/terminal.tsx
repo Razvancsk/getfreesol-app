@@ -958,8 +958,11 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
     if (!amt) { toast({ title: 'Enter amount' }); return; }
     setBusy(true);
     try {
-      const denominatedInQuote = side === 'buy';
-      const amountVal = side === 'sell' && amt.endsWith('%') ? amt : Number(amt);
+      const isPctSell = side === 'sell' && amt.endsWith('%');
+      // Per pumpapi docs: "100%" sells require denominatedInQuote=true and high slippage.
+      const denominatedInQuote = side === 'buy' || isPctSell;
+      const amountVal = isPctSell ? amt : Number(amt);
+      const slipNum = isPctSell ? 99 : Number(slippage);
       const r = await fetch('/api/terminal/build-tx', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -967,7 +970,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
           action: side, mint: token.mint,
           amount: amountVal,
           denominatedInQuote,
-          slippage: Number(slippage),
+          slippage: slipNum,
           pool: (token as any).pool,
         }),
       });
