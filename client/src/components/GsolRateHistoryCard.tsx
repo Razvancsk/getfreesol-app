@@ -59,7 +59,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
 
   return (
     <div className="w-full rounded-2xl bg-purple-900/20 border border-white/20 backdrop-blur-sm overflow-hidden mt-6">
-      <div className="px-0 pt-4 pb-1">
+      <div className="px-0 pt-4 pb-0">
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
             <h2 className="text-green-400 font-black text-3xl">
@@ -120,7 +120,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={last25.map(e => ({ ...e, apyPct: (e.apy ?? 0) * 100 }))}
-                    margin={{ top: 10, right: 4, left: 0, bottom: 5 }}
+                    margin={{ top: 10, right: 4, left: 0, bottom: 0 }}
                     barCategoryGap="15%"
                     onMouseMove={(state: any) => {
                       const p = state?.activePayload?.[0]?.payload;
