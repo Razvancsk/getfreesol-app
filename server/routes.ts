@@ -852,9 +852,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       positions.sort((a, b) => b.currentValue - a.currentValue);
 
-      const realizedUsd = pnl && solPx > 0 ? pnl.realizedSol * solPx : null;
-      const unrealizedUsdTotal = solPx > 0 ? unrealizedSolTotal * solPx : null;
-      const totalUsd = realizedUsd !== null && unrealizedUsdTotal !== null ? realizedUsd + unrealizedUsdTotal : null;
+      const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
+      const gsolPos = positions.find((p: any) => p.mint === GSOL_MINT);
+      const gsolRealizedSol = pnl?.realizedByMint?.[GSOL_MINT] ?? 0;
+      const realizedUsd = pnl && solPx > 0 ? gsolRealizedSol * solPx : null;
+      const unrealizedUsdTotal = gsolPos?.unrealizedUsd ?? null;
+      const totalUsd = realizedUsd !== null && unrealizedUsdTotal !== null ? realizedUsd + unrealizedUsdTotal : realizedUsd;
 
       res.json({
         wallet: address,

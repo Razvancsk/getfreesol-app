@@ -8,6 +8,7 @@ type CacheEntry = {
   realizedSol: number;
   totalBoughtSol: Record<string, number>;
   totalSoldSol: Record<string, number>;
+  realizedByMint: Record<string, number>;
   txCount: number;
   reachedLimit: boolean;
   untrackedSells: number;
@@ -65,7 +66,7 @@ function netDeltasForWallet(tx: any, wallet: string): Record<string, number> {
 function processSwap(
   tx: any,
   wallet: string,
-  state: { lots: Record<string, Lot[]>; realizedSol: number; bought: Record<string, number>; sold: Record<string, number>; untrackedSells: number }
+  state: { lots: Record<string, Lot[]>; realizedSol: number; bought: Record<string, number>; sold: Record<string, number>; realizedByMint: Record<string, number>; untrackedSells: number }
 ) {
   const deltas = netDeltasForWallet(tx, wallet);
   const solDelta = deltas[WSOL] || 0;
@@ -107,7 +108,9 @@ function processSwap(
       // Sold more than we have lots for (untracked acquisition: transfer-in or older swap)
       state.untrackedSells += 1;
     }
-    state.realizedSol += proceedsSol - costBasisConsumed;
+    const tradeRealized = proceedsSol - costBasisConsumed;
+    state.realizedSol += tradeRealized;
+    state.realizedByMint[outMint] = (state.realizedByMint[outMint] || 0) + tradeRealized;
     state.sold[outMint] = (state.sold[outMint] || 0) + proceedsSol;
   }
 }
@@ -143,6 +146,7 @@ async function computeFresh(wallet: string): Promise<CacheEntry> {
     realizedSol: 0,
     bought: {} as Record<string, number>,
     sold: {} as Record<string, number>,
+    realizedByMint: {} as Record<string, number>,
     untrackedSells: 0,
   };
   for (const tx of all) processSwap(tx, wallet, state);
@@ -153,6 +157,7 @@ async function computeFresh(wallet: string): Promise<CacheEntry> {
     realizedSol: state.realizedSol,
     totalBoughtSol: state.bought,
     totalSoldSol: state.sold,
+    realizedByMint: state.realizedByMint,
     txCount: all.length,
     reachedLimit,
     untrackedSells: state.untrackedSells,

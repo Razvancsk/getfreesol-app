@@ -188,12 +188,14 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 {(() => {
                   const fmtUsd = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(Math.abs(n) >= 100 ? 2 : 4)}`;
                   const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
-                  const totalValue = Number(jupPortfolio?.currentValue ?? 0);
                   const realized = jupPortfolio?.realized;
                   const unrealized = jupPortfolio?.unrealized;
                   const total = jupPortfolio?.total;
                   const swapsCount = Number(jupPortfolio?.swapsCount ?? 0);
-                  const positions: any[] = Array.isArray(jupPortfolio?.positions) ? jupPortfolio.positions : [];
+                  const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
+                  const positions: any[] = (Array.isArray(jupPortfolio?.positions) ? jupPortfolio.positions : [])
+                    .filter((p: any) => p.mint === GSOL_MINT);
+                  const gsolValue = Number(positions[0]?.currentValue ?? 0);
 
                   const Stat = ({ label, val }: { label: string; val: any }) => {
                     const n = Number(val);
@@ -214,16 +216,16 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                     <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <div className="text-white text-sm font-semibold">Portfolio PnL</div>
+                          <div className="text-white text-sm font-semibold">GSOL PnL</div>
                           <div className="text-white/50 text-[10px]">
-                            {swapsCount} swaps · FIFO via Helius
+                            FIFO via Helius
                             {jupPortfolio?.reachedLimit && ' · history capped'}
-                            {Number(jupPortfolio?.untrackedSells) > 0 && ` · ${jupPortfolio.untrackedSells} untracked sell(s)`}
+                            {Number(jupPortfolio?.untrackedSells) > 0 && ' · partial history'}
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-white/70 text-[10px]">Value</div>
-                          <div className="text-white font-bold text-base">{fmtUsd(totalValue)}</div>
+                          <div className="text-white/70 text-[10px]">GSOL Value</div>
+                          <div className="text-white font-bold text-base">{fmtUsd(gsolValue)}</div>
                         </div>
                       </div>
                       {jupPortfolioLoading ? (
