@@ -567,11 +567,11 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             {!holdersLoading && (holdersData?.holders?.length ?? 0) === 0 && (
               <div className="text-center text-white/50 text-sm py-6">No holders found.</div>
             )}
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-purple-500/20">
               {(holdersData?.holders || []).slice(0, 20).map((h, i) => {
                 const pct = totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0;
                 return (
-                  <div key={h.address} className="flex items-center justify-between py-2 px-2 text-sm">
+                  <div key={h.address} className="flex items-center justify-between py-3 px-3 text-sm">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-white/40 text-xs w-5 text-right">#{i + 1}</span>
                       <a href={`https://solscan.io/account/${h.address}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-purple-300 underline truncate">
