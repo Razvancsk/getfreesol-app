@@ -279,7 +279,7 @@ export function TerminalView() {
             return (
               <div
                 key={t.mint}
-                className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4 hover:border-purple-500/40 transition-all cursor-pointer overflow-hidden active:scale-[0.98]"
+                className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4 hover:border-purple-500/40 transition-all cursor-pointer overflow-hidden active:scale-[0.98] font-bold"
                 data-testid={`row-${t.mint}`}
               >
                 <div className="flex items-center justify-between gap-3 mb-3">
