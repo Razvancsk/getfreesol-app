@@ -396,13 +396,20 @@ function handleEvent(ev: Event) {
     const evUri = ev.uri || tm?.uri;
     const evImg = ev.imageUri || tm?.imageUri;
     const directImg = evImg && looksLikeImage(evImg) ? ipfsToHttp(evImg) : evImg;
+    // pumpapi update: when quoteMint is present and not wSOL, the *Sol fields
+    // are actually denominated in the quote token (USDC/USDT/etc), not SOL.
+    // Skip SOL-derived fields for those events so we don't corrupt USD math.
+    const WSOL = 'So11111111111111111111111111111111111111112';
+    const isSolQuote = !ev.quoteMint || ev.quoteMint === WSOL;
     const patch: Partial<Token> = {
       pool: ev.pool ?? undefined,
-      vSolInBondingCurve: ev.vSolInBondingCurve ?? undefined,
-      vTokensInBondingCurve: ev.vTokensInBondingCurve ?? undefined,
-      marketCapSol: ev.marketCapSol ?? undefined,
-      bondingPct: bondingPctFor(ev.pool, ev.vSolInBondingCurve),
     };
+    if (isSolQuote) {
+      patch.vSolInBondingCurve = ev.vSolInBondingCurve ?? undefined;
+      patch.vTokensInBondingCurve = ev.vTokensInBondingCurve ?? undefined;
+      patch.marketCapSol = ev.marketCapSol ?? undefined;
+      patch.bondingPct = bondingPctFor(ev.pool, ev.vSolInBondingCurve);
+    }
     const existing = tokens.get(ev.mint);
     if (evName && !existing?.name) patch.name = evName;
     if (evSymbol && !existing?.symbol) patch.symbol = evSymbol;
@@ -412,7 +419,7 @@ function handleEvent(ev: Event) {
     if (metaUri && (!t.imageUri || !looksLikeImage(t.imageUri))) {
       resolveImageFromUri(ev.mint, metaUri).catch(() => {});
     }
-    if (typeof ev.marketCapSol === 'number' && t.firstMarketCapSol == null) {
+    if (isSolQuote && typeof ev.marketCapSol === 'number' && t.firstMarketCapSol == null) {
       t.firstMarketCapSol = ev.marketCapSol;
     }
     if (!t.name || !t.imageUri) backfillFromHelius(ev.mint);
@@ -424,9 +431,11 @@ function handleEvent(ev: Event) {
       t.bondingPct = 1;
       surfaceMigratedWhenReady(ev.mint);
     }
-    const solSize = typeof ev.solAmount === 'number' ? ev.solAmount
-      : typeof ev.sol === 'number' ? ev.sol : 0;
-    if (solSize > 0) t.solVolume = (t.solVolume ?? 0) + solSize;
+    if (isSolQuote) {
+      const solSize = typeof ev.solAmount === 'number' ? ev.solAmount
+        : typeof ev.sol === 'number' ? ev.sol : 0;
+      if (solSize > 0) t.solVolume = (t.solVolume ?? 0) + solSize;
+    }
     if (ev.txType === 'buy') t.buys++; else t.sells++;
   }
 }
