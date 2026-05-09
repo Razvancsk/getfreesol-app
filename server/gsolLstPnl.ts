@@ -1,9 +1,12 @@
+import { PublicKey } from '@solana/web3.js';
+import { getAssociatedTokenAddressSync } from '@solana/spl-token';
+
 const WSOL = 'So11111111111111111111111111111111111111112';
 const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
 const HELIUS_KEY = process.env.HELIUS_API_KEY;
 const SANCTUM_KEY = process.env.SANCTUM_API_KEY;
 const PAGE_LIMIT = 100;
-const MAX_TX = 2000;
+const MAX_TX = 5000; // ATA-scoped, so each tx is GSOL-related
 const TTL_MS = 5 * 60 * 1000;
 
 type RatePoint = { ts: number; rate: number };
@@ -97,11 +100,21 @@ function gsolDelta(tx: any, wallet: string): number {
 
 async function compute(wallet: string, currentRate: number, solPriceUsd: number): Promise<Result> {
   const history = await fetchRateHistory();
+
+  // Derive the user's GSOL associated token account — its tx history is
+  // GSOL-only, so we get full lifetime history in far fewer calls than
+  // scanning the wallet itself.
+  let scanAddress = wallet;
+  try {
+    const ata = getAssociatedTokenAddressSync(new PublicKey(GSOL_MINT), new PublicKey(wallet));
+    scanAddress = ata.toBase58();
+  } catch {}
+
   const all: any[] = [];
   let before: string | undefined;
   let reachedLimit = false;
   while (all.length < MAX_TX) {
-    const page = await fetchTxPage(wallet, before);
+    const page = await fetchTxPage(scanAddress, before);
     if (page.length === 0) break;
     all.push(...page);
     if (page.length < PAGE_LIMIT) break;
