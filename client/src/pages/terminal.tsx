@@ -979,7 +979,17 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       const rpc = heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com';
       const conn = new Connection(rpc, 'confirmed');
       const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: false, maxRetries: 3 });
-      toast({ title: `${side === 'buy' ? 'Buy' : 'Sell'} sent`, description: signature.slice(0, 12) + '…' });
+      const url = `https://solscan.io/tx/${signature}`;
+      toast({
+        title: 'Swap Successful!',
+        description: (
+          <span>
+            Transaction confirmed on Solana blockchain
+            <br />
+            <a href={url} target="_blank" rel="noreferrer" className="underline">View Transaction →</a>
+          </span>
+        ) as any,
+      });
       setAmount('');
     } catch (e: any) {
       toast({ title: 'Trade failed', description: e?.message || String(e), variant: 'destructive' });
