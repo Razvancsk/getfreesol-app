@@ -187,9 +187,6 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               </div>
             </div>
 
-            <p className="text-center text-white text-xs mt-3">
-              Data refreshed once per Solana epoch (~2 days) · {epochs.length} epochs recorded
-            </p>
           </>
         ) : (
           <div className="space-y-3">
