@@ -104,7 +104,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               ))}
             </div>
             <div className="h-[260px] w-full relative">
-              <div className="absolute top-0 right-9 text-[10px] text-white z-10 pointer-events-none">
+              <div className="absolute top-0 right-10 text-[10px] text-white z-10 pointer-events-none">
                 Display limit: 25% APY
               </div>
               {isLoading ? (
@@ -115,7 +115,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={last25.map(e => ({ ...e, apyPct: (e.apy ?? 0) * 100 }))}
-                    margin={{ top: 10, right: -5, left: 0, bottom: 25 }}
+                    margin={{ top: 10, right: 0, left: 5, bottom: 25 }}
                     barCategoryGap="15%"
                   >
                     <YAxis
@@ -124,11 +124,10 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                       domain={[0, 24]}
                       ticks={[0, 4, 8, 12, 16, 20, 24]}
                       tickFormatter={(v) => `${v}%`}
-                      tick={{ fill: '#ffffff', fontSize: 11, dx: -2 }}
+                      tick={{ fill: '#ffffff', fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
-                      width={32}
-                      mirror
+                      width={36}
                     />
                     <XAxis
                       dataKey="epoch"
