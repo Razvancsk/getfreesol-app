@@ -3677,28 +3677,17 @@ export default function SolRefund() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <Link href="/terminal">
-                      <Button
-                        className="bg-purple-800/60 hover:bg-purple-700/60 text-white rounded-lg px-3 py-2 text-xs font-medium border border-purple-500/30 flex items-center gap-1 h-auto"
-                        data-testid="button-terminal-mobile-guest"
-                      >
-                        <span>📟</span>
-                        <span>Terminal</span>
-                      </Button>
-                    </Link>
-                    <Button
-                      onClick={() => {
-                        select(null);
-                        setVisible(true);
-                      }}
-                      className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-                      title="Connect your wallet"
-                      data-testid="button-connect"
-                    >
-                      Connect
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => {
+                      select(null);
+                      setVisible(true);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+                    title="Connect your wallet"
+                    data-testid="button-connect"
+                  >
+                    Connect
+                  </Button>
                 )}
               </div>
             </div>
@@ -3773,28 +3762,17 @@ export default function SolRefund() {
                   </div>
                 </>
               ) : (
-                <div className="flex items-center gap-2">
-                  <Link href="/terminal">
-                    <Button
-                      className="bg-purple-800/60 hover:bg-purple-700/60 text-white rounded-lg px-3 py-2 text-sm font-medium border border-purple-500/30 flex items-center gap-1 h-auto"
-                      data-testid="button-terminal-desktop-guest"
-                    >
-                      <span>📟</span>
-                      <span>Terminal</span>
-                    </Button>
-                  </Link>
-                  <Button
-                    onClick={() => {
-                      select(null);
-                      setVisible(true);
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30 h-auto"
-                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
-                    data-testid="button-connect-desktop"
-                  >
-                    Connect Wallet
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => {
+                    select(null);
+                    setVisible(true);
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30 h-auto"
+                  title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
+                  data-testid="button-connect-desktop"
+                >
+                  Connect Wallet
+                </Button>
               )}
             </div>
               </>
@@ -3895,6 +3873,14 @@ export default function SolRefund() {
                 >
                   <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
                 </Button>
+                <Link href="/terminal">
+                  <Button
+                    className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30"
+                    data-testid="button-terminal-tab"
+                  >
+                    <span className="text-xl shrink-0">📟</span> Terminal
+                  </Button>
+                </Link>
                 {canViewPartners && (
                   <Link href="/partners">
                     <Button
@@ -7681,6 +7667,10 @@ export default function SolRefund() {
             <FaSackDollar style={{ width: '20px', height: '20px' }} />
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
           </button>
+          <Link href="/terminal" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#c084fc', textDecoration: 'none', cursor: 'pointer' }} data-testid="link-terminal-mobile-nav">
+            <span style={{ fontSize: '20px', lineHeight: 1 }}>📟</span>
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Terminal</span>
+          </Link>
           {canViewPartners && (
             <Link href="/partners" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#fde68a', textDecoration: 'none', cursor: 'pointer' }}>
               <span style={{ fontSize: '20px', lineHeight: 1 }}>🤝</span>
