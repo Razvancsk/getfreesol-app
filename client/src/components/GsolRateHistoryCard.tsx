@@ -75,10 +75,10 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
               </p>
             )}
           </div>
-          <div className="flex items-center gap-1 bg-purple-900/30 rounded-lg p-1 border border-white/20 shrink-0">
+          <div className="flex items-center bg-purple-900/30 rounded-lg border border-white/20 shrink-0 overflow-hidden">
             <button
               onClick={() => setView('overview')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
                 view === 'overview' ? 'bg-purple-600 text-white' : 'text-white hover:text-white'
               }`}
             >
@@ -86,7 +86,7 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
             </button>
             <button
               onClick={() => setView('position')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
                 view === 'position' ? 'bg-purple-600 text-white' : 'text-white hover:text-white'
               }`}
             >
