@@ -244,6 +244,39 @@ function pumpHeliusQueue() {
     });
   }
 }
+// Wait until a token has BOTH name and imageUri before surfacing it in any
+// feed list. Polls every 200ms and gives up after 60s if metadata never lands.
+function isReady(mint: string): boolean {
+  const t = tokens.get(mint);
+  return !!t && !!t.name && !!t.imageUri;
+}
+function waitForReady(mint: string, onReady: () => void) {
+  if (isReady(mint)) { onReady(); return; }
+  backfillFromHelius(mint);
+  const start = Date.now();
+  const tick = () => {
+    if (!tokens.get(mint)) return;
+    if (isReady(mint)) { onReady(); return; }
+    if (Date.now() - start > 60_000) return; // give up silently
+    setTimeout(tick, 200);
+  };
+  setTimeout(tick, 200);
+}
+function surfaceNewWhenReady(mint: string) {
+  waitForReady(mint, () => {
+    if (newOrder.includes(mint)) return;
+    newOrder.unshift(mint);
+    while (newOrder.length > MAX_NEW) newOrder.pop();
+  });
+}
+function surfaceMigratedWhenReady(mint: string) {
+  waitForReady(mint, () => {
+    if (migratedOrder.includes(mint)) return;
+    migratedOrder.unshift(mint);
+    while (migratedOrder.length > MAX_MIGRATED) migratedOrder.pop();
+  });
+}
+
 function backfillFromHelius(mint: string) {
   const t = tokens.get(mint);
   if (!t) return;
@@ -321,30 +354,9 @@ function handleEvent(ev: Event) {
     if (metaUri && (!directImg || !looksLikeImage(directImg))) {
       resolveImageFromUri(ev.mint, metaUri).catch(() => {});
     }
-    // Pre-fetch image so the card never appears blank. Add to "New" only
-    // once name+image are ready (or after a short safety timeout).
-    const t0 = tokens.get(ev.mint);
-    const surfaceWhenReady = () => {
-      if (newOrder.includes(ev.mint)) return;
-      newOrder.unshift(ev.mint);
-      while (newOrder.length > MAX_NEW) newOrder.pop();
-    };
-    if (t0 && t0.name && t0.imageUri) {
-      surfaceWhenReady();
-    } else {
-      if (t0 && (!t0.name || !t0.imageUri)) backfillFromHelius(ev.mint);
-      const start = Date.now();
-      const tick = () => {
-        const tt = tokens.get(ev.mint);
-        if (!tt) return;
-        if ((tt.name && tt.imageUri) || Date.now() - start > 4000) {
-          surfaceWhenReady();
-        } else {
-          setTimeout(tick, 200);
-        }
-      };
-      setTimeout(tick, 200);
-    }
+    // Add to "New" only once name+image are both ready. No safety timeout —
+    // if metadata never arrives, the token is simply not shown.
+    surfaceNewWhenReady(ev.mint);
     return;
   }
 
@@ -371,11 +383,7 @@ function handleEvent(ev: Event) {
     if (metaUri && (!t.imageUri || !looksLikeImage(t.imageUri))) {
       resolveImageFromUri(ev.mint, metaUri).catch(() => {});
     }
-    if (!migratedOrder.includes(ev.mint)) {
-      migratedOrder.unshift(ev.mint);
-      while (migratedOrder.length > MAX_MIGRATED) migratedOrder.pop();
-    }
-    if (!t.name || !t.imageUri) backfillFromHelius(ev.mint);
+    surfaceMigratedWhenReady(ev.mint);
     return;
   }
 
@@ -414,10 +422,7 @@ function handleEvent(ev: Event) {
       t.migrated = true;
       t.migratedAt = ts;
       t.bondingPct = 1;
-      if (!migratedOrder.includes(ev.mint)) {
-        migratedOrder.unshift(ev.mint);
-        while (migratedOrder.length > MAX_MIGRATED) migratedOrder.pop();
-      }
+      surfaceMigratedWhenReady(ev.mint);
     }
     const solSize = typeof ev.solAmount === 'number' ? ev.solAmount
       : typeof ev.sol === 'number' ? ev.sol : 0;
@@ -527,7 +532,7 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
   }
   // bonding: any bonding-curve launchpad, not migrated, ≥ threshold, sorted desc
   return [...tokens.values()]
-    .filter((t) => !t.migrated && isBondingPool(t.pool) && (t.bondingPct ?? 0) >= ALMOST_BOND_THRESHOLD && (t.bondingPct ?? 0) < 1)
+    .filter((t) => !!t.name && !!t.imageUri && !t.migrated && isBondingPool(t.pool) && (t.bondingPct ?? 0) >= ALMOST_BOND_THRESHOLD && (t.bondingPct ?? 0) < 1)
     .sort((a, b) => (b.bondingPct ?? 0) - (a.bondingPct ?? 0))
     .slice(0, limit)
     .map(serialize);
