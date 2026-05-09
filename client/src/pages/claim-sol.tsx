@@ -3164,9 +3164,9 @@ export default function SolRefund() {
     setSelectedTokens(new Set());
   };
 
-  // Calculate total SOL user receives (flat 0.002 SOL per account)
+  // Calculate total SOL user receives (90% of rent per account, 10% platform fee)
   const calculateTotalSOL = (count: number) => {
-    const netAmount = count * 0.002;
+    const netAmount = count * 0.00186;
     return `${netAmount.toFixed(6)}`;
   };
 
@@ -7285,7 +7285,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">You receive ~0.0018 SOL per account (10% fee)</span>
+                  <span className="text-sm">You receive ~0.00186 SOL per account (10% fee)</span>
                 </div>
               </div>
             </div>
