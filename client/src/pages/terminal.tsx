@@ -476,45 +476,36 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           <div className="text-center text-white/50 py-16">Loading token…</div>
         )}
 
-        <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 rounded-2xl border border-purple-500/20 p-4 md:p-5 mb-4">
-          <div className="flex items-center gap-3">
+        <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 rounded-2xl border border-purple-500/20 p-5 md:p-6 mb-4">
+          <div className="flex flex-col items-center text-center gap-3">
             {info?.icon ? (
-              <img src={info.icon} className="w-14 h-14 rounded-xl object-cover" alt="" />
+              <img src={info.icon} className="w-20 h-20 rounded-full object-cover" alt="" />
             ) : (
-              <div className="w-14 h-14 rounded-xl bg-purple-700" />
+              <div className="w-20 h-20 rounded-full bg-purple-700" />
             )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xl md:text-2xl font-bold truncate">{info?.name || 'Unknown'}</span>
-                <span className="text-sm text-white/60">${info?.symbol || ''}</span>
-                {info?.isVerified && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
-                )}
-              </div>
-              <div className="text-xs text-white/40 font-mono truncate">{mint}</div>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <div className="text-xl md:text-2xl font-bold tabular-nums">{fmtPriceUsd(info?.usdPrice)}</div>
-              <div className={`text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
-                {pct24 != null && Number.isFinite(pct24) ? `${pctUp ? '+' : ''}${pct24.toFixed(2)}%` : '—'}
-              </div>
+            <div>
+              <div className="text-2xl md:text-3xl font-bold text-white">{info?.symbol || '—'}</div>
+              <div className="text-sm text-white/60 mt-0.5">{info?.name || 'Unknown'}</div>
+              {info?.isVerified && (
+                <span className="inline-block mt-2 text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
+              )}
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-            {[
-              { label: 'LIQUIDITY', value: fmtUsd(info?.liquidity) },
-              { label: 'MARKET CAP', value: fmtUsd(info?.mcap) },
-              { label: '24H VOL', value: fmtUsd(((Number(s24.buyVolume)||0) + (Number(s24.sellVolume)||0)) || undefined) },
-              { label: '24H TXNS', value: fmtCount(((Number(s24.numBuys)||0) + (Number(s24.numSells)||0)) || info?.holderCount) },
-            ].map((s) => (
-              <div key={s.label} className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-5 py-4 text-center">
-                <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">{s.label}</div>
-                <div className="text-white text-2xl md:text-3xl font-bold tabular-nums mt-1">{s.value}</div>
-              </div>
-            ))}
-          </div>
-
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          {[
+            { label: 'PRICE', value: fmtPriceUsd(info?.usdPrice), extra: pct24 != null && Number.isFinite(pct24) ? `${pctUp ? '+' : ''}${pct24.toFixed(2)}%` : null, extraColor: pctUp ? 'text-green-400' : 'text-red-400' },
+            { label: 'LIQUIDITY', value: fmtUsd(info?.liquidity) },
+            { label: 'MARKET CAP', value: fmtUsd(info?.mcap) },
+            { label: '24H VOL', value: fmtUsd(((Number(s24.buyVolume)||0) + (Number(s24.sellVolume)||0)) || undefined) },
+          ].map((s) => (
+            <div key={s.label} className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-5 py-4 text-center">
+              <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">{s.label}</div>
+              <div className="text-white text-2xl md:text-3xl font-bold tabular-nums mt-1">{s.value}</div>
+              {s.extra && <div className={`text-sm font-medium mt-1 ${s.extraColor}`}>{s.extra}</div>}
+            </div>
+          ))}
         </div>
 
         <div className="flex gap-2 mb-3">
