@@ -187,9 +187,6 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                   <div className="text-green-400 font-black text-2xl mt-1">
                     +{yearlyEarnings.toFixed(4)} SOL
                   </div>
-                  <div className="text-white text-xs mt-1">
-                    At current {displayApy !== null ? displayApy.toFixed(1) : '—'}% APY
-                  </div>
                 </div>
               </>
             )}
