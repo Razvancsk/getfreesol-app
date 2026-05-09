@@ -143,6 +143,8 @@ function evictIfNeeded() {
   for (const k of tokens.keys()) {
     if (i++ >= toRemove) break;
     tokens.delete(k); // oldest first since Map preserves insertion order
+    heliusTried.delete(k);
+    heliusAttempts.delete(k);
   }
 }
 
@@ -158,6 +160,100 @@ function ipfsToHttp(u: string): string {
 function looksLikeImage(u: string): boolean {
   return /\.(png|jpe?g|gif|webp|svg|avif)(\?|$)/i.test(u);
 }
+// Backfill name/symbol/image for tokens whose `create` event we missed
+// (e.g. they were born before our WS connected). Uses Helius DAS `getAsset`,
+// which returns the on-chain Metaplex metadata + off-chain JSON in one call.
+const heliusTried = new Set<string>();
+const heliusInflight = new Set<string>();
+const heliusAttempts = new Map<string, number>();
+const HELIUS_MAX_ATTEMPTS = 40; // ~10 minutes with capped back-off
+let heliusActive = 0;
+const HELIUS_MAX_CONCURRENT = 4;
+const heliusQueue: string[] = [];
+// Returns 'done' when token now has name+image (or is permanently empty),
+// 'retry' when Helius hasn't indexed it yet or hit a transient error.
+async function runHeliusFor(mint: string): Promise<'done' | 'retry'> {
+  const key = process.env.HELIUS_API_KEY;
+  if (!key) return 'done';
+  try {
+    const ctl = new AbortController();
+    const to = setTimeout(() => ctl.abort(), 8000);
+    const r = await fetch(`https://mainnet.helius-rpc.com/?api-key=${key}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0', id: '1', method: 'getAsset',
+        params: { id: mint, displayOptions: { showFungible: true } },
+      }),
+      signal: ctl.signal,
+    });
+    clearTimeout(to);
+    if (!r.ok) return 'retry';
+    const j: any = await r.json().catch(() => null);
+    const a = j?.result;
+    if (!a) return 'retry'; // not indexed yet
+    const meta = a.content?.metadata || {};
+    const ext = a.mint_extensions?.metadata || {};
+    const tinfo = a.token_info || {};
+    const name = (meta.name || ext.name) as string | undefined;
+    const symbol = (meta.symbol || ext.symbol || tinfo.symbol) as string | undefined;
+    const linkImg = a.content?.links?.image as string | undefined;
+    const filesImg = (a.content?.files || []).find((f: any) => typeof f?.uri === 'string')?.uri as string | undefined;
+    const img = linkImg || filesImg;
+    const t = tokens.get(mint);
+    if (!t) return 'done';
+    if (name && !t.name) t.name = name;
+    if (symbol && !t.symbol) t.symbol = symbol;
+    if (img && !t.imageUri) t.imageUri = ipfsToHttp(img);
+    if (t.name && t.imageUri) return 'done';
+    return 'retry'; // partial/empty → keep trying as Helius indexes more
+  } catch {
+    return 'retry';
+  }
+}
+function pumpHeliusQueue() {
+  while (heliusActive < HELIUS_MAX_CONCURRENT && heliusQueue.length) {
+    const mint = heliusQueue.shift()!;
+    if (heliusTried.has(mint)) continue;
+    if (heliusInflight.has(mint)) continue;
+    heliusInflight.add(mint);
+    heliusActive++;
+    runHeliusFor(mint).then((res) => {
+      const n = (heliusAttempts.get(mint) || 0) + 1;
+      heliusAttempts.set(mint, n);
+      if (res === 'done' || n >= HELIUS_MAX_ATTEMPTS) {
+        heliusTried.add(mint);
+      } else {
+        // Exponential-ish back-off: 2s, 4s, 6s, 8s, ...
+        const delay = Math.min(2000 * n, 15000);
+        setTimeout(() => {
+          if (heliusTried.has(mint)) return;
+          if (heliusInflight.has(mint)) return;
+          if (heliusQueue.includes(mint)) return;
+          const t = tokens.get(mint);
+          if (!t) return;
+          if (t.name && t.imageUri) return;
+          heliusQueue.push(mint);
+          pumpHeliusQueue();
+        }, delay);
+      }
+    }).finally(() => {
+      heliusActive--;
+      heliusInflight.delete(mint);
+      setTimeout(pumpHeliusQueue, 100);
+    });
+  }
+}
+function backfillFromHelius(mint: string) {
+  const t = tokens.get(mint);
+  if (!t) return;
+  if (t.name && t.imageUri) return;
+  if (heliusTried.has(mint) || heliusInflight.has(mint)) return;
+  if (heliusQueue.includes(mint)) return;
+  heliusQueue.push(mint);
+  pumpHeliusQueue();
+}
+
 async function resolveImageFromUri(mint: string, uri: string) {
   if (metaCache.has(uri)) {
     const img = metaCache.get(uri);
@@ -229,6 +325,10 @@ function handleEvent(ev: Event) {
     // Moonshot, etc. (the pumpapi.io stream covers every supported launchpad).
     newOrder.unshift(ev.mint);
     while (newOrder.length > MAX_NEW) newOrder.pop();
+    // If the create event lacked a usable image (or IPFS is slow), fall back to
+    // Helius DAS so the card never stays blank.
+    const t = tokens.get(ev.mint);
+    if (t && (!t.name || !t.imageUri)) backfillFromHelius(ev.mint);
     return;
   }
 
@@ -259,6 +359,7 @@ function handleEvent(ev: Event) {
       migratedOrder.unshift(ev.mint);
       while (migratedOrder.length > MAX_MIGRATED) migratedOrder.pop();
     }
+    if (!t.name || !t.imageUri) backfillFromHelius(ev.mint);
     return;
   }
 
@@ -290,6 +391,7 @@ function handleEvent(ev: Event) {
     if (typeof ev.marketCapSol === 'number' && t.firstMarketCapSol == null) {
       t.firstMarketCapSol = ev.marketCapSol;
     }
+    if (!t.name || !t.imageUri) backfillFromHelius(ev.mint);
     // If we see this token trading on a post-graduation AMM pool, mark migrated
     // even when we never received an explicit `migrate`/`createPool` event.
     if (!t.migrated && isMigratedPool(ev.pool)) {
