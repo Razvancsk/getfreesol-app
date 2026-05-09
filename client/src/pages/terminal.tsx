@@ -1038,8 +1038,8 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-white">Referral Fee</span>
-                <span className="text-white font-semibold">0.10%</span>
+                <span className="text-white">Fee</span>
+                <span className="text-white font-semibold">0.50%</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-white">Slippage</span>
