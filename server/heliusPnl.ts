@@ -31,10 +31,11 @@ function cachePut(wallet: string, entry: CacheEntry) {
   }
 }
 
-async function fetchSwapPage(wallet: string, before?: string): Promise<any[]> {
+async function fetchTxPage(wallet: string, before?: string): Promise<any[]> {
+  // No type filter: capture SWAPs, stake-pool deposits/withdrawals (Sanctum mints GSOL),
+  // and any other tx where wallet exchanges SOL for a token (or vice versa).
   const url = new URL(`https://api.helius.xyz/v0/addresses/${wallet}/transactions`);
   url.searchParams.set('api-key', HELIUS_KEY!);
-  url.searchParams.set('type', 'SWAP');
   url.searchParams.set('limit', String(PAGE_LIMIT));
   if (before) url.searchParams.set('before', before);
   const r = await fetch(url.toString());
@@ -131,7 +132,7 @@ async function computeFresh(wallet: string): Promise<CacheEntry> {
   let before: string | undefined;
   let reachedLimit = false;
   while (all.length < MAX_TX) {
-    const page = await fetchSwapPage(wallet, before);
+    const page = await fetchTxPage(wallet, before);
     if (page.length === 0) break;
     all.push(...page);
     if (page.length < PAGE_LIMIT) break;
