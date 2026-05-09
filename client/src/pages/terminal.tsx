@@ -583,48 +583,6 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           <div className="text-center text-white/50 py-16">Loading token…</div>
         )}
 
-        <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-4 py-4 md:px-5 md:py-4 mb-4 w-full md:w-auto md:min-w-[480px] md:inline-flex md:max-w-full">
-          <div className="flex items-center gap-3">
-            {(() => {
-              const t: Token = (liveData?.live as Token) || readCachedToken(mint) || ({ mint } as Token);
-              const tokenForAvatar: Token = {
-                ...t,
-                mint,
-                name: t.name || info?.name,
-                symbol: t.symbol || info?.symbol,
-                imageUri: t.imageUri || info?.icon,
-              };
-              const bondPct = Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
-              const isMigrated = !!t.migrated || (t.bondingPct ?? 0) >= 1 || !!(info as any)?.graduatedPool;
-              return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isMigrated} size={80} />;
-            })()}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xl md:text-2xl font-bold text-white leading-tight">{info?.symbol || '—'}</span>
-                <span className="text-sm md:text-base text-white/60 truncate">{info?.name || 'Unknown'}</span>
-                {info?.isVerified && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-0.5 text-xs text-white/50">
-                {info?.firstPool?.createdAt && (
-                  <span>{relAge(info.firstPool.createdAt)}</span>
-                )}
-                <span className="font-mono">{shortMint(mint)}</span>
-                <button
-                  onClick={() => navigator.clipboard.writeText(mint).catch(() => {})}
-                  className="text-white/50 hover:text-white"
-                  data-testid="button-copy-mint"
-                  aria-label="Copy mint"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <SocialIcons socials={pickSocials(info)} mint={mint} />
-            </div>
-          </div>
-        </div>
-
         <div className="lg:flex lg:gap-4 mb-4">
           <div className="hidden lg:block flex-1 min-w-0 rounded-xl overflow-hidden border border-white/10 bg-black">
             <iframe
@@ -636,6 +594,48 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           </div>
 
           <div className="lg:w-[360px] lg:shrink-0 space-y-3">
+            <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-4 py-4">
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const t: Token = (liveData?.live as Token) || readCachedToken(mint) || ({ mint } as Token);
+                  const tokenForAvatar: Token = {
+                    ...t,
+                    mint,
+                    name: t.name || info?.name,
+                    symbol: t.symbol || info?.symbol,
+                    imageUri: t.imageUri || info?.icon,
+                  };
+                  const bondPct = Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
+                  const isMigrated = !!t.migrated || (t.bondingPct ?? 0) >= 1 || !!(info as any)?.graduatedPool;
+                  return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isMigrated} size={80} />;
+                })()}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xl md:text-2xl font-bold text-white leading-tight">{info?.symbol || '—'}</span>
+                    <span className="text-sm md:text-base text-white/60 truncate">{info?.name || 'Unknown'}</span>
+                    {info?.isVerified && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-white/50">
+                    {info?.firstPool?.createdAt && (
+                      <span>{relAge(info.firstPool.createdAt)}</span>
+                    )}
+                    <span className="font-mono">{shortMint(mint)}</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(mint).catch(() => {})}
+                      className="text-white/50 hover:text-white"
+                      data-testid="button-copy-mint"
+                      aria-label="Copy mint"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <SocialIcons socials={pickSocials(info)} mint={mint} />
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-4 lg:grid-cols-2 gap-2 md:gap-3">
               {(() => {
                 const live: any = liveData?.live || {};
