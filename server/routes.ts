@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
+import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -741,24 +742,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (process.env.JUPITER_API_KEY) headers['x-api-key'] = process.env.JUPITER_API_KEY;
       const WSOL = 'So11111111111111111111111111111111111111112';
       type Holding = { mint: string; qty: number };
-      const heldTokens: Holding[] = [];
+      const byMint: Record<string, number> = {};
       try {
         const hr = await fetch(`https://api.jup.ag/ultra/v1/holdings/${address}`, { headers });
         if (hr.ok) {
           const hd: any = await hr.json();
-          // Native SOL
           const solQty = Number(hd?.uiAmount ?? 0);
-          if (solQty > 0) heldTokens.push({ mint: WSOL, qty: solQty });
+          if (solQty > 0) byMint[WSOL] = (byMint[WSOL] || 0) + solQty;
           const tokens = hd?.tokens || {};
           for (const [mint, accs] of Object.entries<any>(tokens)) {
             if (!Array.isArray(accs)) continue;
             const qty = accs.reduce((a: number, v: any) => a + Number(v?.uiAmount ?? 0), 0);
-            if (qty > 0) heldTokens.push({ mint, qty });
+            if (qty > 0) byMint[mint] = (byMint[mint] || 0) + qty;
           }
         }
       } catch (e) {
         console.error('Holdings fetch failed:', e);
       }
+      const heldTokens: Holding[] = Object.entries(byMint).map(([mint, qty]) => ({ mint, qty }));
 
       // Symbol fallback for held tokens not in our swap records
       const knownSymbols: Record<string, string> = {
@@ -780,9 +781,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch {}
       }
 
+      // Helius-based PnL (FIFO, SOL-denominated cost basis from on-chain swap history)
+      let pnl: any = null;
+      try {
+        pnl = await computeWalletPnl(address);
+      } catch (e: any) {
+        console.error('Helius PnL failed:', e?.message || e);
+      }
+
+      const solPx = Number(prices[WSOL]?.usdPrice ?? 0);
+
       let currentValue = 0;
       let pnl24h = 0;
       let valueYesterday = 0;
+      let unrealizedSolTotal = 0;
+      let costBasisSolTotal = 0;
       const positions: any[] = [];
       for (const h of heldTokens) {
         const p: any = prices[h.mint] || {};
@@ -800,6 +813,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           valueYesterday += valYesterday;
         }
         currentValue += val;
+
+        // Cost basis from Helius FIFO lots
+        const lots = pnl?.lots?.[h.mint];
+        const costSol = remainingCostSol(lots);
+        const trackedQty = remainingQty(lots);
+        let unrealizedSol: number | null = null;
+        let unrealizedUsd: number | null = null;
+        let unrealizedPct: number | null = null;
+        let avgCostUsd: number | null = null;
+        if (h.mint === WSOL) {
+          // SOL itself: no cost basis tracking, skip unrealized
+        } else if (costSol > 0 && trackedQty > 0 && solPx > 0) {
+          const proportionalCost = costSol * Math.min(1, h.qty / trackedQty);
+          const currentValSol = px > 0 ? (val / solPx) : 0;
+          unrealizedSol = currentValSol - proportionalCost;
+          unrealizedUsd = unrealizedSol * solPx;
+          const costUsd = proportionalCost * solPx;
+          unrealizedPct = costUsd > 0 ? (unrealizedUsd / costUsd) * 100 : null;
+          avgCostUsd = trackedQty > 0 ? (costSol * solPx) / trackedQty : null;
+          unrealizedSolTotal += unrealizedSol;
+          costBasisSolTotal += proportionalCost;
+        }
+
         positions.push({
           mint: h.mint,
           symbol: symbols[h.mint] || knownSymbols[h.mint],
@@ -809,9 +845,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           priceChange24h: Number.isFinite(chg) ? chg : null,
           pnl24h: tokenPnl24h,
           pnl24hPct: tokenPnl24h !== null && pxYesterday ? ((px - pxYesterday) / pxYesterday) * 100 : null,
+          avgCostUsd,
+          unrealizedUsd,
+          unrealizedPct,
         });
       }
       positions.sort((a, b) => b.currentValue - a.currentValue);
+
+      const realizedUsd = pnl && solPx > 0 ? pnl.realizedSol * solPx : null;
+      const unrealizedUsdTotal = solPx > 0 ? unrealizedSolTotal * solPx : null;
+      const totalUsd = realizedUsd !== null && unrealizedUsdTotal !== null ? realizedUsd + unrealizedUsdTotal : null;
 
       res.json({
         wallet: address,
@@ -819,6 +862,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         valueYesterday,
         pnl24h,
         pnl24hPct: valueYesterday > 0 ? (pnl24h / valueYesterday) * 100 : null,
+        realized: realizedUsd,
+        unrealized: unrealizedUsdTotal,
+        total: totalUsd,
+        costBasisUsd: solPx > 0 ? costBasisSolTotal * solPx : null,
+        swapsCount: pnl?.txCount ?? 0,
+        cached: pnl?.cached ?? false,
+        reachedLimit: pnl?.reachedLimit ?? false,
+        untrackedSells: pnl?.untrackedSells ?? 0,
         positions,
       });
     } catch (e: any) {

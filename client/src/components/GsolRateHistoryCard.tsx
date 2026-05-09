@@ -189,47 +189,51 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                   const fmtUsd = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(Math.abs(n) >= 100 ? 2 : 4)}`;
                   const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
                   const totalValue = Number(jupPortfolio?.currentValue ?? 0);
-                  const pnl24h = Number(jupPortfolio?.pnl24h ?? NaN);
-                  const pnl24hPct = Number(jupPortfolio?.pnl24hPct ?? NaN);
+                  const realized = jupPortfolio?.realized;
+                  const unrealized = jupPortfolio?.unrealized;
+                  const total = jupPortfolio?.total;
+                  const swapsCount = Number(jupPortfolio?.swapsCount ?? 0);
                   const positions: any[] = Array.isArray(jupPortfolio?.positions) ? jupPortfolio.positions : [];
+
+                  const Stat = ({ label, val }: { label: string; val: any }) => {
+                    const n = Number(val);
+                    const has = val !== null && val !== undefined && Number.isFinite(n);
+                    return (
+                      <div>
+                        <div className="text-white/70 text-xs">{label}</div>
+                        {has ? (
+                          <div className={`font-black text-lg ${n >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {(n >= 0 ? '+' : '') + fmtUsd(n)}
+                          </div>
+                        ) : <div className="text-white/70 text-sm">—</div>}
+                      </div>
+                    );
+                  };
 
                   return (
                     <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="text-white text-sm font-semibold">Portfolio · 24h PnL</div>
-                        {walletAddress && (
-                          <a
-                            href={`https://jup.ag/portfolio/${walletAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11px] text-purple-200 hover:text-white underline"
-                          >
-                            All-time on Jupiter ↗
-                          </a>
-                        )}
+                        <div>
+                          <div className="text-white text-sm font-semibold">Portfolio PnL</div>
+                          <div className="text-white/50 text-[10px]">
+                            {swapsCount} swaps · FIFO via Helius
+                            {jupPortfolio?.reachedLimit && ' · history capped'}
+                            {Number(jupPortfolio?.untrackedSells) > 0 && ` · ${jupPortfolio.untrackedSells} untracked sell(s)`}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-white/70 text-[10px]">Value</div>
+                          <div className="text-white font-bold text-base">{fmtUsd(totalValue)}</div>
+                        </div>
                       </div>
                       {jupPortfolioLoading ? (
-                        <div className="text-white/70 text-sm">Loading…</div>
+                        <div className="text-white/70 text-sm">Loading PnL…</div>
                       ) : (
                         <>
-                          <div className="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                              <div className="text-white/70 text-xs">Total Value</div>
-                              <div className="text-white font-black text-lg">{fmtUsd(totalValue)}</div>
-                            </div>
-                            <div>
-                              <div className="text-white/70 text-xs">24h PnL</div>
-                              {Number.isFinite(pnl24h) ? (
-                                <>
-                                  <div className={`font-black text-lg ${pnl24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    {(pnl24h >= 0 ? '+' : '') + fmtUsd(pnl24h)}
-                                  </div>
-                                  {Number.isFinite(pnl24hPct) && (
-                                    <div className={`text-[11px] ${pnl24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPct(pnl24hPct)}</div>
-                                  )}
-                                </>
-                              ) : <div className="text-white/70 text-sm">—</div>}
-                            </div>
+                          <div className="grid grid-cols-3 gap-3 mb-3">
+                            <Stat label="Unrealized" val={unrealized} />
+                            <Stat label="Realized" val={realized} />
+                            <Stat label="Total" val={total} />
                           </div>
                           {positions.length > 0 && (
                             <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1 border-t border-white/10 pt-3">
@@ -237,18 +241,23 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                                 const qty = Number(p.qty);
                                 const val = Number(p.currentValue);
                                 const px = Number(p.currentPrice);
-                                const u = Number(p.pnl24h);
-                                const pct = Number(p.pnl24hPct);
+                                const u = Number(p.unrealizedUsd);
+                                const pct = Number(p.unrealizedPct);
+                                const avg = Number(p.avgCostUsd);
                                 const sym = p.symbol || `${String(p.mint).slice(0, 4)}…${String(p.mint).slice(-4)}`;
                                 const qtyStr = qty >= 1 ? qty.toLocaleString(undefined, { maximumFractionDigits: 4 }) : qty.toFixed(6);
+                                const hasU = p.unrealizedUsd !== null && p.unrealizedUsd !== undefined && Number.isFinite(u);
                                 return (
                                   <div key={p.mint} className="flex items-center justify-between text-xs bg-black/20 rounded-lg px-3 py-2">
                                     <div className="min-w-0">
                                       <div className="text-white font-semibold truncate">{sym}</div>
-                                      <div className="text-white/50 text-[10px]">{qtyStr} · {fmtUsd(val)}</div>
+                                      <div className="text-white/50 text-[10px]">
+                                        {qtyStr} · {fmtUsd(val)}
+                                        {Number.isFinite(avg) && ` · avg ${fmtUsd(avg)}`}
+                                      </div>
                                     </div>
                                     <div className="text-right shrink-0 ml-2">
-                                      {Number.isFinite(u) ? (
+                                      {hasU ? (
                                         <>
                                           <div className={`font-bold ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                             {(u >= 0 ? '+' : '') + fmtUsd(u)}
