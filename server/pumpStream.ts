@@ -321,14 +321,30 @@ function handleEvent(ev: Event) {
     if (metaUri && (!directImg || !looksLikeImage(directImg))) {
       resolveImageFromUri(ev.mint, metaUri).catch(() => {});
     }
-    // Surface ALL launchpad mints in "New" — pump.fun, LetsBonk, Meteora, Bags,
-    // Moonshot, etc. (the pumpapi.io stream covers every supported launchpad).
-    newOrder.unshift(ev.mint);
-    while (newOrder.length > MAX_NEW) newOrder.pop();
-    // If the create event lacked a usable image (or IPFS is slow), fall back to
-    // Helius DAS so the card never stays blank.
-    const t = tokens.get(ev.mint);
-    if (t && (!t.name || !t.imageUri)) backfillFromHelius(ev.mint);
+    // Pre-fetch image so the card never appears blank. Add to "New" only
+    // once name+image are ready (or after a short safety timeout).
+    const t0 = tokens.get(ev.mint);
+    const surfaceWhenReady = () => {
+      if (newOrder.includes(ev.mint)) return;
+      newOrder.unshift(ev.mint);
+      while (newOrder.length > MAX_NEW) newOrder.pop();
+    };
+    if (t0 && t0.name && t0.imageUri) {
+      surfaceWhenReady();
+    } else {
+      if (t0 && (!t0.name || !t0.imageUri)) backfillFromHelius(ev.mint);
+      const start = Date.now();
+      const tick = () => {
+        const tt = tokens.get(ev.mint);
+        if (!tt) return;
+        if ((tt.name && tt.imageUri) || Date.now() - start > 4000) {
+          surfaceWhenReady();
+        } else {
+          setTimeout(tick, 200);
+        }
+      };
+      setTimeout(tick, 200);
+    }
     return;
   }
 
