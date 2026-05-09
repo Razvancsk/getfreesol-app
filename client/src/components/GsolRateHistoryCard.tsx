@@ -188,12 +188,12 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                 {(() => {
                   const fmtUsd = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(Math.abs(n) >= 100 ? 2 : 4)}`;
                   const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
-                  const unrealized = Number(jupPortfolio?.unrealized ?? NaN);
-                  const realized = Number(jupPortfolio?.realized ?? NaN);
-                  const totalPnl = Number(jupPortfolio?.total ?? NaN);
+                  const unrealized = Number(jupPortfolio?.unrealized ?? 0);
+                  const realized = Number(jupPortfolio?.realized ?? 0);
+                  const totalPnl = Number(jupPortfolio?.total ?? (unrealized + realized));
                   const unrealizedPct = Number(jupPortfolio?.unrealizedPct ?? NaN);
                   const swapsCount = Number(jupPortfolio?.swapsCount ?? 0);
-                  const hasPnl = swapsCount > 0 && (Number.isFinite(unrealized) || Number.isFinite(realized) || Number.isFinite(totalPnl));
+                  const hasPnl = true;
 
                   return (
                     <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
