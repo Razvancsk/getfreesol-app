@@ -2253,10 +2253,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Fee: platform takes everything above 0.002 SOL per account (user always gets 0.002 SOL back)
-      const USER_PAYOUT_PER_ACCOUNT = 2_000_000; // 0.002 SOL returned to user per account
-      const userPayoutLamports = bufferAddresses.length * USER_PAYOUT_PER_ACCOUNT;
-      const totalFeeLamports = Math.max(0, totalLamports - userPayoutLamports);
+      // Fee: 10% platform fee on rent reclaimed (user gets 90%)
+      const PLATFORM_FEE_BPS = 1000; // 10%
+      const totalFeeLamports = Math.floor(totalLamports * PLATFORM_FEE_BPS / 10000);
+      const userPayoutLamports = totalLamports - totalFeeLamports;
       
       // Split: 50% platform, 50% referral (if exists)
       const referralFeeLamports = referralCodeData ? Math.floor(totalFeeLamports * 0.5) : 0;
@@ -2598,13 +2598,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Fee: platform takes everything above 0.002 SOL per account (user always gets 0.002 SOL back per account)
+      // Fee: 10% platform fee on rent reclaimed (user gets 90%)
       const walletFeeRates = await getWalletFeeRates(walletAddress);
       const REFERRAL_SPLIT_PERCENT = walletFeeRates.referralPercent;
-      const USER_PAYOUT_LAMPORTS = 2_000_000; // 0.002 SOL returned to user per account
+      const PLATFORM_FEE_BPS = 1000; // 10%
       const numAccountsClosed = validAccountsForTx.length;
-      const userPayoutTotal = numAccountsClosed * USER_PAYOUT_LAMPORTS;
-      const totalFeeLamports = Math.max(0, actualRecoveredLamports - userPayoutTotal);
+      const totalFeeLamports = Math.floor(actualRecoveredLamports * PLATFORM_FEE_BPS / 10000);
+      const userPayoutTotal = actualRecoveredLamports - totalFeeLamports;
 
       let referralFeeLamports = 0;
       let platformFeeLamports = totalFeeLamports;
