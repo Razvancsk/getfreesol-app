@@ -75,7 +75,7 @@ function TokenAvatar({ token, bondPct, migrated }: { token: Token; bondPct: numb
   const color = colorFor(token.mint);
   const showImg = token.imageUri && !failed;
   const SIZE = 92;
-  const IMG = 76;
+  const IMG = 84;
   const STROKE = 3;
   const RX = 14;
   const pct = migrated ? 100 : Math.max(0, Math.min(100, bondPct));
