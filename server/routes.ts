@@ -11208,11 +11208,18 @@ Claimer: ${walletAddress}`;
       if (_rateHistoryCache && Date.now() - _rateHistoryCache.cachedAt < RATE_HISTORY_CACHE_MS) {
         return res.json(_rateHistoryCache);
       }
-      const sanctumRes = await fetch(
-        `https://sanctum-api.ironforge.network/lsts/${GSOL_MINT_ADDR}/apys?apiKey=${process.env.SANCTUM_API_KEY}&limit=500`
-      );
+      const [sanctumRes, latestRes] = await Promise.all([
+        fetch(`https://sanctum-api.ironforge.network/lsts/${GSOL_MINT_ADDR}/apys?apiKey=${process.env.SANCTUM_API_KEY}&limit=500`),
+        fetch(`https://sanctum-api.ironforge.network/lsts/${GSOL_MINT_ADDR}?apiKey=${process.env.SANCTUM_API_KEY}`),
+      ]);
       if (!sanctumRes.ok) throw new Error(`Sanctum apys ${sanctumRes.status}`);
       const sanctumData = await sanctumRes.json();
+      let latestApy: number | null = null;
+      if (latestRes.ok) {
+        const ld = await latestRes.json();
+        const v = ld?.data?.[0]?.latestApy;
+        if (typeof v === 'number' && v > 0 && v < 1) latestApy = v;
+      }
       const apyRows: { epoch: number; epochEndTs: number; apy: number }[] = (sanctumData?.data ?? [])
         .map((r: any) => ({
           epoch: r.epoch,
@@ -11245,7 +11252,7 @@ Claimer: ${walletAddress}`;
         });
       }
 
-      const result = { epochs, currentRate: compound, cachedAt: Date.now() };
+      const result = { epochs, currentRate: compound, latestApy, cachedAt: Date.now() };
       _rateHistoryCache = result;
       res.json(result);
     } catch (e: any) {

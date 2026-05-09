@@ -14,6 +14,7 @@ interface Props {
 interface RateHistory {
   epochs: { epoch: number; rate: number; apy: number; date: string }[];
   currentRate: number;
+  latestApy?: number | null;
 }
 
 function formatTvl(tvlLamports: number | null): string {
@@ -50,10 +51,11 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
   const apyValues = last25.map(e => (e.apy ?? 0) * 100).filter(v => v > 0);
   const maxApy = apyValues.length ? Math.max(...apyValues) : 6;
   const yMax = Math.ceil(maxApy * 1.2);
+  const sanctumLatestApy = data?.latestApy ? data.latestApy * 100 : null;
   const lastEpochApy = last25.length ? (last25[last25.length - 1].apy ?? 0) * 100 : 0;
   const lastEpochObj = last25.length ? last25[last25.length - 1] : null;
-  const activeEpoch = hovered ?? (lastEpochObj ? { epoch: lastEpochObj.epoch, apy: lastEpochApy, date: lastEpochObj.date } : null);
-  const displayApy = activeEpoch ? activeEpoch.apy : (gsolApy ?? null);
+  const defaultApy = sanctumLatestApy ?? (lastEpochApy > 0 ? lastEpochApy : (gsolApy ?? null));
+  const displayApy = hovered ? hovered.apy : defaultApy;
   const solEquivalent = gsolBalance * currentRate;
   const yearlyEarnings = displayApy && gsolBalance > 0 ? (solEquivalent * displayApy) / 100 : 0;
 
