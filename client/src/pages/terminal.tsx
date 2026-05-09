@@ -166,6 +166,19 @@ function shortMint(m: string) {
   return `${m.slice(0, 4)}…${m.slice(-4)}`;
 }
 
+function readCachedToken(mint: string): Token | undefined {
+  try {
+    for (const tab of ['new', 'bonding', 'migrated'] as const) {
+      const raw = localStorage.getItem(`terminal_feed_cache_${tab}`);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      const found = (parsed?.tokens || []).find((t: any) => t?.mint === mint);
+      if (found) return found as Token;
+    }
+  } catch {}
+  return undefined;
+}
+
 function SocialIcons({ socials }: { socials: { twitter?: string; website?: string; telegram?: string; discord?: string } }) {
   const items: { href: string; icon: any; label: string }[] = [];
   if (socials.twitter) items.push({ href: socials.twitter, icon: Twitter, label: 'Twitter' });
@@ -540,11 +553,23 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
 
         <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-5 py-5 md:px-6 md:py-6 mb-4">
           <div className="flex items-center gap-4">
-            {info?.icon ? (
-              <img src={info.icon} className="w-16 h-16 md:w-20 md:h-20 rounded-2xl object-cover flex-shrink-0" alt="" />
-            ) : (
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-purple-700 flex-shrink-0" />
-            )}
+            {(() => {
+              const cached = readCachedToken(mint);
+              const isGraduated =
+                !!(info as any)?.graduatedPool ||
+                (info as any)?.graduated === true ||
+                (info as any)?.firstPool?.graduated === true ||
+                (cached?.migrated === true) ||
+                ((cached?.bondingPct ?? 0) >= 1);
+              const bondPct = isGraduated ? 100 : Math.round(((cached?.bondingPct ?? 0)) * 100);
+              const tokenForAvatar: Token = {
+                mint,
+                name: info?.name || cached?.name,
+                symbol: info?.symbol || cached?.symbol,
+                imageUri: info?.icon || cached?.imageUri,
+              };
+              return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isGraduated} />;
+            })()}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-2xl md:text-3xl font-bold text-white">{info?.symbol || '—'}</span>
