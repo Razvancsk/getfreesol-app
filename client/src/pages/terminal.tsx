@@ -141,7 +141,6 @@ export function TerminalView() {
                   <Icon className="h-4 w-4" />
                   <span className="font-semibold text-sm">{t.label}</span>
                 </div>
-                <div className="text-[10px] text-white/50 mt-0.5">{t.sub}</div>
               </button>
             );
           })}
