@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy } from 'lucide-react';
 
 type FeedType = 'new' | 'bonding' | 'migrated';
 
@@ -164,6 +164,24 @@ function fmtSol(n?: number) {
 
 function shortMint(m: string) {
   return `${m.slice(0, 4)}…${m.slice(-4)}`;
+}
+
+function relAge(input: string | number | Date | undefined): string {
+  if (!input) return '';
+  const t = typeof input === 'number' ? input : new Date(input).getTime();
+  if (!Number.isFinite(t)) return '';
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo`;
+  const y = Math.floor(d / 365);
+  return `${y}y`;
 }
 
 export default function TerminalPage() {
@@ -476,19 +494,35 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           <div className="text-center text-white/50 py-16">Loading token…</div>
         )}
 
-        <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 rounded-2xl border border-purple-500/20 p-5 md:p-6 mb-4">
-          <div className="flex items-center justify-center gap-4">
+        <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-4 py-3 mb-4">
+          <div className="flex items-center gap-3">
             {info?.icon ? (
-              <img src={info.icon} className="w-16 h-16 rounded-full object-cover" alt="" />
+              <img src={info.icon} className="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="" />
             ) : (
-              <div className="w-16 h-16 rounded-full bg-purple-700" />
+              <div className="w-10 h-10 rounded-full bg-purple-700 flex-shrink-0" />
             )}
-            <div className="text-left">
-              <div className="text-2xl md:text-3xl font-bold text-white">{info?.symbol || '—'}</div>
-              <div className="text-sm text-white/60 mt-0.5">{info?.name || 'Unknown'}</div>
-              {info?.isVerified && (
-                <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
-              )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-xl font-bold text-white">{info?.symbol || '—'}</span>
+                <span className="text-sm text-white/60 truncate">{info?.name || 'Unknown'}</span>
+                {info?.isVerified && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-1 text-xs text-white/50">
+                {info?.firstPool?.createdAt && (
+                  <span>{relAge(info.firstPool.createdAt)}</span>
+                )}
+                <span className="font-mono">{shortMint(mint)}</span>
+                <button
+                  onClick={() => navigator.clipboard.writeText(mint).catch(() => {})}
+                  className="text-white/50 hover:text-white"
+                  data-testid="button-copy-mint"
+                  aria-label="Copy mint"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
