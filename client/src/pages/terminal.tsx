@@ -959,11 +959,14 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
     if (!amt) { toast({ title: 'Enter amount' }); return; }
     setBusy(true);
     try {
-      const isPctSell = side === 'sell' && amt.endsWith('%');
-      // Per pumpapi docs: "100%" sells require denominatedInQuote=true and high slippage.
-      const denominatedInQuote = side === 'buy' || isPctSell;
-      const amountVal = isPctSell ? amt : Number(amt);
-      const slipNum = isPctSell ? 99 : Number(slippage);
+      // If sell amount is the full token balance (within 0.01% rounding),
+      // send literal "100%" per pumpapi docs to avoid insufficient-funds errors.
+      const numAmt = Number(amt);
+      const isFullSell = side === 'sell' && tokenBalance != null && tokenBalance > 0
+        && isFinite(numAmt) && Math.abs(numAmt - tokenBalance) / tokenBalance < 0.0001;
+      const denominatedInQuote = side === 'buy' || isFullSell;
+      const amountVal = isFullSell ? '100%' : numAmt;
+      const slipNum = isFullSell ? 99 : Number(slippage);
       const r = await fetch('/api/terminal/build-tx', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1056,9 +1059,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
                   onClick={() => {
                     if (p === 'MAX') {
                       if (side === 'buy' && balance != null) setAmount(Math.max(0, balance - 0.01).toFixed(4));
-                      else setAmount('100%');
-                    } else if (p === '100%' && side === 'sell') {
-                      setAmount('100%');
+                      else if (tokenBalance != null) setAmount(String(tokenBalance));
                     } else if (p.endsWith('%')) {
                       const pct = parseFloat(p) / 100;
                       if (side === 'sell' && tokenBalance != null) setAmount(String(tokenBalance * pct));
