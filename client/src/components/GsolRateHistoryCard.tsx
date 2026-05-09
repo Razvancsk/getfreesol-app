@@ -237,46 +237,6 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                             <Stat label="Realized" val={realized} />
                             <Stat label="Total" val={total} />
                           </div>
-                          {positions.length > 0 && (
-                            <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1 border-t border-white/10 pt-3">
-                              {positions.map((p: any) => {
-                                const qty = Number(p.qty);
-                                const val = Number(p.currentValue);
-                                const px = Number(p.currentPrice);
-                                const u = Number(p.unrealizedUsd);
-                                const pct = Number(p.unrealizedPct);
-                                const avg = Number(p.avgCostUsd);
-                                const sym = p.symbol || `${String(p.mint).slice(0, 4)}…${String(p.mint).slice(-4)}`;
-                                const qtyStr = qty >= 1 ? qty.toLocaleString(undefined, { maximumFractionDigits: 4 }) : qty.toFixed(6);
-                                const hasU = p.unrealizedUsd !== null && p.unrealizedUsd !== undefined && Number.isFinite(u);
-                                return (
-                                  <div key={p.mint} className="flex items-center justify-between text-xs bg-black/20 rounded-lg px-3 py-2">
-                                    <div className="min-w-0">
-                                      <div className="text-white font-semibold truncate">{sym}</div>
-                                      <div className="text-white/50 text-[10px]">
-                                        {qtyStr} · {fmtUsd(val)}
-                                        {Number.isFinite(avg) && ` · avg ${fmtUsd(avg)}`}
-                                      </div>
-                                    </div>
-                                    <div className="text-right shrink-0 ml-2">
-                                      {hasU ? (
-                                        <>
-                                          <div className={`font-bold ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                            {(u >= 0 ? '+' : '') + fmtUsd(u)}
-                                          </div>
-                                          {Number.isFinite(pct) && (
-                                            <div className={`text-[10px] ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPct(pct)}</div>
-                                          )}
-                                        </>
-                                      ) : (
-                                        <div className="text-white/40">—</div>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
                         </>
                       )}
                     </div>
