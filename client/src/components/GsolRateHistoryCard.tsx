@@ -249,6 +249,38 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                           No swaps yet — PnL will appear after your first Jupiter swap on this site.
                         </div>
                       )}
+
+                      {Array.isArray(jupPortfolio?.positions) && jupPortfolio.positions.length > 0 && (
+                        <div className="mt-4 border-t border-white/10 pt-3">
+                          <div className="text-white/70 text-xs mb-2">Tokens</div>
+                          <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                            {jupPortfolio.positions.map((p: any) => {
+                              const u = Number(p.unrealizedPnl);
+                              const pct = Number(p.unrealizedPnlPct);
+                              const qty = Number(p.qty);
+                              const val = Number(p.currentValue);
+                              const sym = p.symbol || `${String(p.mint).slice(0, 4)}…${String(p.mint).slice(-4)}`;
+                              const qtyStr = qty >= 1 ? qty.toLocaleString(undefined, { maximumFractionDigits: 4 }) : qty.toFixed(6);
+                              return (
+                                <div key={p.mint} className="flex items-center justify-between text-xs bg-black/20 rounded-lg px-3 py-2">
+                                  <div className="min-w-0">
+                                    <div className="text-white font-semibold truncate">{sym}</div>
+                                    <div className="text-white/50 text-[10px]">{qtyStr} · {fmtUsd(val)}</div>
+                                  </div>
+                                  <div className="text-right shrink-0 ml-2">
+                                    <div className={`font-bold ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                      {(u >= 0 ? '+' : '') + fmtUsd(u)}
+                                    </div>
+                                    {Number.isFinite(pct) && (
+                                      <div className={`text-[10px] ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPct(pct)}</div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
