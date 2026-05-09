@@ -185,12 +185,6 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                     <div className="text-white font-bold text-2xl mt-1">{solEquivalent.toFixed(4)} SOL</div>
                   </div>
                 </div>
-                <div className="bg-purple-900/20 border border-white/20 rounded-xl p-4">
-                  <div className="text-white text-sm">Estimated Yearly Earnings</div>
-                  <div className="text-green-400 font-black text-2xl mt-1">
-                    +{yearlyEarnings.toFixed(4)} SOL
-                  </div>
-                </div>
                 {(() => {
                   const elements: any[] = jupPortfolio?.elements ?? [];
                   const findGsol = (el: any): any => {
