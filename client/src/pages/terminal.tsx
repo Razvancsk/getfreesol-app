@@ -801,8 +801,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
       {mobileSwapOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex items-end" data-testid="mobile-swap-sheet">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileSwapOpen(false)} />
-          <div className="relative w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-t border-purple-500/40 rounded-t-2xl p-4 pb-6 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
-            <div className="flex items-center justify-between mb-4">
+          <div className="relative w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-t border-purple-500/40 rounded-t-2xl p-3 pb-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 {info?.icon && <img src={info.icon} className="h-7 w-7 rounded-full" alt="" />}
                 <div className="text-white font-bold text-lg">Trade {info?.symbol || ''}</div>
@@ -968,18 +968,18 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
   }
 
   return (
-    <div className={flat ? 'space-y-5' : 'bg-purple-900/40 border border-purple-500/20 rounded-2xl p-4 space-y-5'}>
-      <div className="grid grid-cols-2 bg-purple-950/50 border border-purple-500/20 rounded-xl p-1.5 gap-1">
+    <div className={flat ? 'space-y-3' : 'bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 space-y-3'}>
+      <div className="grid grid-cols-2 bg-purple-950/50 border border-purple-500/20 rounded-lg p-1 gap-1">
         <button
           onClick={() => { setSide('buy'); setAmount(''); }}
-          className={`py-3 rounded-lg text-base font-semibold transition flex items-center justify-center gap-2 ${side === 'buy' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
+          className={`py-2 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1.5 ${side === 'buy' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
           data-testid="swap-tab-buy"
-        ><Zap className="h-4 w-4" /> Buy</button>
+        ><Zap className="h-3.5 w-3.5" /> Buy</button>
         <button
           onClick={() => { setSide('sell'); setAmount(''); }}
-          className={`py-3 rounded-lg text-base font-semibold transition flex items-center justify-center gap-2 ${side === 'sell' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
+          className={`py-2 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1.5 ${side === 'sell' ? 'bg-purple-600 text-white' : 'text-white/60 hover:text-white'}`}
           data-testid="swap-tab-sell"
-        ><ArrowDownUp className="h-4 w-4" /> Sell</button>
+        ><ArrowDownUp className="h-3.5 w-3.5" /> Sell</button>
       </div>
       {(() => {
         const paySym = side === 'buy' ? 'SOL' : sym;
@@ -1006,18 +1006,18 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
                 data-testid="swap-max-top"
               >MAX</button>
             </div>
-            <div className="bg-purple-950/50 rounded-xl border border-purple-500/40 ring-1 ring-purple-500/30 px-4 py-3 flex items-center gap-3">
-              <div className="text-white/70 text-base font-semibold">{paySym}</div>
+            <div className="bg-purple-950/50 rounded-lg border border-purple-500/40 px-3 py-2 flex items-center gap-3">
+              <div className="text-white/70 text-sm font-semibold">{paySym}</div>
               <input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.0"
                 inputMode="decimal"
-                className="flex-1 bg-transparent text-white text-xl font-bold outline-none"
+                className="flex-1 bg-transparent text-white text-base font-bold outline-none"
                 data-testid="input-swap-amount"
               />
             </div>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 gap-1.5">
               {allPresets.map((p) => (
                 <button
                   key={p}
@@ -1027,7 +1027,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
                       else setAmount('100%');
                     } else setAmount(p);
                   }}
-                  className="py-2.5 rounded-lg text-sm bg-purple-950/50 border border-purple-500/20 text-white hover:bg-purple-600/40"
+                  className="py-1.5 rounded-md text-xs bg-purple-950/50 border border-purple-500/20 text-white hover:bg-purple-600/40"
                   data-testid={`swap-preset-${p}`}
                 >{p}</button>
               ))}
@@ -1052,7 +1052,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       <Button
         onClick={submit}
         disabled={busy || !publicKey}
-        className={`w-full py-6 text-base font-bold rounded-xl ${side === 'buy' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-90'}`}
+        className={`w-full py-4 text-sm font-bold rounded-xl ${side === 'buy' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-90'}`}
         data-testid="button-quick-swap"
       >
         {busy ? 'Sending…' : !publicKey ? 'Connect Wallet in Header' : side === 'buy' ? 'Buy' : 'Sell'}
