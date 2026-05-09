@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
+import { startPumpStream, getFeed as getPumpFeed, getStreamStatus as getPumpStatus, buildTradeTx as buildPumpTradeTx } from './pumpStream';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -12736,6 +12737,39 @@ Claimer: ${walletAddress}`;
       await autoPayPartners();
     } catch (e: any) {
       console.error('❌ Vault partner fee cron failed:', e.message);
+    }
+  });
+
+  // ── /api/terminal — pump.fun screener (powered by pumpapi.io stream) ──
+  try { startPumpStream(); } catch (e: any) { console.error('[pumpStream] start failed', e?.message); }
+
+  app.get('/api/terminal/feed', (req, res) => {
+    const t = String(req.query.type || 'new');
+    if (t !== 'new' && t !== 'bonding' && t !== 'migrated') {
+      return res.status(400).json({ error: 'type must be new|bonding|migrated' });
+    }
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    res.json({ tokens: getPumpFeed(t as any, limit), status: getPumpStatus() });
+  });
+
+  app.post('/api/terminal/build-tx', async (req, res) => {
+    try {
+      const { publicKey, action, mint, amount, denominatedInQuote, slippage, priorityFee } = req.body || {};
+      if (!publicKey || !mint) return res.status(400).json({ error: 'publicKey and mint required' });
+      if (action !== 'buy' && action !== 'sell') return res.status(400).json({ error: 'action must be buy or sell' });
+      if (amount === undefined || amount === null || amount === '') return res.status(400).json({ error: 'amount required' });
+      const tx = await buildPumpTradeTx({
+        publicKey: String(publicKey),
+        action,
+        mint: String(mint),
+        amount,
+        denominatedInQuote: !!denominatedInQuote,
+        slippage: slippage !== undefined ? Number(slippage) : undefined,
+        priorityFee: priorityFee !== undefined ? Number(priorityFee) : undefined,
+      });
+      res.json({ tx });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'build-tx failed' });
     }
   });
 

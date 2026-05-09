@@ -3614,6 +3614,15 @@ export default function SolRefund() {
                       <span className="text-white/50">|</span>
                       <span className="text-green-400">{formatXP(userXP)}</span>
                     </div>
+                    <Link href="/terminal">
+                      <Button
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
+                        data-testid="button-terminal"
+                      >
+                        <span>📟</span>
+                        <span>Terminal</span>
+                      </Button>
+                    </Link>
                     <Link href="/profile">
                       <Button
                         className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
@@ -3693,6 +3702,15 @@ export default function SolRefund() {
                     <span className="text-white/50">|</span>
                     <span className="text-green-400">{formatXP(userXP)}</span>
                   </div>
+                  <Link href="/terminal">
+                    <Button
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
+                      data-testid="button-terminal-desktop"
+                    >
+                      <span>📟</span>
+                      <span>Terminal</span>
+                    </Button>
+                  </Link>
                   <Link href="/profile">
                     <Button
                       className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
