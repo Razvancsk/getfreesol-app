@@ -286,24 +286,14 @@ export function TerminalView() {
                   </div>
                 </div>
 
-                {/* Footer: mint + actions */}
-                <div className="flex items-center justify-between gap-2">
-                  <a
-                    href={`https://solscan.io/token/${t.mint}`}
-                    target="_blank" rel="noreferrer"
-                    className="text-[10px] text-white/40 font-mono hover:text-white/70 inline-flex items-center gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {shortMint(t.mint)} <ExternalLink className="h-2.5 w-2.5" />
-                  </a>
-                  <div className="flex gap-2">
-                    <Button size="sm" className="h-8 px-4 text-xs font-bold bg-green-600 hover:bg-green-500" onClick={() => setTradeFor({ token: t, action: 'buy' })} data-testid={`buy-${t.mint}`}>
-                      Buy
-                    </Button>
-                    <Button size="sm" className="h-8 px-4 text-xs font-bold bg-red-600 hover:bg-red-500" onClick={() => setTradeFor({ token: t, action: 'sell' })} data-testid={`sell-${t.mint}`}>
-                      Sell
-                    </Button>
-                  </div>
+                {/* Footer: actions */}
+                <div className="flex items-center justify-end gap-2">
+                  <Button size="sm" className="h-8 px-4 text-xs font-bold bg-green-600 hover:bg-green-500" onClick={() => setTradeFor({ token: t, action: 'buy' })} data-testid={`buy-${t.mint}`}>
+                    Buy
+                  </Button>
+                  <Button size="sm" className="h-8 px-4 text-xs font-bold bg-red-600 hover:bg-red-500" onClick={() => setTradeFor({ token: t, action: 'sell' })} data-testid={`sell-${t.mint}`}>
+                    Sell
+                  </Button>
                 </div>
               </div>
             );
