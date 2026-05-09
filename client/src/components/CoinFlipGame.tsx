@@ -9,6 +9,8 @@ import { Loader2 } from 'lucide-react';
 import lossGif from '@assets/tenor_1773011576032.gif';
 
 const BET_AMOUNTS = [0.002, 0.01, 0.05, 0.1, 0.5, 1];
+const ADMIN_ONLY_BET_AMOUNTS = new Set([0.1, 0.5, 1]);
+const ADMIN_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 
 function timeAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -393,7 +395,7 @@ export function CoinFlipGame() {
       <div className="text-center">
         <p className="text-gray-300 font-bold text-lg tracking-widest uppercase mb-3">For</p>
         <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
-          {BET_AMOUNTS.map((amount) => {
+          {BET_AMOUNTS.filter(a => !ADMIN_ONLY_BET_AMOUNTS.has(a) || publicKey?.toBase58() === ADMIN_WALLET).map((amount) => {
             const tooHighForVault = vaultBalance > 0 && vaultBalance < amount * 2;
             return (
               <button
