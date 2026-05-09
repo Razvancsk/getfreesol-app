@@ -989,6 +989,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
             <a href={url} target="_blank" rel="noreferrer" className="underline">View Transaction →</a>
           </span>
         ) as any,
+        className: 'bg-green-600 border-green-700 text-white',
       });
       setAmount('');
     } catch (e: any) {
