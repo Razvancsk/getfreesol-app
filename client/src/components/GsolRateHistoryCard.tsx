@@ -268,11 +268,17 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                                     <div className="text-white/50 text-[10px]">{qtyStr} · {fmtUsd(val)}</div>
                                   </div>
                                   <div className="text-right shrink-0 ml-2">
-                                    <div className={`font-bold ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                      {(u >= 0 ? '+' : '') + fmtUsd(u)}
-                                    </div>
-                                    {Number.isFinite(pct) && (
-                                      <div className={`text-[10px] ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPct(pct)}</div>
+                                    {Number.isFinite(u) ? (
+                                      <>
+                                        <div className={`font-bold ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                          {(u >= 0 ? '+' : '') + fmtUsd(u)}
+                                        </div>
+                                        {Number.isFinite(pct) && (
+                                          <div className={`text-[10px] ${u >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPct(pct)}</div>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <div className="text-white/40">—</div>
                                     )}
                                   </div>
                                 </div>

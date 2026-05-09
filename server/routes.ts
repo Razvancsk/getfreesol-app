@@ -733,12 +733,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!address) return res.status(400).json({ error: 'Missing wallet address' });
 
       const swaps = await storage.getSwapRecordsByWallet(address, 5000);
-      // Build FIFO lots per mint (token bought adds a lot, token sold consumes lots)
-      type Lot = { qty: number; costUsd: number };
-      const lots: Record<string, Lot[]> = {};
+      // Weighted-average cost basis per mint (matches typical portfolio tracker methodology)
+      // For each mint: sum USD spent buying ÷ sum qty bought = avg buy price
+      // Realized PnL = sum over sells of (proceeds - avg_cost × qty_sold)
+      const buyQty: Record<string, number> = {};
+      const buyUsd: Record<string, number> = {};
       const symbols: Record<string, string> = {};
       let realized = 0;
-      // Oldest first
       const ordered = [...swaps].sort((a, b) => new Date(a.swappedAt).getTime() - new Date(b.swappedAt).getTime());
       for (const s of ordered) {
         const usd = Number(s.usdValue || 0);
@@ -747,33 +748,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!Number.isFinite(usd) || usd <= 0 || inAmt <= 0 || outAmt <= 0) continue;
         if (s.outputSymbol) symbols[s.outputMint] = s.outputSymbol;
         if (s.inputSymbol) symbols[s.inputMint] = s.inputSymbol;
-        // BUY side: outputMint gains qty=outAmt at cost=usd
-        (lots[s.outputMint] ||= []).push({ qty: outAmt, costUsd: usd });
-        // SELL side: inputMint loses qty=inAmt at proceeds=usd → consume FIFO
-        let remaining = inAmt;
-        let proceeds = usd;
-        const queue = (lots[s.inputMint] ||= []);
-        while (remaining > 1e-12 && queue.length > 0) {
-          const lot = queue[0];
-          const take = Math.min(lot.qty, remaining);
-          const cost = (take / lot.qty) * lot.costUsd;
-          const portionProceeds = (take / inAmt) * usd;
-          realized += portionProceeds - cost;
-          lot.qty -= take;
-          lot.costUsd -= cost;
-          remaining -= take;
-          proceeds -= portionProceeds;
-          if (lot.qty <= 1e-12) queue.shift();
+        // BUY side: outputMint gained
+        buyQty[s.outputMint] = (buyQty[s.outputMint] || 0) + outAmt;
+        buyUsd[s.outputMint] = (buyUsd[s.outputMint] || 0) + usd;
+        // SELL side: inputMint sold → realized vs running avg cost
+        const avg = buyQty[s.inputMint] > 0 ? (buyUsd[s.inputMint] / buyQty[s.inputMint]) : 0;
+        if (avg > 0) {
+          const costOfSold = avg * inAmt;
+          realized += usd - costOfSold;
+          // reduce qty proportionally, keep avg cost stable
+          buyQty[s.inputMint] = Math.max(0, buyQty[s.inputMint] - inAmt);
+          buyUsd[s.inputMint] = avg * buyQty[s.inputMint];
         }
-        // If sold more than known cost basis (no prior buy in our records) we just skip remaining → realized counted only against known basis
       }
 
-      // Per-mint avg cost from FIFO remaining lots
       const avgCost: Record<string, number> = {};
-      for (const [mint, queue] of Object.entries(lots)) {
-        const qty = queue.reduce((a, l) => a + l.qty, 0);
-        const costUsd = queue.reduce((a, l) => a + l.costUsd, 0);
-        if (qty > 1e-9 && costUsd > 0) avgCost[mint] = costUsd / qty;
+      for (const mint of Object.keys(buyQty)) {
+        if (buyQty[mint] > 1e-9 && buyUsd[mint] > 0) avgCost[mint] = buyUsd[mint] / buyQty[mint];
       }
 
       // Fetch ACTUAL on-chain holdings via Jupiter Ultra Holdings
@@ -827,9 +818,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const px = Number(prices[h.mint]?.usdPrice ?? 0);
         const val = px * h.qty;
         if (val < 0.01) continue; // hide dust
-        const ac = avgCost[h.mint];
-        const costUsd = ac ? ac * h.qty : 0;
-        const u = ac ? val - costUsd : 0;
+        const isBase = h.mint === WSOL; // treat SOL as base currency, no PnL
+        const ac = isBase ? undefined : avgCost[h.mint];
+        // cap cost basis at the lesser of held qty vs tracked buy qty (handles transfers in/out)
+        const trackedQty = buyQty[h.mint] || 0;
+        const basisQty = ac ? Math.min(h.qty, trackedQty) : 0;
+        const costUsd = ac ? ac * basisQty : 0;
+        const valOfBasis = ac ? px * basisQty : 0;
+        const u = ac ? valOfBasis - costUsd : 0;
         currentValue += val;
         unrealized += u;
         positions.push({
@@ -840,7 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           avgCostUsd: ac ?? null,
           currentPrice: px,
           currentValue: val,
-          unrealizedPnl: u,
+          unrealizedPnl: ac ? u : null,
           unrealizedPnlPct: costUsd > 0 ? (u / costUsd) * 100 : null,
           hasCostBasis: !!ac,
         });
