@@ -142,7 +142,7 @@ function fmtCount(n?: number): string {
 
 const TABS: { id: FeedType; label: string; icon: any; sub: string }[] = [
   { id: 'new',       label: 'New',           icon: Sparkles, sub: 'All launchpads' },
-  { id: 'bonding',   label: 'Almost Bonding', icon: Flame,    sub: '60%+ to bond' },
+  { id: 'bonding',   label: 'Almost Migrated', icon: Flame,    sub: '50%–99% bonded' },
   { id: 'migrated',  label: 'Migrated',      icon: Rocket,   sub: 'Graduated to AMM' },
 ];
 
