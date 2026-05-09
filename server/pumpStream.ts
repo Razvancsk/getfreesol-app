@@ -32,6 +32,7 @@ type Token = {
   solVolume?: number;
   bondingPct?: number;
   createdAt?: number;
+  firstSeen?: number;
   lastSeen: number;
   buys: number;
   sells: number;
@@ -109,7 +110,8 @@ function launchpadLabel(pool: string | undefined): string {
 function upsert(mint: string, patch: Partial<Token>): Token {
   let t = tokens.get(mint);
   if (!t) {
-    t = { mint, lastSeen: Date.now(), buys: 0, sells: 0 };
+    const now = Date.now();
+    t = { mint, lastSeen: now, firstSeen: now, buys: 0, sells: 0 };
     tokens.set(mint, t);
   } else {
     // Map insertion-order is iteration-order; re-insert to mark as MRU.
@@ -395,7 +397,7 @@ function serialize(t: Token) {
     liquidityUsd: liqUsd,
     volumeUsd: volUsd,
     bondingPct: t.bondingPct,
-    createdAt: t.createdAt,
+    createdAt: t.createdAt ?? t.firstSeen,
     lastSeen: t.lastSeen,
     buys: t.buys,
     sells: t.sells,
