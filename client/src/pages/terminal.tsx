@@ -190,14 +190,27 @@ export function TerminalView() {
   const [search, setSearch] = useState('');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
 
+  const cacheKey = `terminal_feed_cache_${tab}`;
   const { data, isFetching } = useQuery<{ tokens: Token[]; status: any }>({
     queryKey: ['/api/terminal/feed', tab],
     queryFn: async () => {
       const r = await fetch(`/api/terminal/feed?type=${tab}&limit=25`);
       if (!r.ok) throw new Error('feed failed');
-      return r.json();
+      const json = await r.json();
+      try {
+        if (json?.tokens?.length) {
+          localStorage.setItem(cacheKey, JSON.stringify(json));
+        }
+      } catch {}
+      return json;
     },
     refetchInterval: 1500,
+    initialData: () => {
+      try {
+        const raw = localStorage.getItem(cacheKey);
+        return raw ? JSON.parse(raw) : undefined;
+      } catch { return undefined; }
+    },
   });
 
   const tokens = useMemo(() => {
