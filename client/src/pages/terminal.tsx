@@ -207,56 +207,35 @@ export function TerminalView() {
             const totalTx = (t.buys ?? 0) + (t.sells ?? 0);
             const pct = t.pctChange;
             const pctUp = (pct ?? 0) >= 0;
+            const bondPct = Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
+            const isMigrated = tab === 'migrated' || (t.bondingPct ?? 0) >= 1;
             return (
               <div
                 key={t.mint}
-                className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4 hover:border-purple-500/40 transition-all overflow-hidden"
+                className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4 hover:border-purple-500/40 transition-all cursor-pointer overflow-hidden active:scale-[0.98]"
                 data-testid={`row-${t.mint}`}
               >
-                {/* Top: identity + price */}
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    {(() => {
-                      const pct = tab === 'migrated' ? 100 : Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
-                      const isMigrated = tab === 'migrated' || (t.bondingPct ?? 0) >= 1;
-                      const stroke = isMigrated ? '#10b981' : pct >= 60 ? '#f97316' : '#a855f7';
-                      return (
-                        <div className="relative flex-shrink-0" style={{ width: 60, height: 60 }}>
-                          <svg className="absolute inset-0 -rotate-90 overflow-visible" width={60} height={60} viewBox="0 0 60 60" fill="none">
-                            <rect x="3" y="3" width="54" height="54" rx="12" stroke="rgba(255,255,255,0.12)" strokeWidth="3" />
-                            <rect
-                              x="3" y="3" width="54" height="54" rx="12"
-                              stroke={stroke} strokeWidth="3" strokeLinecap="round"
-                              pathLength={100}
-                              strokeDasharray={`${pct} 100`}
-                              style={{
-                                transition: 'stroke-dasharray 1200ms cubic-bezier(0.4,0,0.2,1)',
-                              }}
-                            />
-                          </svg>
-                          <div className="absolute inset-[6px] rounded-[10px] bg-purple-700/40 overflow-hidden flex items-center justify-center ring-1 ring-white/10">
-                            {t.imageUri
-                              ? <img src={t.imageUri} alt={`${t.symbol} logo`} className="w-full h-full object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
-                              : <span className="text-sm font-bold text-white">{(t.symbol || '?').slice(0, 2)}</span>}
-                          </div>
-                          <div
-                            className={`absolute left-1/2 -translate-x-1/2 -bottom-1.5 text-[10px] font-bold text-white px-1.5 py-px rounded-md shadow-md ${isMigrated ? 'bg-emerald-500' : pct >= 60 ? 'bg-orange-500' : 'bg-purple-600'}`}
-                          >
-                            {isMigrated ? '✓' : `${pct}%`}
-                          </div>
+                    <div className="relative flex-shrink-0" style={{ width: 40, height: 40 }}>
+                      {t.imageUri ? (
+                        <img
+                          src={t.imageUri}
+                          alt={`${t.symbol} logo`}
+                          className="w-10 h-10 text-sm rounded-xl object-cover"
+                          onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+                        />
+                      ) : (
+                        <div className="bg-pink-600 w-10 h-10 text-sm rounded-xl flex items-center justify-center text-white font-bold">
+                          {(t.symbol || '?').slice(0, 2).toUpperCase()}
                         </div>
-                      );
-                    })()}
+                      )}
+                    </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-white text-base truncate">{t.name || t.symbol || 'Unknown'}</span>
-                        {t.launchpad && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/30 border border-purple-400/40 text-purple-100 font-semibold uppercase tracking-wide shrink-0">
-                            {t.launchpad}
-                          </span>
-                        )}
                       </div>
-                      <div className="text-gray-400 text-sm">{t.symbol || shortMint(t.mint)}</div>
+                      <div className="text-gray-400 text-sm truncate">{t.symbol || shortMint(t.mint)}</div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -264,12 +243,41 @@ export function TerminalView() {
                     {pct != null && Number.isFinite(pct) ? (
                       <div className={`flex items-center justify-end text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
                         {pctUp ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
-                        {pctUp ? '+' : ''}{pct.toFixed(2)}%
+                        {pctUp ? '+' : ''}{(pct ?? 0).toFixed(2)}%
                       </div>
                     ) : (
                       <div className="text-gray-400 text-sm">—</div>
                     )}
                   </div>
+                </div>
+
+                {/* Badge row */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                  {t.launchpad && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-purple-500/10 text-purple-300 border-purple-500/20">
+                      {t.launchpad}
+                    </span>
+                  )}
+                  {!isMigrated && (t.bondingPct ?? 0) > 0 && (
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border tabular-nums ${
+                        bondPct >= 60
+                          ? 'bg-orange-500/10 text-orange-300 border-orange-500/20'
+                          : 'bg-slate-500/10 text-slate-300 border-slate-500/20'
+                      }`}
+                      title="Progress toward bonding curve migration"
+                    >
+                      Bonding {bondPct}%
+                    </span>
+                  )}
+                  {isMigrated && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-300 border-emerald-500/20">
+                      Migrated ✓
+                    </span>
+                  )}
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-500/10 text-slate-400 border-slate-500/20">
+                    {ago(t.createdAt)} old
+                  </span>
                 </div>
 
                 {/* Stats grid */}
@@ -279,14 +287,8 @@ export function TerminalView() {
                     <div className="text-white font-medium tabular-nums">{fmtUsd(t.marketCapUsd)}</div>
                   </div>
                   <div>
-                    <div className="text-gray-400">{tab === 'bonding' ? 'Bonding' : tab === 'migrated' ? 'Migrated' : 'Age'}</div>
-                    <div className={`font-medium tabular-nums ${tab === 'bonding' ? 'text-orange-300' : tab === 'migrated' ? 'text-green-300' : 'text-white'}`}>
-                      {tab === 'bonding'
-                        ? `${Math.round((t.bondingPct ?? 0) * 100)}%`
-                        : tab === 'migrated'
-                          ? `${ago(t.lastSeen)} ago`
-                          : `${ago(t.createdAt)} ago`}
-                    </div>
+                    <div className="text-gray-400">Volume</div>
+                    <div className="text-white font-medium tabular-nums">{fmtUsd(t.volumeUsd)}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">Liquidity</div>
@@ -306,6 +308,7 @@ export function TerminalView() {
                     href={`https://solscan.io/token/${t.mint}`}
                     target="_blank" rel="noreferrer"
                     className="text-[10px] text-white/40 font-mono hover:text-white/70 inline-flex items-center gap-1"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     {shortMint(t.mint)} <ExternalLink className="h-2.5 w-2.5" />
                   </a>
