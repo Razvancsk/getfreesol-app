@@ -12998,7 +12998,7 @@ Claimer: ${walletAddress}`;
 
   app.post('/api/terminal/build-tx', async (req, res) => {
     try {
-      const { publicKey, action, mint, amount, denominatedInQuote, slippage, priorityFee, pool, maxQuoteAmountIn, minBaseAmountOut, maxBaseAmountIn, minQuoteAmountOut } = req.body || {};
+      const { publicKey, action, mint, amount, denominatedInQuote, slippage, priorityFee, pool, jitoTip, maxQuoteAmountIn, minBaseAmountOut, maxBaseAmountIn, minQuoteAmountOut } = req.body || {};
       const v = validateTradeInput({ publicKey, action, mint, amount, slippage, priorityFee });
       if (!v.ok) return res.status(400).json({ error: v.error });
       let resolvedPool: string | undefined = typeof pool === 'string' && pool ? pool : undefined;
@@ -13036,6 +13036,7 @@ Claimer: ${walletAddress}`;
         partnerAddress: 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
         partnerFeeRatio: 0.005,
         pool: resolvedPool,
+        jitoTip: jitoTip !== undefined ? Number(jitoTip) : undefined,
         maxQuoteAmountIn: maxQuoteAmountIn !== undefined ? Number(maxQuoteAmountIn) : undefined,
         minBaseAmountOut: minBaseAmountOut !== undefined ? Number(minBaseAmountOut) : undefined,
         maxBaseAmountIn: maxBaseAmountIn !== undefined ? Number(maxBaseAmountIn) : undefined,

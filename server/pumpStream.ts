@@ -30,6 +30,13 @@ type Token = {
   marketCapSol?: number;
   firstMarketCapSol?: number;
   solVolume?: number;
+  // pumpapi stream update: stablecoin-quoted pools (USDC/USDT) ship
+  // marketCapQuote / quoteAmount instead of marketCapSol / solAmount.
+  // For known stables we treat the quote value as USD directly.
+  quoteMint?: string;
+  marketCapQuoteUsd?: number;
+  firstMarketCapQuoteUsd?: number;
+  quoteVolumeUsd?: number;
   bondingPct?: number;
   createdAt?: number;
   firstSeen?: number;
@@ -396,11 +403,16 @@ function handleEvent(ev: Event) {
     const evUri = ev.uri || tm?.uri;
     const evImg = ev.imageUri || tm?.imageUri;
     const directImg = evImg && looksLikeImage(evImg) ? ipfsToHttp(evImg) : evImg;
-    // pumpapi update: when quoteMint is present and not wSOL, the *Sol fields
-    // are actually denominated in the quote token (USDC/USDT/etc), not SOL.
-    // Skip SOL-derived fields for those events so we don't corrupt USD math.
+    // pumpapi stream update: non-SOL quoted pools ship marketCapQuote /
+    // quoteAmount / vQuoteInBondingCurve instead of the *Sol variants.
+    // For known stablecoin quotes we use the quote value as USD directly.
     const WSOL = 'So11111111111111111111111111111111111111112';
+    const STABLES: Record<string, true> = {
+      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': true, // USDC
+      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': true, // USDT
+    };
     const isSolQuote = !ev.quoteMint || ev.quoteMint === WSOL;
+    const isStableQuote = !!(ev.quoteMint && STABLES[ev.quoteMint]);
     const patch: Partial<Token> = {
       pool: ev.pool ?? undefined,
     };
@@ -409,6 +421,9 @@ function handleEvent(ev: Event) {
       patch.vTokensInBondingCurve = ev.vTokensInBondingCurve ?? undefined;
       patch.marketCapSol = ev.marketCapSol ?? undefined;
       patch.bondingPct = bondingPctFor(ev.pool, ev.vSolInBondingCurve);
+    } else if (isStableQuote) {
+      patch.quoteMint = ev.quoteMint;
+      if (typeof ev.marketCapQuote === 'number') patch.marketCapQuoteUsd = ev.marketCapQuote;
     }
     const existing = tokens.get(ev.mint);
     if (evName && !existing?.name) patch.name = evName;
@@ -421,6 +436,9 @@ function handleEvent(ev: Event) {
     }
     if (isSolQuote && typeof ev.marketCapSol === 'number' && t.firstMarketCapSol == null) {
       t.firstMarketCapSol = ev.marketCapSol;
+    }
+    if (isStableQuote && typeof ev.marketCapQuote === 'number' && t.firstMarketCapQuoteUsd == null) {
+      t.firstMarketCapQuoteUsd = ev.marketCapQuote;
     }
     if (!t.name || !t.imageUri) backfillFromHelius(ev.mint);
     // If we see this token trading on a post-graduation AMM pool, mark migrated
@@ -435,6 +453,9 @@ function handleEvent(ev: Event) {
       const solSize = typeof ev.solAmount === 'number' ? ev.solAmount
         : typeof ev.sol === 'number' ? ev.sol : 0;
       if (solSize > 0) t.solVolume = (t.solVolume ?? 0) + solSize;
+    } else if (isStableQuote) {
+      const qSize = typeof ev.quoteAmount === 'number' ? ev.quoteAmount : 0;
+      if (qSize > 0) t.quoteVolumeUsd = (t.quoteVolumeUsd ?? 0) + qSize;
     }
     if (ev.txType === 'buy') t.buys++; else t.sells++;
   }
@@ -498,15 +519,19 @@ function serialize(t: Token) {
   if ((!mcSol || mcSol <= 0) && t.vSolInBondingCurve && t.vTokensInBondingCurve) {
     mcSol = (t.vSolInBondingCurve / t.vTokensInBondingCurve) * STANDARD_SUPPLY;
   }
-  const mcUsd = mcSol && solUsd ? mcSol * solUsd : undefined;
+  const mcUsdFromSol = mcSol && solUsd ? mcSol * solUsd : undefined;
+  const mcUsd = mcUsdFromSol ?? t.marketCapQuoteUsd;
   const priceUsd = mcUsd ? mcUsd / STANDARD_SUPPLY : undefined;
   const liqSol = t.vSolInBondingCurve;
   const liqUsd = liqSol && solUsd ? liqSol * solUsd : undefined;
   const volSol = t.solVolume;
-  const volUsd = volSol && solUsd ? volSol * solUsd : undefined;
+  const volUsdFromSol = volSol && solUsd ? volSol * solUsd : undefined;
+  const volUsd = (volUsdFromSol ?? 0) + (t.quoteVolumeUsd ?? 0) || undefined;
   let pctChange: number | undefined;
   if (mcSol && t.firstMarketCapSol && t.firstMarketCapSol > 0) {
     pctChange = ((mcSol - t.firstMarketCapSol) / t.firstMarketCapSol) * 100;
+  } else if (t.marketCapQuoteUsd && t.firstMarketCapQuoteUsd && t.firstMarketCapQuoteUsd > 0) {
+    pctChange = ((t.marketCapQuoteUsd - t.firstMarketCapQuoteUsd) / t.firstMarketCapQuoteUsd) * 100;
   }
   return {
     mint: t.mint,
@@ -611,7 +636,9 @@ export async function buildTradeTx(opts: {
   priorityFee?: number;
   partnerAddress?: string;
   partnerFeeRatio?: number;
+  partnerFeeFixed?: number;
   pool?: string;
+  jitoTip?: number;
   maxQuoteAmountIn?: number;
   minBaseAmountOut?: number;
   maxBaseAmountIn?: number;
@@ -628,7 +655,9 @@ export async function buildTradeTx(opts: {
   if (opts.priorityFee !== undefined) body.priorityFee = opts.priorityFee;
   if (opts.partnerAddress) body.partnerAddress = opts.partnerAddress;
   if (opts.partnerFeeRatio !== undefined) body.partnerFeeRatio = opts.partnerFeeRatio;
+  if (opts.partnerFeeFixed !== undefined) body.partnerFeeFixed = opts.partnerFeeFixed;
   if (opts.pool) body.pool = opts.pool;
+  if (opts.jitoTip !== undefined) body.jitoTip = opts.jitoTip;
   if (opts.maxQuoteAmountIn !== undefined) body.maxQuoteAmountIn = opts.maxQuoteAmountIn;
   if (opts.minBaseAmountOut !== undefined) body.minBaseAmountOut = opts.minBaseAmountOut;
   if (opts.maxBaseAmountIn !== undefined) body.maxBaseAmountIn = opts.maxBaseAmountIn;
