@@ -477,17 +477,17 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         )}
 
         <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 rounded-2xl border border-purple-500/20 p-5 md:p-6 mb-4">
-          <div className="flex flex-col items-center text-center gap-3">
+          <div className="flex items-center justify-center gap-4">
             {info?.icon ? (
-              <img src={info.icon} className="w-20 h-20 rounded-full object-cover" alt="" />
+              <img src={info.icon} className="w-16 h-16 rounded-full object-cover" alt="" />
             ) : (
-              <div className="w-20 h-20 rounded-full bg-purple-700" />
+              <div className="w-16 h-16 rounded-full bg-purple-700" />
             )}
-            <div>
+            <div className="text-left">
               <div className="text-2xl md:text-3xl font-bold text-white">{info?.symbol || '—'}</div>
               <div className="text-sm text-white/60 mt-0.5">{info?.name || 'Unknown'}</div>
               {info?.isVerified && (
-                <span className="inline-block mt-2 text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
+                <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
               )}
             </div>
           </div>
