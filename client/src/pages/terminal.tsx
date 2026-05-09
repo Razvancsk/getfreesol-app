@@ -888,6 +888,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
   const [tokenBalance, setTokenBalance] = useState<number | null>(null);
+  const [balRefresh, setBalRefresh] = useState(0);
   const buyPresets = ['0.1', '0.3', '0.5', '0.7'];
   const sellPresets = ['25%', '50%', '75%', '100%'];
   const presets = side === 'buy' ? buyPresets : sellPresets;
@@ -925,7 +926,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       } catch { /* ignore */ }
     })();
     return () => { active = false; };
-  }, [publicKey, busy, token?.mint]);
+  }, [publicKey, busy, token?.mint, balRefresh]);
 
   const live: any = token || {};
   const STANDARD_SUPPLY = 1_000_000_000;
@@ -982,6 +983,11 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       const rpc = heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com';
       const conn = new Connection(rpc, 'confirmed');
       const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: false, maxRetries: 3 });
+      try {
+        const bh = await conn.getLatestBlockhash('confirmed');
+        await conn.confirmTransaction({ signature, ...bh }, 'confirmed');
+      } catch { /* ignore confirm timeout */ }
+      setTimeout(() => setBalRefresh((n) => n + 1), 1500);
       const url = `https://solscan.io/tx/${signature}`;
       toast({
         title: 'Swap Successful!',
