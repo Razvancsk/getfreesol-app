@@ -250,10 +250,20 @@ function TradeDialog({ token, action, onClose }: { token: Token; action: 'buy' |
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'build failed');
-      const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(j.tx), c => c.charCodeAt(0)));
+      let tx: VersionedTransaction;
+      try {
+        tx = VersionedTransaction.deserialize(Uint8Array.from(atob(j.tx), c => c.charCodeAt(0)));
+      } catch {
+        throw new Error('Server returned an unreadable transaction');
+      }
       const signed = await signTransaction(tx);
-      const conn = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-      const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: true, maxRetries: 3 });
+      // Use Helius public RPC if available via env, else mainnet-beta
+      const heliusKey = (import.meta as any).env?.VITE_HELIUS_API_KEY;
+      const rpc = heliusKey
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      const conn = new Connection(rpc, 'confirmed');
+      const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: false, maxRetries: 3 });
       setSig(signature);
       toast({ title: `${action === 'buy' ? 'Buy' : 'Sell'} sent`, description: signature.slice(0, 12) + '…' });
     } catch (e: any) {

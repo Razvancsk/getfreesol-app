@@ -63,15 +63,25 @@ function upsert(mint: string, patch: Partial<Token>): Token {
   if (!t) {
     t = { mint, lastSeen: Date.now(), buys: 0, sells: 0 };
     tokens.set(mint, t);
+  } else {
+    // Map insertion-order is iteration-order; re-insert to mark as MRU.
+    tokens.delete(mint);
+    tokens.set(mint, t);
   }
   Object.assign(t, patch);
   t.lastSeen = Date.now();
-  // LRU evict
-  if (tokens.size > MAX_TRACKED) {
-    const oldest = [...tokens.entries()].sort((a, b) => a[1].lastSeen - b[1].lastSeen)[0];
-    if (oldest) tokens.delete(oldest[0]);
-  }
   return t;
+}
+
+// Periodic batched eviction — much cheaper than sorting every event.
+function evictIfNeeded() {
+  if (tokens.size <= MAX_TRACKED) return;
+  const toRemove = tokens.size - MAX_TRACKED + Math.floor(MAX_TRACKED * 0.05);
+  let i = 0;
+  for (const k of tokens.keys()) {
+    if (i++ >= toRemove) break;
+    tokens.delete(k); // oldest first since Map preserves insertion order
+  }
 }
 
 function handleEvent(ev: Event) {
@@ -91,15 +101,32 @@ function handleEvent(ev: Event) {
       bondingPct: bondingPctFor(ev.pool, ev.vSolInBondingCurve),
       createdAt: ts,
     });
-    newOrder.unshift(ev.mint);
-    while (newOrder.length > MAX_NEW) newOrder.pop();
+    // Only surface pump.fun mints in the "New" tab (this is a pump.fun screener)
+    if (ev.pool === 'pump') {
+      newOrder.unshift(ev.mint);
+      while (newOrder.length > MAX_NEW) newOrder.pop();
+    }
     return;
   }
 
-  if (ev.txType === 'migrate') {
-    upsert(ev.mint, { migrated: true, migratedAt: ts, pool: ev.pool || 'pumpswap' });
-    migratedOrder.unshift(ev.mint);
-    while (migratedOrder.length > MAX_MIGRATED) migratedOrder.pop();
+  // Migration signals:
+  // - `migrate` action lands → migration initiated
+  // - `createPool` with poolCreatedBy='pump' (pool='pump-amm') → migration completed on PumpSwap
+  const isMigrate = ev.txType === 'migrate';
+  const isPumpAmmCreatePool =
+    ev.txType === 'createPool' &&
+    (ev.pool === 'pump-amm' || ev.poolCreatedBy === 'pump');
+  if (isMigrate || isPumpAmmCreatePool) {
+    upsert(ev.mint, {
+      migrated: true,
+      migratedAt: ts,
+      pool: ev.pool || 'pump-amm',
+      bondingPct: 1,
+    });
+    if (!migratedOrder.includes(ev.mint)) {
+      migratedOrder.unshift(ev.mint);
+      while (migratedOrder.length > MAX_MIGRATED) migratedOrder.pop();
+    }
     return;
   }
 
@@ -117,39 +144,51 @@ function handleEvent(ev: Event) {
 }
 
 function connect() {
-  if (ws) return;
+  if (ws || reconnectTimer) return; // guard against duplicate connections / pending reconnect
   console.log('[pumpStream] connecting…');
-  ws = new WebSocket('wss://stream.pumpapi.io/');
-  ws.on('open', () => { connected = true; console.log('[pumpStream] connected'); });
-  ws.on('message', (data) => {
+  const sock = new WebSocket('wss://stream.pumpapi.io/');
+  ws = sock;
+  sock.on('open', () => { connected = true; console.log('[pumpStream] connected'); });
+  sock.on('message', (data) => {
     try {
       const text = typeof data === 'string' ? data : data.toString('utf8');
       const ev = JSON.parse(text);
       if (Array.isArray(ev)) ev.forEach(handleEvent); else handleEvent(ev);
     } catch (e) { /* ignore parse errors */ }
   });
-  const reset = (why: string) => {
-    if (ws) { try { ws.removeAllListeners(); ws.terminate(); } catch {} }
+  const reset = () => {
+    if (ws !== sock) return; // already replaced
+    try { sock.removeAllListeners(); sock.terminate(); } catch {}
     ws = null; connected = false;
-    if (!reconnectTimer) {
-      reconnectTimer = setTimeout(() => { reconnectTimer = null; connect(); }, 3000);
-    }
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => { reconnectTimer = null; connect(); }, 3000);
   };
-  ws.on('close', () => reset('close'));
-  ws.on('error', (e) => { console.error('[pumpStream] error', (e as Error).message); reset('error'); });
+  sock.on('close', () => reset());
+  sock.on('error', (e) => { console.error('[pumpStream] error', (e as Error).message); reset(); });
 }
 
+let started = false;
+let watchdogTimer: NodeJS.Timeout | null = null;
+let evictTimer: NodeJS.Timeout | null = null;
 export function startPumpStream() {
+  if (started) return;
+  started = true;
   connect();
   // watchdog: if no events for 60s, force reconnect
-  setInterval(() => {
+  if (watchdogTimer) clearInterval(watchdogTimer);
+  watchdogTimer = setInterval(() => {
     if (connected && lastEventAt && Date.now() - lastEventAt > 60_000) {
       console.warn('[pumpStream] stale, reconnecting');
-      try { ws?.terminate(); } catch {}
+      const old = ws;
       ws = null; connected = false;
+      try { old?.removeAllListeners(); old?.terminate(); } catch {}
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
       connect();
     }
   }, 30_000);
+  // periodic batched LRU eviction (cheap)
+  if (evictTimer) clearInterval(evictTimer);
+  evictTimer = setInterval(evictIfNeeded, 10_000);
 }
 
 function serialize(t: Token) {
@@ -195,6 +234,39 @@ export function getStreamStatus() {
     migratedCount: migratedOrder.length,
     lastEventAgeMs: lastEventAt ? Date.now() - lastEventAt : null,
   };
+}
+
+const BASE58_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+export function validateTradeInput(opts: {
+  publicKey: any; action: any; mint: any; amount: any;
+  slippage?: any; priorityFee?: any;
+}): { ok: true } | { ok: false; error: string } {
+  if (typeof opts.publicKey !== 'string' || !BASE58_RE.test(opts.publicKey))
+    return { ok: false, error: 'invalid publicKey' };
+  if (typeof opts.mint !== 'string' || !BASE58_RE.test(opts.mint))
+    return { ok: false, error: 'invalid mint' };
+  if (opts.action !== 'buy' && opts.action !== 'sell')
+    return { ok: false, error: 'action must be buy or sell' };
+  // amount: number > 0, OR (sell only) "100%"
+  if (typeof opts.amount === 'string') {
+    if (!(opts.action === 'sell' && /^\d{1,3}(\.\d+)?%$/.test(opts.amount)))
+      return { ok: false, error: 'invalid amount string' };
+  } else {
+    const n = Number(opts.amount);
+    if (!Number.isFinite(n) || n <= 0 || n > 10_000)
+      return { ok: false, error: 'amount must be > 0 and <= 10000' };
+  }
+  if (opts.slippage !== undefined) {
+    const s = Number(opts.slippage);
+    if (!Number.isFinite(s) || s < 0 || s > 100)
+      return { ok: false, error: 'slippage must be 0–100' };
+  }
+  if (opts.priorityFee !== undefined) {
+    const p = Number(opts.priorityFee);
+    if (!Number.isFinite(p) || p < 0 || p > 1)
+      return { ok: false, error: 'priorityFee out of range' };
+  }
+  return { ok: true };
 }
 
 // Build an unsigned buy/sell tx via pumpapi local-transaction mode.
