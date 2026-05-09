@@ -11213,7 +11213,13 @@ Claimer: ${walletAddress}`;
       );
       if (!sanctumRes.ok) throw new Error(`Sanctum apys ${sanctumRes.status}`);
       const sanctumData = await sanctumRes.json();
-      const apyRows: { epoch: number; epochEndTs: number; apy: number }[] = sanctumData?.data ?? [];
+      const apyRows: { epoch: number; epochEndTs: number; apy: number }[] = (sanctumData?.data ?? [])
+        .map((r: any) => ({
+          epoch: r.epoch,
+          epochEndTs: r.epochEndTs,
+          // Cap obviously bogus APY values (Sanctum occasionally returns outliers)
+          apy: r.apy > 1 || r.apy < 0 || !Number.isFinite(r.apy) ? 0 : r.apy,
+        }));
       apyRows.sort((a, b) => a.epoch - b.epoch);
 
       const epochs: { epoch: number; rate: number; apy: number; date: string }[] = [];
