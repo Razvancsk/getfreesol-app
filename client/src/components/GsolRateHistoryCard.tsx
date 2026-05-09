@@ -131,8 +131,8 @@ export default function GsolRateHistoryCard({ tvl, holders, solValue, gsolBalanc
                     <YAxis
                       type="number"
                       orientation="right"
-                      domain={[0, 24]}
-                      ticks={[0, 4, 8, 12, 16, 20, 24]}
+                      domain={[0, 25]}
+                      ticks={[0, 5, 10, 15, 20, 25]}
                       tickFormatter={(v) => `${v}%`}
                       tick={{ fill: '#ffffff', fontSize: 11, fontWeight: 700 }}
                       axisLine={false}
