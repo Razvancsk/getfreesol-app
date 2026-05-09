@@ -227,7 +227,7 @@ export function TerminalView() {
           />
         </div>
 
-        <div className="space-y-3 max-h-[70vh] overflow-y-auto no-scrollbar">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[70vh] overflow-y-auto no-scrollbar">
           {tokens.length === 0 && (
             <div className="px-4 py-16 text-center text-white/50 text-sm bg-purple-900/20 border border-white/10 rounded-2xl">
               {isFetching ? 'Loading feed…' : 'No tokens yet — waiting for stream events.'}
