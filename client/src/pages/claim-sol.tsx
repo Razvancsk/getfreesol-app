@@ -3677,17 +3677,28 @@ export default function SolRefund() {
                     </div>
                   </>
                 ) : (
-                  <Button
-                    onClick={() => {
-                      select(null);
-                      setVisible(true);
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-                    title="Connect your wallet"
-                    data-testid="button-connect"
-                  >
-                    Connect
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Link href="/terminal">
+                      <Button
+                        className="bg-purple-800/60 hover:bg-purple-700/60 text-white rounded-lg px-3 py-2 text-xs font-medium border border-purple-500/30 flex items-center gap-1 h-auto"
+                        data-testid="button-terminal-mobile-guest"
+                      >
+                        <span>📟</span>
+                        <span>Terminal</span>
+                      </Button>
+                    </Link>
+                    <Button
+                      onClick={() => {
+                        select(null);
+                        setVisible(true);
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+                      title="Connect your wallet"
+                      data-testid="button-connect"
+                    >
+                      Connect
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
@@ -3762,17 +3773,28 @@ export default function SolRefund() {
                   </div>
                 </>
               ) : (
-                <Button
-                  onClick={() => {
-                    select(null);
-                    setVisible(true);
-                  }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30 h-auto"
-                  title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
-                  data-testid="button-connect-desktop"
-                >
-                  Connect Wallet
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Link href="/terminal">
+                    <Button
+                      className="bg-purple-800/60 hover:bg-purple-700/60 text-white rounded-lg px-3 py-2 text-sm font-medium border border-purple-500/30 flex items-center gap-1 h-auto"
+                      data-testid="button-terminal-desktop-guest"
+                    >
+                      <span>📟</span>
+                      <span>Terminal</span>
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={() => {
+                      select(null);
+                      setVisible(true);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30 h-auto"
+                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
+                    data-testid="button-connect-desktop"
+                  >
+                    Connect Wallet
+                  </Button>
+                </div>
               )}
             </div>
               </>
