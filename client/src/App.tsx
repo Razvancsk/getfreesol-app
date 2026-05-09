@@ -26,6 +26,7 @@ import NotFound from "@/pages/not-found";
 import GsolWelcomeModal from "@/components/GsolWelcomeModal";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { CoinFlipAnnouncement } from "@/components/CoinFlipAnnouncement";
+import { TerminalAnnouncement } from "@/components/TerminalAnnouncement";
 
 function Router() {
   return (
@@ -66,6 +67,7 @@ function App() {
             <GsolWelcomeModal />
             <FeedbackWidget />
             <CoinFlipAnnouncement />
+            <TerminalAnnouncement />
             <Router />
           </TooltipProvider>
         </ReownProvider>
