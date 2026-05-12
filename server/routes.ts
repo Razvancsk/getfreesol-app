@@ -352,6 +352,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Token search endpoint - uses Jupiter Ultra Search API
+  app.get("/api/client-config", (_req, res) => {
+    const key = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY || '';
+    res.json({ rpcUrl: key ? `https://mainnet.helius-rpc.com/?api-key=${key}` : '' });
+  });
+
+  app.get("/api/blockhash", async (_req, res) => {
+    try {
+      const conn = getHeliusConnection('confirmed');
+      const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
+      res.json({ blockhash, lastValidBlockHeight });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/send-transaction", async (req, res) => {
+    try {
+      const { transaction } = req.body;
+      if (!transaction) return res.status(400).json({ error: 'Missing transaction' });
+      const conn = getHeliusConnection('confirmed');
+      const buf = Buffer.from(transaction, 'base64');
+      const signature = await conn.sendRawTransaction(buf, { skipPreflight: false, preflightCommitment: 'confirmed' });
+      res.json({ signature });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get("/api/tokens/search", async (req, res) => {
     try {
       const { q, limit = '50' } = req.query;
@@ -906,34 +934,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/jupiter/ultra/holdings/:address", async (req, res) => {
     try {
       const { address } = req.params;
-      
-      if (!address) {
-        return res.status(400).json({ error: 'Missing wallet address' });
-      }
+      if (!address) return res.status(400).json({ error: 'Missing wallet address' });
 
-      const holdingsUrl = `https://api.jup.ag/ultra/v1/holdings/${address}`;
-      
-      const headers: Record<string, string> = {
-        'Accept': 'application/json'
-      };
-      
-      if (process.env.JUPITER_API_KEY) {
-        headers['x-api-key'] = process.env.JUPITER_API_KEY;
-      }
-      
-      const response = await fetch(holdingsUrl, { headers });
-      
+      const apiKey = process.env.JUPITER_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'Jupiter API key not configured' });
+
+      const response = await fetch(`https://api.jup.ag/ultra/v1/holdings/${address}`, {
+        headers: { 'Accept': 'application/json', 'x-api-key': apiKey }
+      });
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Jupiter Holdings API error:', response.status, errorText);
         return res.status(response.status).json({ error: 'Failed to fetch holdings' });
       }
-      
+
       const data = await response.json();
+      // data.nativeBalance: { amount, uiAmount }
+      // data.tokens: { [mint]: { amount, decimals, isFrozen, isAssociatedTokenAccount, programId } }
       res.json(data);
     } catch (error) {
       console.error('Holdings proxy error:', error);
       res.status(500).json({ error: 'Failed to fetch holdings' });
+    }
+  });
+
+  app.get("/api/jupiter/ultra/holdings/:address/native", async (req, res) => {
+    try {
+      const { address } = req.params;
+      if (!address) return res.status(400).json({ error: 'Missing wallet address' });
+
+      const apiKey = process.env.JUPITER_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'Jupiter API key not configured' });
+
+      const response = await fetch(`https://api.jup.ag/ultra/v1/holdings/${address}/native`, {
+        headers: { 'Accept': 'application/json', 'x-api-key': apiKey }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return res.status(response.status).json({ error: 'Failed to fetch native balance' });
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch native balance' });
     }
   });
 
@@ -1754,7 +1800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tokensWithMetadata: any[] = [];
 
       // Add native SOL if balance > 0
-      const solBalance = parseFloat(holdings.uiAmount || '0');
+      const solBalance = parseFloat(holdings.nativeBalance?.uiAmount || holdings.uiAmount || '0');
       if (solBalance > 0) {
         tokensWithMetadata.push({
           address: 'So11111111111111111111111111111111111111112',
@@ -1763,7 +1809,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           decimals: 9,
           logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
           balance: solBalance,
-          balanceRaw: holdings.amount
+          balanceRaw: holdings.nativeBalance?.amount || holdings.amount
         });
       }
 
@@ -2279,8 +2325,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createEmptyTokenAccount(account);
       }
 
-      // Note: Wallet check Discord alerts are only sent from the Discord bot /scan command
-      // NOT from website scans to avoid spam
+      // Send Discord alert for wallet scan
+      if (emptyAccounts.length > 0) {
+        try {
+          const { sendWalletCheckAlert } = await import('./discordWebhookService.js');
+          await sendWalletCheckAlert({
+            walletAddress: address,
+            emptyAccountsFound: emptyAccounts.length,
+            estimatedSOL: totalReclaimable
+          });
+        } catch (e) {
+          console.error('Discord wallet check alert failed:', e);
+        }
+      }
 
       const response = {
         success: true,
@@ -3118,8 +3175,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get SOL refund statistics
   app.get("/api/sol-refund/stats", async (req, res) => {
     try {
-      const totalSolRecovered = await storage.getTotalSolRecovered();
-      const totalAccountsClaimed = await storage.getTotalAccountsClaimed();
+      const BASE_SOL = 418.19;
+      const BASE_ACCOUNTS = 202667;
+      const dbSol = await storage.getTotalSolRecovered();
+      const dbAccounts = await storage.getTotalAccountsClaimed();
+      const totalSolRecovered = BASE_SOL + dbSol;
+      const totalAccountsClaimed = BASE_ACCOUNTS + dbAccounts;
       const recentTransactions = await storage.getTransactionRecords(20);
 
       const stats = {
@@ -10831,9 +10892,17 @@ Claimer: ${walletAddress}`;
 
   app.get("/api/coinflip/vault", async (_req, res) => {
     try {
-      const address = getVaultAddress();
-      const balance = await getVaultBalance();
-      const feesWallet = process.env.FEES_WALLET ?? 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+      const { readFileSync } = await import('fs');
+      const { join } = await import('path');
+      const envLines = readFileSync(join(process.cwd(), '.env'), 'utf-8').split('\n');
+      const getEnvVal = (k: string) => { for (const l of envLines) { const t = l.trim(); if (t.startsWith(k + '=')) return t.slice(k.length + 1).trim(); } return ''; };
+      const vaultPrivKey = getEnvVal('COINFLIP_VAULT_KEY') || getEnvVal('RELAYER_PRIVATE_KEY');
+      const feesWallet = getEnvVal('FEES_WALLET') || 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+      const kp = Keypair.fromSecretKey(bs58.decode(vaultPrivKey));
+      const address = kp.publicKey.toBase58();
+      const conn = getHeliusConnection('confirmed');
+      const bal = await conn.getBalance(kp.publicKey);
+      const balance = bal / LAMPORTS_PER_SOL;
       res.json({ success: true, address, balance, feesWallet });
     } catch (error: any) {
       console.error('Error fetching vault info:', error);
@@ -11491,28 +11560,59 @@ Claimer: ${walletAddress}`;
       let apy: number | undefined;
       let apySource = 'gsol-inception';
 
-      // ── 2a. Sanctum Ironforge API APY (primary) ──────────────────────────
-      // GET /lsts/{mint} returns avgApy (what Sanctum displays in their UI)
+      // ── 2a. Sanctum Extra API (public, no key) ───────────────────────────
       try {
-        const sanctumApyRes = await fetch(
-          `https://sanctum-api.ironforge.network/lsts/${GSOL_MINT_ADDR}?apiKey=${process.env.SANCTUM_API_KEY}`
-        );
-        if (sanctumApyRes.ok) {
-          const sanctumApyData = await sanctumApyRes.json();
-          const lstData = sanctumApyData?.data?.[0];
-          // avgApy matches what Sanctum shows in their UI (decimal, e.g. 0.0332 = 3.32%)
-          const avgApy = lstData?.avgApy;
-          if (typeof avgApy === 'number' && avgApy > 0) {
-            apy = avgApy * 100;
-            apySource = 'sanctum-api';
-            // grab solValue, tvl, holders while we have the response
-            if (lstData?.solValue) solValue = Number(lstData.solValue) / 1e9;
-            if (lstData?.tvl)      sanctumTvl = Number(lstData.tvl);
-            if (lstData?.holders)  sanctumHolders = Number(lstData.holders);
-            console.log(`✅ Sanctum GSOL avgApy: ${apy.toFixed(2)}%, solValue: ${solValue}, tvl: ${sanctumTvl}, holders: ${sanctumHolders}`);
+        const sanctumRes = await fetch('https://sanctum-extra-api.vercel.app/v1/lst-list');
+        if (sanctumRes.ok) {
+          const sanctumData = await sanctumRes.json();
+          const lstList: any[] = sanctumData?.sanctumLstList ?? sanctumData ?? [];
+          const gsol = lstList.find((t: any) =>
+            t.mint === GSOL_MINT_ADDR || t.address === GSOL_MINT_ADDR
+          );
+          if (gsol) {
+            if (gsol.apy !== undefined)       { apy = Number(gsol.apy) * 100; apySource = 'sanctum-extra'; }
+            if (gsol.solValue !== undefined)  solValue = Number(gsol.solValue);
+            if (gsol.tvl !== undefined)       sanctumTvl = Number(gsol.tvl);
+            if (gsol.holders !== undefined)   sanctumHolders = Number(gsol.holders);
+            console.log(`✅ Sanctum Extra GSOL: apy=${apy}, tvl=${sanctumTvl}, holders=${sanctumHolders}`);
           }
         }
       } catch (_) {}
+
+      // ── 2a-2. Sanctum Ironforge API (fallback, requires key) ─────────────
+      if ((apy === undefined || sanctumTvl === undefined) && process.env.SANCTUM_API_KEY) {
+        try {
+          const sanctumApyRes = await fetch(
+            `https://sanctum-api.ironforge.network/lsts/${GSOL_MINT_ADDR}?apiKey=${process.env.SANCTUM_API_KEY}`
+          );
+          if (sanctumApyRes.ok) {
+            const sanctumApyData = await sanctumApyRes.json();
+            const lstData = sanctumApyData?.data?.[0];
+            const avgApy = lstData?.avgApy;
+            if (typeof avgApy === 'number' && avgApy > 0) {
+              apy = avgApy * 100; apySource = 'sanctum-api';
+              if (lstData?.solValue) solValue = Number(lstData.solValue) / 1e9;
+              if (lstData?.tvl)      sanctumTvl = Number(lstData.tvl);
+              if (lstData?.holders)  sanctumHolders = Number(lstData.holders);
+            }
+          }
+        } catch (_) {}
+      }
+
+      // ── 2a-3. Helius DAS — holder count fallback ─────────────────────────
+      if (!sanctumHolders) {
+        try {
+          const dasRes = await fetch(heliusUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTokenAccounts',
+              params: { mint: GSOL_MINT_ADDR, limit: 1, displayOptions: {} } })
+          });
+          if (dasRes.ok) {
+            const dasData = await dasRes.json();
+            if (dasData?.result?.total) sanctumHolders = Number(dasData.result.total);
+          }
+        } catch (_) {}
+      }
 
       // ── 2b. On-chain inception-to-now APY (fallback if Sanctum doesn't have GSOL) ──
       if (apy === undefined) try {

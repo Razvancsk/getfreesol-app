@@ -1,0 +1,46 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0Kbigint: Failed to load bindings, pure JS will be used (try npm run rebuild?)
+✅ REST API: Keypair initialized from seed
+🔑 REST API: Derived public key for authentication
+✅ Backpack API credentials configured
+✅ WebSocket: Keypair initialized from seed
+🔑 WebSocket: Derived public key for authentication
+11:34:17 PM [express] Initializing server...
+11:34:17 PM [express] NODE_ENV: development
+11:34:17 PM [express] PORT: 5000
+11:34:17 PM [express] DATABASE_URL exists: true
+11:34:17 PM [express] Testing database connection...
+11:34:17 PM [express] Database connection successful
+🤖 Starting X bot scheduled jobs...
+✅ X bot scheduled jobs started
+🔐 Loaded encryption key from .fee_encryption_key file
+[pumpStream] connecting…
+11:34:17 PM [express] Routes registered successfully
+11:34:17 PM [express] Discord bot disabled in development mode to avoid double responses
+✅ X API credentials updated from environment
+Telegram bot is starting...
+Auto-claim scheduler started (checks every 1 minute)
+Telegram bot is online and listening!
+11:34:19 PM [express] Starting server in development mode...
+11:34:19 PM [express] Setting up Vite for development mode...
+[pumpStream] connected
+11:34:20 PM [express] Vite setup completed
+11:34:20 PM [express] Server started successfully on port 5000
+11:34:20 PM [express] Environment: development
+11:34:20 PM [express] 🔔 Starting alert monitoring system (schedule: */5 * * * *)
+11:34:20 PM [express] 🔔 Running initial alert check...
+🔔 Checking alerts for all wallets...
+Found 0 wallets with enabled alerts
+✅ Alert check complete
+11:34:20 PM [express] ✅ Initial alert check complete, starting scheduled checks
+🔔 Checking alerts for all wallets...
+Found 0 wallets with enabled alerts
+✅ Alert check complete
+11:35:00 PM [express] ✅ Alert check completed in 129ms
+🔔 Checking alerts for all wallets...
+Found 0 wallets with enabled alerts
+✅ Alert check complete
+11:40:00 PM [express] ✅ Alert check completed in 125ms

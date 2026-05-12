@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\\\Users\\\\razva\\\\Downloads\\\\CodeCollaborate\\\\CodeCollaborate\" /a:h)",
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}

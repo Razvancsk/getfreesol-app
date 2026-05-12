@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOL Refund - Reclaim Your Solana</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            500: '#8B5CF6',
+                            600: '#7C3AED',
+                            700: '#6D28D9'
+                        },
+                        accent: {
+                            emerald: '#10B981',
+                            amber: '#F59E0B'
+                        },
+                        dark: {
+                            900: '#0F0F23',
+                            800: '#1E1B4B',
+                            700: '#312E81'
+                        }
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.6s ease-out',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        },
+                        glow: {
+                            '0%': { boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)' },
+                            '100%': { boxShadow: '0 0 30px rgba(139, 92, 246, 0.6)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-dark-900 text-gray-100 font-inter">
+    <!-- @COMPONENT: Header Navigation -->
+    <header class="bg-dark-800/80 backdrop-blur-lg border-b border-gray-700/50 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-coins text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-primary-500 to-purple-400 bg-clip-text text-transparent">
+                            SOL Refund
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- @STATE: walletConnected:boolean = false -->
+                    <button id="connectWalletBtn" class="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 animate-glow">
+                        <i class="fas fa-wallet"></i>
+                        <span data-bind="walletStatus">Connect Phantom</span>
+                    </button>
+                    
+                    <!-- Connected wallet display (hidden by default) -->
+                    <div id="walletConnected" class="hidden bg-dark-700 px-4 py-2 rounded-lg border border-gray-600 flex items-center space-x-3">
+                        <div class="w-2 h-2 bg-accent-emerald rounded-full animate-pulse-slow"></div>
+                        <span class="text-sm font-mono" data-bind="walletAddress">9QQk...umYC</span>
+                        <button id="disconnectBtn" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header Navigation -->
+
+    <!-- @COMPONENT: Hero Section -->
+    <section class="relative overflow-hidden py-20">
+        <!-- Background gradient -->
+        <div class="absolute inset-0 bg-gradient-to-br from-dark-800 via-dark-900 to-dark-800"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(139,92,246,0.1),transparent_50%)]"></div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-6xl font-bold mb-6 animate-slide-up">
+                    Reclaim Your
+                    <span class="bg-gradient-to-r from-primary-500 to-purple-400 bg-clip-text text-transparent">
+                        SOL
+                    </span>
+                </h1>
+                <p class="text-xl text-gray-300 mb-8 max-w-3xl mx-auto animate-slide-up">
+                    Recover SOL from empty token accounts. Our automated system scans your wallet and closes unused accounts to reclaim rent deposits.
+                </p>
+                
+                <!-- Stats Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-fade-in">
+                    <div class="bg-dark-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+                        <div class="text-3xl font-bold text-accent-emerald" data-bind="stats.totalSolRecovered">247.8</div>
+                        <div class="text-gray-400">SOL Recovered</div>
+                    </div>
+                    <div class="bg-dark-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+                        <div class="text-3xl font-bold text-primary-500" data-bind="stats.totalAccountsClaimed">1,542</div>
+                        <div class="text-gray-400">Accounts Closed</div>
+                    </div>
+                    <div class="bg-dark-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+                        <div class="text-3xl font-bold text-accent-amber" data-bind="stats.recentTransactions.length">89</div>
+                        <div class="text-gray-400">Recent Claims</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: Hero Section -->
+
+    <!-- @COMPONENT: Main Application -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        
+        <!-- Wallet Connection Flow -->
+        <div id="walletPrompt" class="mb-12">
+            <div class="bg-gradient-to-r from-dark-800 to-dark-700 rounded-2xl p-8 border border-gray-700/50 text-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-wallet text-2xl text-white"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-4">Connect Your Phantom Wallet</h3>
+                <p class="text-gray-300 mb-6 max-w-md mx-auto">
+                    Connect your Phantom wallet to scan for empty token accounts and start reclaiming your SOL.
+                </p>
+                <button class="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 px-8 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105">
+                    <i class="fas fa-wallet mr-2"></i>
+                    Connect Phantom Wallet
+                </button>
+            </div>
+        </div>
+
+        <!-- Scan Interface (Hidden initially) -->
+        <div id="scanInterface" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Left Column: Scan & Results -->
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <!-- Scan Card -->
+                    <div class="bg-gradient-to-br from-dark-800 to-dark-700 rounded-2xl p-6 border border-gray-700/50">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold flex items-center">
+                                <i class="fas fa-search text-primary-500 mr-3"></i>
+                                Wallet Scanner
+                            </h3>
+                            <div class="flex items-center space-x-2 text-sm text-gray-400">
+                                <div class="w-2 h-2 bg-accent-emerald rounded-full animate-pulse"></div>
+                                <span>Connected</span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-dark-900/50 rounded-lg p-4 border border-gray-600/30">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Wallet Address</label>
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-1 bg-dark-700 rounded-lg px-4 py-3 font-mono text-sm border border-gray-600">
+                                        <span data-bind="connectedWallet">9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC</span>
+                                    </div>
+                                    <button class="text-gray-400 hover:text-white p-2">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- @STATE: isScanning:boolean = false -->
+                            <button id="scanBtn" class="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-search"></i>
+                                <span data-bind="scanButtonText">Scan for Empty Accounts</span>
+                            </button>
+                            
+                            <!-- Scanning Progress (Hidden by default) -->
+                            <div id="scanProgress" class="hidden">
+                                <div class="bg-dark-900/50 rounded-lg p-4 border border-gray-600/30">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm text-gray-300">Scanning wallet...</span>
+                                        <span class="text-sm text-primary-500" data-bind="scanProgress">68%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700 rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full transition-all duration-300" style="width: 68%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scan Results -->
+                    <div id="scanResults" class="hidden bg-gradient-to-br from-dark-800 to-dark-700 rounded-2xl p-6 border border-gray-700/50">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold flex items-center">
+                                <i class="fas fa-list-ul text-accent-emerald mr-3"></i>
+                                Empty Token Accounts
+                            </h3>
+                            <div class="bg-accent-emerald/20 px-3 py-1 rounded-full text-accent-emerald text-sm font-medium">
+                                <span data-bind="emptyAccountsCount">12</span> accounts found
+                            </div>
+                        </div>
+
+                        <!-- Summary Stats -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-dark-900/50 rounded-lg p-4 border border-gray-600/30">
+                                <div class="text-2xl font-bold text-accent-emerald" data-bind="totalReclaimable">2.4832 SOL</div>
+                                <div class="text-gray-400 text-sm">Total Reclaimable</div>
+                            </div>
+                            <div class="bg-dark-900/50 rounded-lg p-4 border border-gray-600/30">
+                                <div class="text-2xl font-bold text-primary-500" data-bind="netAmount">2.1107 SOL</div>
+                                <div class="text-gray-400 text-sm">You'll receive (after 15% fee)</div>
+                            </div>
+                        </div>
+
+                        <!-- Fee Disclosure -->
+                        <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
+                            <div class="flex items-start space-x-3">
+                                <i class="fas fa-info-circle text-accent-amber text-lg mt-0.5"></i>
+                                <div>
+                                    <div class="font-semibold text-accent-amber mb-1">Service Fee: 15%</div>
+                                    <div class="text-sm text-gray-300">
+                                        A 15% service fee (<span data-bind="feeAmount">0.3725 SOL</span>) will be deducted from your refund to cover transaction costs and platform maintenance.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Account List -->
+                        <div class="space-y-3 mb-6 max-h-64 overflow-y-auto">
+                            <!-- @MAP: emptyAccounts.map(account => ( -->
+                            <div class="bg-dark-900/50 rounded-lg p-4 border border-gray-600/30 flex items-center justify-between" data-mock="true">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" checked class="w-4 h-4 text-primary-500 bg-dark-700 border-gray-600 rounded focus:ring-primary-500">
+                                    <div>
+                                        <div class="font-mono text-sm" data-bind="account.mintAddress">EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v</div>
+                                        <div class="text-xs text-gray-400" data-bind="account.tokenSymbol">USDC</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-semibold text-accent-emerald" data-bind="account.rentAmount">0.00203928 SOL</div>
+                                    <div class="text-xs text-gray-400">Balance: 0</div>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-4">
+                            <button class="flex-1 bg-gradient-to-r from-accent-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-coins"></i>
+                                <span>Claim SOL Refund</span>
+                            </button>
+                            <button class="px-6 py-3 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-500 rounded-lg transition-all duration-200">
+                                Select All
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Transaction Processing -->
+                    <div id="processingModal" class="hidden bg-gradient-to-br from-dark-800 to-dark-700 rounded-2xl p-6 border border-gray-700/50">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                                <i class="fas fa-cog fa-spin text-2xl text-white"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-4">Processing Transaction</h3>
+                            <p class="text-gray-300 mb-6">
+                                Please confirm the transaction in your Phantom wallet and wait for confirmation.
+                            </p>
+                            <div class="bg-dark-900/50 rounded-lg p-4 border border-gray-600/30">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-gray-300">Transaction Progress</span>
+                                    <span class="text-sm text-primary-500">Confirming...</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full animate-pulse" style="width: 75%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Statistics & History -->
+                <div class="space-y-6">
+                    
+                    <!-- Platform Stats -->
+                    <div class="bg-gradient-to-br from-dark-800 to-dark-700 rounded-2xl p-6 border border-gray-700/50">
+                        <h3 class="text-lg font-bold mb-4 flex items-center">
+                            <i class="fas fa-chart-line text-primary-500 mr-3"></i>
+                            Platform Statistics
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Total SOL Recovered</span>
+                                <span class="font-bold text-accent-emerald" data-bind="stats.totalSolRecovered">247.8 SOL</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Accounts Closed</span>
+                                <span class="font-bold text-primary-500" data-bind="stats.totalAccountsClaimed">1,542</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Users Helped</span>
+                                <span class="font-bold text-accent-amber">324</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Average Recovery</span>
+                                <span class="font-bold text-gray-100">0.763 SOL</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="bg-gradient-to-br from-dark-800 to-dark-700 rounded-2xl p-6 border border-gray-700/50">
+                        <h3 class="text-lg font-bold mb-4 flex items-center">
+                            <i class="fas fa-clock text-accent-emerald mr-3"></i>
+                            Recent Claims
+                        </h3>
+                        <div class="space-y-3 max-h-72 overflow-y-auto">
+                            <!-- @MAP: recentTransactions.map(tx => ( -->
+                            <div class="bg-dark-900/50 rounded-lg p-3 border border-gray-600/30" data-mock="true">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-mono text-xs text-gray-400" data-bind="tx.signature">5KJp...8xY2</span>
+                                    <span class="text-xs text-accent-emerald" data-bind="tx.solRecovered">1.24 SOL</span>
+                                </div>
+                                <div class="flex justify-between items-center text-xs text-gray-500">
+                                    <span data-bind="tx.accountsClosed">8 accounts closed</span>
+                                    <span data-bind="tx.processedAt">2 mins ago</span>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+
+                    <!-- How It Works -->
+                    <div class="bg-gradient-to-br from-dark-800 to-dark-700 rounded-2xl p-6 border border-gray-700/50">
+                        <h3 class="text-lg font-bold mb-4 flex items-center">
+                            <i class="fas fa-question-circle text-accent-amber mr-3"></i>
+                            How It Works
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-xs font-bold text-white">1</div>
+                                <div>
+                                    <div class="font-medium text-gray-200">Connect Wallet</div>
+                                    <div class="text-sm text-gray-400">Connect your Phantom wallet securely</div>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-xs font-bold text-white">2</div>
+                                <div>
+                                    <div class="font-medium text-gray-200">Scan Accounts</div>
+                                    <div class="text-sm text-gray-400">We scan for empty token accounts</div>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-xs font-bold text-white">3</div>
+                                <div>
+                                    <div class="font-medium text-gray-200">Claim SOL</div>
+                                    <div class="text-sm text-gray-400">Close accounts and reclaim your SOL</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- @END_COMPONENT: Main Application -->
+
+    <!-- @COMPONENT: Success Modal -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-gradient-to-br from-dark-800 to-dark-700 rounded-2xl p-8 border border-gray-700/50 max-w-md w-full text-center">
+            <div class="w-16 h-16 bg-gradient-to-br from-accent-emerald to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check text-2xl text-white"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-4">Transaction Successful!</h3>
+            <p class="text-gray-300 mb-6">
+                Your SOL refund has been processed successfully.
+            </p>
+            <div class="bg-dark-900/50 rounded-lg p-4 border border-gray-600/30 mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-gray-300">SOL Recovered</span>
+                    <span class="font-bold text-accent-emerald" data-bind="successAmount">2.1107 SOL</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-gray-300">Accounts Closed</span>
+                    <span class="font-bold text-primary-500" data-bind="successAccountsClosed">12</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-300">Transaction</span>
+                    <a href="#" class="text-primary-500 hover:text-primary-400 text-sm font-mono" data-bind="successTxSignature">View on Explorer</a>
+                </div>
+            </div>
+            <button class="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 py-3 rounded-lg font-semibold transition-all duration-200">
+                Close
+            </button>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: Success Modal -->
+
+    <!-- @COMPONENT: Error Toast -->
+    <div id="errorToast" class="hidden fixed top-4 right-4 bg-red-600 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-sm">
+        <div class="flex items-start space-x-3">
+            <i class="fas fa-exclamation-triangle text-lg mt-0.5"></i>
+            <div>
+                <div class="font-semibold">Error</div>
+                <div class="text-sm" data-bind="errorMessage">Something went wrong. Please try again.</div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: Error Toast -->
+
+    <!-- Footer -->
+    <footer class="bg-dark-800/50 border-t border-gray-700/50 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-6 h-6 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-coins text-white text-xs"></i>
+                        </div>
+                        <span class="font-bold text-lg">SOL Refund</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">
+                        Safely reclaim SOL from empty token accounts on the Solana blockchain.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">How it works</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Security</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Support</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Community</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors flex items-center"><i class="fab fa-twitter mr-2"></i>Twitter</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors flex items-center"><i class="fab fa-discord mr-2"></i>Discord</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors flex items-center"><i class="fab fa-github mr-2"></i>GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700/50 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2024 SOL Refund. Built on Solana. Service fee: 15%</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    // TODO: Implement Phantom wallet integration, Solana blockchain interactions, and real-time data updates
+    (function() {
+        // Mock wallet connection state
+        let isWalletConnected = false;
+        let currentWallet = null;
+        
+        // DOM elements
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        const walletConnected = document.getElementById('walletConnected');
+        const walletPrompt = document.getElementById('walletPrompt');
+        const scanInterface = document.getElementById('scanInterface');
+        const scanBtn = document.getElementById('scanBtn');
+        const scanProgress = document.getElementById('scanProgress');
+        const scanResults = document.getElementById('scanResults');
+        const processingModal = document.getElementById('processingModal');
+        const successModal = document.getElementById('successModal');
+        const errorToast = document.getElementById('errorToast');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+
+        // Mock wallet connection
+        connectWalletBtn.addEventListener('click', function() {
+            // TODO: Implement actual Phantom wallet connection
+            simulateWalletConnection();
+        });
+
+        disconnectBtn.addEventListener('click', function() {
+            // TODO: Implement wallet disconnection
+            disconnectWallet();
+        });
+
+        // Mock scan functionality
+        scanBtn.addEventListener('click', function() {
+            // TODO: Implement actual wallet scanning for empty token accounts
+            simulateWalletScan();
+        });
+
+        function simulateWalletConnection() {
+            // Show loading state
+            connectWalletBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Connecting...';
+            connectWalletBtn.disabled = true;
+            
+            setTimeout(() => {
+                isWalletConnected = true;
+                currentWallet = '9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC';
+                
+                // Update UI
+                connectWalletBtn.classList.add('hidden');
+                walletConnected.classList.remove('hidden');
+                walletPrompt.classList.add('hidden');
+                scanInterface.classList.remove('hidden');
+                
+                // Reset button
+                connectWalletBtn.innerHTML = '<i class="fas fa-wallet"></i><span>Connect Phantom</span>';
+                connectWalletBtn.disabled = false;
+                
+                showToast('Wallet connected successfully!', 'success');
+            }, 2000);
+        }
+
+        function disconnectWallet() {
+            isWalletConnected = false;
+            currentWallet = null;
+            
+            // Update UI
+            connectWalletBtn.classList.remove('hidden');
+            walletConnected.classList.add('hidden');
+            walletPrompt.classList.remove('hidden');
+            scanInterface.classList.add('hidden');
+            scanResults.classList.add('hidden');
+            
+            showToast('Wallet disconnected', 'info');
+        }
+
+        function simulateWalletScan() {
+            // Show scanning progress
+            scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Scanning...';
+            scanBtn.disabled = true;
+            scanProgress.classList.remove('hidden');
+            
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 100) progress = 100;
+                
+                const progressBar = scanProgress.querySelector('.bg-gradient-to-r');
+                const progressText = scanProgress.querySelector('[data-bind="scanProgress"]');
+                
+                progressBar.style.width = progress + '%';
+                progressText.textContent = Math.round(progress) + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    setTimeout(() => {
+                        // Hide progress and show results
+                        scanProgress.classList.add('hidden');
+                        scanResults.classList.remove('hidden');
+                        
+                        // Reset scan button
+                        scanBtn.innerHTML = '<i class="fas fa-search mr-2"></i>Scan Again';
+                        scanBtn.disabled = false;
+                        
+                        showToast('Scan completed! Found 12 empty accounts.', 'success');
+                    }, 500);
+                }
+            }, 200);
+        }
+
+        function showToast(message, type = 'info') {
+            const toastTypes = {
+                success: 'bg-green-600',
+                error: 'bg-red-600',
+                info: 'bg-blue-600'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 ${toastTypes[type]} text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-sm transform translate-x-full transition-transform duration-300`;
+            toast.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}-circle"></i>
+                    <div class="text-sm">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+            
+            // Auto remove
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 4000);
+        }
+
+        // Mock real-time stats updates
+        function updateStats() {
+            // TODO: Implement real API calls for statistics
+            const stats = document.querySelectorAll('[data-bind*="stats"]');
+            stats.forEach(stat => {
+                if (stat.dataset.bind.includes('totalSolRecovered')) {
+                    const current = parseFloat(stat.textContent);
+                    stat.textContent = (current + Math.random() * 0.1).toFixed(1);
+                }
+            });
+        }
+
+        // Update stats every 5 seconds (as specified in requirements)
+        setInterval(updateStats, 5000);
+
+        // Mock claim SOL functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('button')?.textContent?.includes('Claim SOL Refund')) {
+                // TODO: Implement actual SOL claiming transaction
+                simulateClaimTransaction();
+            }
+        });
+
+        function simulateClaimTransaction() {
+            // Show processing modal
+            processingModal.classList.remove('hidden');
+            
+            setTimeout(() => {
+                processingModal.classList.add('hidden');
+                successModal.classList.remove('hidden');
+                
+                // Update scan results to show claimed
+                scanResults.classList.add('hidden');
+                
+                showToast('SOL refund completed successfully!', 'success');
+            }, 5000);
+        }
+
+        // Close success modal
+        successModal.addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON') {
+                successModal.classList.add('hidden');
+            }
+        });
+
+        // Initialize app
+        console.log('SOL Refund DApp initialized');
+    })();
+    </script>
+</body>
+</html>

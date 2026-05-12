@@ -1,7 +1,17 @@
 import fetch from 'node-fetch';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
-const DISCORD_CHECK_WEBHOOK_URL = process.env.DISCORD_CHECK_WEBHOOK_URL;
+function getEnvUrl(name: string): string {
+  try {
+    const lines = readFileSync(join(process.cwd(), '.env'), 'utf-8').split('\n');
+    for (const line of lines) {
+      const t = line.trim();
+      if (t.startsWith(name + '=')) return t.slice(name.length + 1).trim();
+    }
+  } catch {}
+  return process.env[name] || '';
+}
 
 interface ClaimAlert {
   walletAddress: string;
@@ -11,6 +21,7 @@ interface ClaimAlert {
 }
 
 export async function sendClaimAlert(alert: ClaimAlert): Promise<{ success: boolean; error?: string }> {
+  const DISCORD_WEBHOOK_URL = getEnvUrl('DISCORD_WEBHOOK_URL');
   if (!DISCORD_WEBHOOK_URL) {
     console.error('❌ DISCORD_WEBHOOK_URL not configured');
     return { success: false, error: 'Webhook URL not configured' };
@@ -108,6 +119,7 @@ interface WalletCheckAlert {
 }
 
 export async function sendWalletCheckAlert(alert: WalletCheckAlert): Promise<{ success: boolean; error?: string }> {
+  const DISCORD_CHECK_WEBHOOK_URL = getEnvUrl('DISCORD_CHECK_WEBHOOK_URL');
   if (!DISCORD_CHECK_WEBHOOK_URL) {
     console.error('❌ DISCORD_CHECK_WEBHOOK_URL not configured');
     return { success: false, error: 'Webhook URL not configured' };
@@ -206,6 +218,7 @@ interface TokenBurnAlert {
 }
 
 export async function sendTokenBurnAlert(alert: TokenBurnAlert): Promise<{ success: boolean; error?: string }> {
+  const DISCORD_WEBHOOK_URL = getEnvUrl('DISCORD_WEBHOOK_URL');
   if (!DISCORD_WEBHOOK_URL) {
     console.error('❌ DISCORD_WEBHOOK_URL not configured');
     return { success: false, error: 'Webhook URL not configured' };
@@ -304,6 +317,7 @@ interface NFTBurnAlert {
 }
 
 export async function sendNFTBurnAlert(alert: NFTBurnAlert): Promise<{ success: boolean; error?: string }> {
+  const DISCORD_WEBHOOK_URL = getEnvUrl('DISCORD_WEBHOOK_URL');
   if (!DISCORD_WEBHOOK_URL) {
     console.error('❌ DISCORD_WEBHOOK_URL not configured');
     return { success: false, error: 'Webhook URL not configured' };

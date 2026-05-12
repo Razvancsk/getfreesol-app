@@ -1,5 +1,5 @@
 import { useAppKit, useAppKitAccount, useAppKitProvider, useDisconnect } from "@reown/appkit/react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { Connection, PublicKey, VersionedTransaction, Transaction } from "@solana/web3.js";
 import type { Provider } from "@reown/appkit-adapter-solana/react";
 
@@ -33,10 +33,13 @@ export const useReownWallet = (): ReownWalletHook => {
   const { walletProvider } = useAppKitProvider<Provider>("solana");
   const { disconnect: appKitDisconnect } = useDisconnect();
 
-  const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
-  const rpcEndpoint = heliusKey 
-    ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-    : "https://api.mainnet-beta.solana.com";
+  const [rpcEndpoint, setRpcEndpoint] = useState<string>("https://api.mainnet-beta.solana.com");
+  useEffect(() => {
+    fetch('/api/client-config')
+      .then(r => r.json())
+      .then(d => { if (d.rpcUrl) setRpcEndpoint(d.rpcUrl); })
+      .catch(() => {});
+  }, []);
 
   const connection = useMemo(() => new Connection(rpcEndpoint, "confirmed"), [rpcEndpoint]);
 

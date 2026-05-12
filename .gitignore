@@ -6,3 +6,8 @@ vite.config.ts.*
 *.tar.gz
 .fee_encryption_key
 .coinflip_vault_key
+
+# Environment variables - never commit
+.env
+.env.local
+.env.*.local

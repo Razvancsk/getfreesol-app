@@ -1,0 +1,50 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0Kbigint: Failed to load bindings, pure JS will be used (try npm run rebuild?)
+✅ REST API: Keypair initialized from seed
+🔑 REST API: Derived public key for authentication
+✅ Backpack API credentials configured
+✅ WebSocket: Keypair initialized from seed
+🔑 WebSocket: Derived public key for authentication
+7:17:59 PM [express] Initializing server...
+7:17:59 PM [express] NODE_ENV: development
+7:17:59 PM [express] PORT: 5000
+7:17:59 PM [express] DATABASE_URL exists: true
+7:17:59 PM [express] Testing database connection...
+7:17:59 PM [express] Database connection successful
+🤖 Starting X bot scheduled jobs...
+✅ X bot scheduled jobs started
+🔐 Loaded encryption key from .fee_encryption_key file
+[pumpStream] connecting…
+7:17:59 PM [express] Routes registered successfully
+7:17:59 PM [express] Discord bot disabled in development mode to avoid double responses
+✅ X API credentials updated from environment
+Telegram bot is starting...
+Auto-claim scheduler started (checks every 1 minute)
+Telegram bot is online and listening!
+7:17:59 PM [express] Starting server in development mode...
+7:17:59 PM [express] Setting up Vite for development mode...
+7:17:59 PM [express] Vite setup completed
+Uncaught Exception (server kept alive): listen EADDRINUSE: address already in use 0.0.0.0:5000
+Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at doListen (node:net:2139:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected

@@ -176,7 +176,9 @@ export function CoinFlipGame() {
         }));
       }
 
-      const { blockhash } = await connection.getLatestBlockhash('confirmed');
+      const bhResp = await fetch('/api/blockhash');
+      if (!bhResp.ok) throw new Error('Failed to get blockhash from server');
+      const { blockhash } = await bhResp.json();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
@@ -186,10 +188,14 @@ export function CoinFlipGame() {
         const signed = await signTransaction(transaction);
         console.log('Transaction signed, sending...');
         const serialized = signed.serialize();
-        signature = await connection.sendRawTransaction(serialized, {
-          skipPreflight: false,
-          preflightCommitment: 'confirmed',
+        const sendResp = await fetch('/api/send-transaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transaction: Buffer.from(serialized).toString('base64') }),
         });
+        const sendData = await sendResp.json();
+        if (!sendData.signature) throw new Error(sendData.error || 'Failed to send transaction');
+        signature = sendData.signature;
       } catch (signErr: any) {
         console.error('Sign/send error:', signErr);
         if (signErr?.message?.includes('User rejected') || signErr?.message?.includes('cancelled')) {
