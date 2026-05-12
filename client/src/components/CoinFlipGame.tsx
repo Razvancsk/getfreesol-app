@@ -158,6 +158,8 @@ export function CoinFlipGame() {
     setFlipResult(null);
     setShowResult(false);
 
+    let spinInterval: ReturnType<typeof setInterval> | null = null;
+
     try {
       // Two instructions: bet → vault, fee → fees wallet
       const betLamports = Math.floor(betAmount * LAMPORTS_PER_SOL);
@@ -206,7 +208,7 @@ export function CoinFlipGame() {
       console.log(`Bet transaction sent: ${signature}`);
 
       let rotations = 0;
-      const spinInterval = setInterval(() => {
+      spinInterval = setInterval(() => {
         rotations += 30;
         setCoinRotation(rotations);
       }, 50);
@@ -252,6 +254,9 @@ export function CoinFlipGame() {
         description: shortMsg,
         variant: 'destructive',
       });
+    } finally {
+      if (spinInterval) clearInterval(spinInterval);
+      setIsFlipping(false);
     }
   }, [publicKey, connected, betAmount, choice, signTransaction, connection, toast, flipMutation, vaultAddress, vaultBalance]);
 

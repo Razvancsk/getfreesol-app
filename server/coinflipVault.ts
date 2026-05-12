@@ -1,30 +1,13 @@
 import { Keypair, Connection, LAMPORTS_PER_SOL, SystemProgram, Transaction, sendAndConfirmTransaction, PublicKey } from '@solana/web3.js';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import bs58 from 'bs58';
-
-const ENV_PATH = join(process.cwd(), '.env');
-
-function readEnvKey(name: string): string | undefined {
-  try {
-    const lines = readFileSync(ENV_PATH, 'utf-8').split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith(name + '=')) {
-        return trimmed.slice(name.length + 1).trim();
-      }
-    }
-  } catch {}
-  return undefined;
-}
 
 let vaultKeypair: Keypair | null = null;
 
 function loadVault(): Keypair {
   if (vaultKeypair) return vaultKeypair;
 
-  const key = readEnvKey('COINFLIP_VAULT_KEY') || readEnvKey('RELAYER_PRIVATE_KEY');
-  if (!key) throw new Error('COINFLIP_VAULT_KEY is not set in .env');
+  const key = process.env.COINFLIP_VAULT_KEY || process.env.RELAYER_PRIVATE_KEY;
+  if (!key) throw new Error('COINFLIP_VAULT_KEY is not set');
 
   vaultKeypair = Keypair.fromSecretKey(bs58.decode(key));
   console.log(`🎰 Coin flip vault loaded: ${vaultKeypair.publicKey.toBase58()}`);
@@ -44,7 +27,7 @@ export function getVaultPrivateKey(): string {
 }
 
 function getConnection(): Connection {
-  const apiKey = readEnvKey('HELIUS_API_KEY') || process.env.HELIUS_API_KEY;
+  const apiKey = process.env.HELIUS_API_KEY;
   if (!apiKey) throw new Error('HELIUS_API_KEY is required');
   return new Connection(`https://mainnet.helius-rpc.com/?api-key=${apiKey}`, 'confirmed');
 }
