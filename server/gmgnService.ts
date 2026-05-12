@@ -44,32 +44,43 @@ let lastUpdate = 0;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 async function runGmgn(args: string): Promise<any> {
+  const apiKey = process.env.GMGN_API_KEY || '';
   const env = {
     ...process.env,
+    GMGN_API_KEY: apiKey,
     PATH: `${process.cwd()}/node_modules/.bin:${process.env.PATH || ''}`,
   };
-  const { stdout } = await execAsync(`gmgn-cli ${args}`, { timeout: 30000, env });
+  const { stdout, stderr } = await execAsync(`gmgn-cli ${args}`, { timeout: 30000, env });
   const text = stdout.trim();
-  if (!text) throw new Error('empty response from gmgn-cli');
+  if (!text) {
+    throw new Error(`empty response from gmgn-cli. stderr: ${stderr?.slice(0, 200)}`);
+  }
   return JSON.parse(text);
 }
 
 function mapToken(t: any): GmgnToken {
+  // market_cap is used in both trenches and trending; usd_market_cap is trenches alias
+  const mcap = Number(t.usd_market_cap ?? t.market_cap) || undefined;
+  // volume: trending uses `volume` (1h window), trenches uses volume_1h/volume_24h
+  const vol = Number(t.volume_1h ?? t.volume ?? t.volume_24h) || undefined;
+  // bonding curve progress: trenches has `progress` (0-1)
+  const bondPct = t.progress != null ? Number(t.progress) : undefined;
   return {
     mint: t.address || '',
     name: t.name || '',
     symbol: t.symbol || '',
     imageUri: t.logo || '',
     priceUsd: Number(t.price) || undefined,
-    pctChange: Number(t.price_change_percent ?? t.price_change_percent1h) || undefined,
-    marketCapUsd: Number(t.usd_market_cap ?? t.market_cap) || undefined,
+    pctChange: t.price_change_percent != null ? Number(t.price_change_percent) : (t.price_change_percent1h != null ? Number(t.price_change_percent1h) : undefined),
+    marketCapUsd: mcap,
     liquidityUsd: Number(t.liquidity) || undefined,
-    volumeUsd: Number(t.volume_1h ?? t.volume) || undefined,
+    volumeUsd: vol,
     buys: Number(t.buys_24h ?? t.buys) || 0,
     sells: Number(t.sells_24h ?? t.sells) || 0,
     createdAt: t.created_timestamp ? Number(t.created_timestamp) * 1000 : undefined,
-    migrated: !!(t.complete_timestamp || t.open_timestamp),
-    launchpad: t.launchpad_platform || t.exchange || 'pump.fun',
+    bondingPct: bondPct,
+    migrated: !!(t.complete_timestamp && t.complete_timestamp > 0) || !!(t.open_timestamp && t.open_timestamp > 0),
+    launchpad: t.launchpad_platform || t.launchpad || t.exchange || 'pump.fun',
     smartDegens: Number(t.smart_degen_count) || 0,
     renownedCount: Number(t.renowned_count) || 0,
     rugRatio: t.rug_ratio != null ? Number(t.rug_ratio) : undefined,
@@ -97,44 +108,43 @@ function setupConfig() {
 async function poll() {
   try {
     // All trenches categories in one call
+    // Response structure: { new_creation: [...], pump: [...], completed: [...] }
     try {
       const j = await runGmgn(
         'market trenches --chain sol --type new_creation --type near_completion --type completed --limit 50 --raw'
       );
-      const newArr: any[] = j?.data?.new_creation || [];
-      const bondArr: any[] = j?.data?.pump || j?.data?.near_completion || [];
-      const migArr: any[] = j?.data?.completed || [];
+      const newArr: any[] = j?.new_creation || [];
+      const bondArr: any[] = j?.pump || j?.near_completion || [];
+      const migArr: any[] = j?.completed || [];
       if (newArr.length) cache.new = newArr.map(mapToken).filter(t => t.mint);
       if (bondArr.length) cache.bonding = bondArr.map(mapToken).filter(t => t.mint);
       if (migArr.length) cache.migrated = migArr.map(mapToken).filter(t => t.mint);
+      console.log(`[gmgn] trenches: new=${newArr.length} bonding=${bondArr.length} migrated=${migArr.length}`);
     } catch (e: any) {
       console.error('[gmgn] trenches fetch failed:', e.message);
     }
 
-    // Trending
+    // Trending — response structure: { code, data: { rank: [...] }, message }
     try {
       const j = await runGmgn(
         'market trending --chain sol --interval 1h --order-by volume --limit 50 --raw'
       );
       const arr: any[] = j?.data?.rank || [];
       if (arr.length) cache.trending = arr.map(mapToken).filter(t => t.mint);
+      console.log(`[gmgn] trending: ${arr.length} tokens`);
     } catch (e: any) {
       console.error('[gmgn] trending fetch failed:', e.message);
     }
 
-    // SOL price from trending (first item with price, or keep last known)
-    if (cache.trending.length === 0 && cache.migrated.length > 0) {
-      // fallback: try to get SOL price from a simple fetch
-      try {
-        const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd', {
-          signal: AbortSignal.timeout(5000),
-        });
-        if (r.ok) {
-          const cg: any = await r.json();
-          if (cg?.solana?.usd) solUsdPrice = Number(cg.solana.usd);
-        }
-      } catch {}
-    }
+    // SOL price: fetch from a lightweight source
+    try {
+      const r = await fetch('https://price.jup.ag/v6/price?ids=SOL', { signal: AbortSignal.timeout(5000) });
+      if (r.ok) {
+        const j: any = await r.json();
+        const p = j?.data?.SOL?.price;
+        if (p) solUsdPrice = Number(p);
+      }
+    } catch {}
 
     connected = true;
     lastUpdate = Date.now();
