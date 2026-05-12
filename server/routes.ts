@@ -996,7 +996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const takerPubkey = new PublicKey(taker as string);
       const inputMintPubkey = new PublicKey(inputMint as string);
       const PLATFORM_WALLET = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
-      const RENT_FEE_LAMPORTS = 407856; // 20% of ~0.00203928 SOL rent
+      const RENT_FEE_LAMPORTS = 203928; // 10% of ~0.00203928 SOL rent
       
       const connection = getHeliusConnection();
 
@@ -1232,7 +1232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createCloseAccountInstruction } = await import('@solana/spl-token');
           
           const PLATFORM_WALLET = new SolanaPublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
-          const RENT_FEE_LAMPORTS = 407856; // 20% of ~0.00203928 SOL rent
+          const RENT_FEE_LAMPORTS = 203928; // 10% of ~0.00203928 SOL rent
           
           const txBuffer = Buffer.from(orderData.transaction, 'base64');
           const jupiterTx = VersionedTransaction.deserialize(txBuffer);
@@ -1376,7 +1376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createCloseAccountInstruction } = await import('@solana/spl-token');
       
       const PLATFORM_WALLET = new SolanaPublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
-      const RENT_FEE_LAMPORTS = 407856; // 20% of ~0.00203928 SOL rent
+      const RENT_FEE_LAMPORTS = 203928; // 10% of ~0.00203928 SOL rent
       
       const txBuffer = Buffer.from(swapData.swapTransaction, 'base64');
       const jupiterTx = VersionedTransaction.deserialize(txBuffer);
@@ -5934,7 +5934,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Calculate batch-specific fees
         const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
-        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.20); // 20% fee
+        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.10); // 10% fee
         const NETWORK_BUFFER = 10000; // Small buffer for network fees
         const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
@@ -6426,7 +6426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Calculate batch-specific fees
         const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
-        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.20); // 20% fee
+        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.10); // 10% fee
         const NETWORK_BUFFER = 10000; // Small buffer for network fees
         const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
@@ -6642,9 +6642,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { walletAddress } = req.params;
       const isGfsHolder = await checkGfsHolder(walletAddress);
-      res.json({ isGfsHolder, feePercent: isGfsHolder ? 10 : 20, discount: isGfsHolder ? 50 : 0 });
+      res.json({ isGfsHolder, feePercent: 10, discount: 0 });
     } catch (error) {
-      res.json({ isGfsHolder: false, feePercent: 20, discount: 0 });
+      res.json({ isGfsHolder: false, feePercent: 10, discount: 0 });
     }
   });
 
