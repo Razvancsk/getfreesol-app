@@ -3851,6 +3851,13 @@ export default function SolRefund() {
                 >
                   <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
                 </Button>
+                <Link href="/terminal">
+                  <Button
+                    className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30"
+                  >
+                    <TrendingUp className="h-5 w-5 shrink-0" /> Trenches
+                  </Button>
+                </Link>
                 {canViewPartners && (
                   <Link href="/partners">
                     <Button
