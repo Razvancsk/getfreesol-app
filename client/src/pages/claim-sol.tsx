@@ -1306,8 +1306,8 @@ export default function SolRefund() {
           tokenMints: [tokenMint],
           tokensProcessed: 1,
           solRecovered: parseFloat(solRecovered),
-          netAmount: parseFloat(solRecovered) * 0.80, // 20% fee
-          feeAmount: parseFloat(solRecovered) * 0.20
+          netAmount: parseFloat(solRecovered) * 0.90, // 10% fee
+          feeAmount: parseFloat(solRecovered) * 0.10
         })
       });
 
@@ -1666,8 +1666,8 @@ export default function SolRefund() {
             successfulSwaps.push({ signature, inputMint: token.mint, outputAmount: outputSol });
 
             const rentPerAccount = 2039280;
-            const rentRecoveredForThisAccount = (rentPerAccount * 0.80) / 1e9;
-            const feeForThisAccount = (rentPerAccount * 0.20) / 1e9;
+            const rentRecoveredForThisAccount = (rentPerAccount * 0.90) / 1e9;
+            const feeForThisAccount = (rentPerAccount * 0.10) / 1e9;
             totalRentRecovered += rentRecoveredForThisAccount;
 
             try {
