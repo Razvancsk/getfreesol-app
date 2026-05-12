@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
-import { startPumpStream, getFeed as getPumpFeed, getStreamStatus as getPumpStatus, buildTradeTx as buildPumpTradeTx, validateTradeInput, getTokenLive as getPumpTokenLive } from './pumpStream';
+import { buildTradeTx as buildPumpTradeTx, validateTradeInput } from './pumpStream';
+import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders } from './gmgnService';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -12836,8 +12837,8 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // ── /api/terminal — pump.fun screener (powered by pumpapi.io stream) ──
-  try { startPumpStream(); } catch (e: any) { console.error('[pumpStream] start failed', e?.message); }
+  // ── /api/terminal — Solana token screener (powered by GMGN) ──
+  try { startGmgnService(); } catch (e: any) { console.error('[gmgn] start failed', e?.message); }
 
   app.get('/api/terminal/feed', (req, res) => {
     const t = String(req.query.type || 'new');
@@ -12845,7 +12846,12 @@ Claimer: ${walletAddress}`;
       return res.status(400).json({ error: 'type must be new|bonding|migrated' });
     }
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
-    res.json({ tokens: getPumpFeed(t as any, limit), status: getPumpStatus() });
+    res.json({ tokens: getGmgnFeed(t as any, limit), status: getGmgnStatus() });
+  });
+
+  app.get('/api/terminal/trending', (req, res) => {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    res.json({ tokens: getGmgnTrending(limit), status: getGmgnStatus() });
   });
 
   app.get('/api/terminal/search', async (req, res) => {
@@ -12893,46 +12899,21 @@ Claimer: ${walletAddress}`;
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
-      const key = process.env.JUPITER_API_KEY;
-      if (!key) return res.status(500).json({ error: 'JUPITER_API_KEY missing' });
-      const r = await fetch(`https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`, {
-        headers: { 'x-api-key': key },
-      });
-      if (!r.ok) return res.status(r.status).json({ error: `jupiter ${r.status}` });
-      const arr: any[] = await r.json();
-      const m = (Array.isArray(arr) ? arr : []).find((x: any) => x?.id === mint) || arr?.[0];
-      if (!m) return res.status(404).json({ error: 'not found' });
-      // Fallback: pull socials from Helius DAS off-chain metadata if missing
-      if (!m.twitter && !m.website && !m.telegram && !m.discord) {
-        try {
-          const hk = process.env.HELIUS_API_KEY;
-          if (hk) {
-            const dr = await fetch(`https://mainnet.helius-rpc.com/?api-key=${hk}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ jsonrpc: '2.0', id: 'das', method: 'getAsset', params: { id: mint } }),
-            });
-            const dj = await dr.json();
-            const uri = dj?.result?.content?.json_uri;
-            if (uri) {
-              const httpUri = uri.startsWith('ipfs://')
-                ? `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`
-                : uri;
-              const mr = await fetch(httpUri, { signal: AbortSignal.timeout(4000) });
-              if (mr.ok) {
-                const meta = await mr.json();
-                m.twitter = m.twitter || meta.twitter || meta.x || meta.twitter_url;
-                m.website = m.website || meta.website || meta.external_url || meta.site;
-                m.telegram = m.telegram || meta.telegram;
-                m.discord = m.discord || meta.discord;
-              }
-            }
-          }
-        } catch {}
-      }
-      res.json(m);
+      const info = await getGmgnTokenInfo(mint);
+      res.json(info);
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'token info failed' });
+    }
+  });
+
+  app.get('/api/terminal/token-security/:mint', async (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const security = await getGmgnTokenSecurity(mint);
+      res.json({ security });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'token security failed' });
     }
   });
 
@@ -12940,44 +12921,7 @@ Claimer: ${walletAddress}`;
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
-      let live: any = getPumpTokenLive(mint);
-      if (!live || (!live.liquidityUsd && !live.marketCapUsd && !live.volumeUsd)) {
-        try {
-          const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${mint}`);
-          if (r.ok) {
-            const j: any = await r.json();
-            const pairs: any[] = Array.isArray(j?.pairs) ? j.pairs : [];
-            const sol = pairs.filter((p) => p?.chainId === 'solana');
-            if (sol.length) {
-              const best = sol.reduce((a, b) => ((b?.liquidity?.usd || 0) > (a?.liquidity?.usd || 0) ? b : a));
-              const SOL_MINT = 'So11111111111111111111111111111111111111112';
-              const solPair = sol.find((p) => p?.quoteToken?.address === SOL_MINT) || best;
-              const priceSol = Number(solPair?.priceNative) || undefined;
-              const { getSolUsd } = await import('./pumpStream');
-              const solUsdNow = getSolUsd();
-              const buys = sol.reduce((s, p) => s + (Number(p?.txns?.h24?.buys) || 0), 0);
-              const sells = sol.reduce((s, p) => s + (Number(p?.txns?.h24?.sells) || 0), 0);
-              const volumeUsd = sol.reduce((s, p) => s + (Number(p?.volume?.h24) || 0), 0);
-              const liquidityUsd = sol.reduce((s, p) => s + (Number(p?.liquidity?.usd) || 0), 0);
-              const merged = {
-                ...(live || {}),
-                mint,
-                name: live?.name || best?.baseToken?.name,
-                symbol: live?.symbol || best?.baseToken?.symbol,
-                priceUsd: live?.priceUsd ?? (Number(best?.priceUsd) || undefined),
-                priceSol: (live as any)?.priceSol ?? priceSol,
-                marketCapUsd: live?.marketCapUsd ?? (Number(best?.marketCap) || Number(best?.fdv) || undefined),
-                liquidityUsd: live?.liquidityUsd ?? (liquidityUsd || undefined),
-                volumeUsd: live?.volumeUsd ?? (volumeUsd || undefined),
-                buys: live?.buys ?? buys,
-                sells: live?.sells ?? sells,
-                solUsd: live?.solUsd ?? (solUsdNow || undefined),
-              };
-              live = merged;
-            }
-          }
-        } catch {}
-      }
+      const live = await getGmgnTokenLive(mint);
       res.json({ live });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'live failed' });
@@ -12988,110 +12932,21 @@ Claimer: ${walletAddress}`;
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
-      const key = process.env.HELIUS_API_KEY;
-      if (!key) return res.status(500).json({ error: 'HELIUS_API_KEY missing' });
-      const rpc = `https://mainnet.helius-rpc.com/?api-key=${key}`;
-      const r = await fetch(rpc, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0', id: 1, method: 'getTokenLargestAccounts', params: [mint],
-        }),
-      });
-      const j = await r.json();
-      if (j?.error) return res.status(503).json({ error: j.error?.message || 'rpc error', holders: [] });
-      const list: any[] = j?.result?.value || [];
-      // Resolve owners for each token account so we can label dev/pool wallets
-      const tokenAccounts: string[] = list.map((h: any) => h.address).filter(Boolean);
-      const owners: Record<string, string | undefined> = {};
-      if (tokenAccounts.length) {
-        try {
-          const ownerRes = await fetch(rpc, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0', id: 2, method: 'getMultipleAccounts',
-              params: [tokenAccounts, { encoding: 'jsonParsed' }],
-            }),
-          });
-          const oj = await ownerRes.json();
-          const arr: any[] = oj?.result?.value || [];
-          arr.forEach((acc: any, idx: number) => {
-            const owner = acc?.data?.parsed?.info?.owner;
-            if (owner) owners[tokenAccounts[idx]] = owner;
-          });
-        } catch {}
-      }
-      // Derive pump.fun bonding curve PDA + its associated token account
-      let pumpBondingCurve: string | undefined;
-      let pumpBondingCurveAta: string | undefined;
-      try {
-        const PUMP_PROGRAM = new PublicKey('6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P9');
-        const mintPk = new PublicKey(mint);
-        const [bc] = PublicKey.findProgramAddressSync(
-          [Buffer.from('bonding-curve'), mintPk.toBuffer()],
-          PUMP_PROGRAM,
-        );
-        pumpBondingCurve = bc.toBase58();
-        pumpBondingCurveAta = getAssociatedTokenAddressSync(mintPk, bc, true).toBase58();
-      } catch {}
-
-      // Resolve the program owner of each holder's owner account so we can
-      // identify pool/AMM accounts (PumpSwap, Raydium, Meteora, Orca, etc.)
-      const AMM_PROGRAMS: Record<string, string> = {
-        '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P9': 'Pump.fun',
-        '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P': 'Pump.fun',
-        'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA': 'PumpSwap',
-        'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXE': 'PumpSwap',
-        '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8': 'Raydium',
-        'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK': 'Raydium',
-        'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C': 'Raydium',
-        'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo': 'Meteora',
-        'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB': 'Meteora',
-        'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc': 'Orca',
-      };
-      const ownerProgramOwners: Record<string, string | undefined> = {};
-      const uniqueOwners = Array.from(new Set(Object.values(owners).filter(Boolean) as string[]));
-      if (uniqueOwners.length) {
-        try {
-          const opRes = await fetch(rpc, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0', id: 3, method: 'getMultipleAccounts',
-              params: [uniqueOwners, { encoding: 'base64', dataSlice: { offset: 0, length: 0 } }],
-            }),
-          });
-          const opj = await opRes.json();
-          const arr: any[] = opj?.result?.value || [];
-          arr.forEach((acc: any, idx: number) => {
-            if (acc?.owner) ownerProgramOwners[uniqueOwners[idx]] = acc.owner;
-          });
-        } catch {}
-      }
-
-      const holders = list.map((h: any) => {
-        const owner = owners[h.address];
-        let label: string | undefined;
-        if (
-          (pumpBondingCurve && owner === pumpBondingCurve) ||
-          (pumpBondingCurveAta && h.address === pumpBondingCurveAta)
-        ) {
-          label = 'pump.fun-bonding-curve';
-        } else if (owner && ownerProgramOwners[owner] && AMM_PROGRAMS[ownerProgramOwners[owner]!]) {
-          label = `liquidity-pool:${AMM_PROGRAMS[ownerProgramOwners[owner]!]}`;
-        }
-        return {
-          address: h.address,
-          owner,
-          amount: Number(h.uiAmount) || 0,
-          decimals: Number(h.decimals) || 0,
-          label,
-        };
-      });
+      const holders = await getGmgnTopHolders(mint);
       res.json({ holders });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'holders failed' });
+    }
+  });
+
+  app.get('/api/terminal/traders/:mint', async (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const traders = await getGmgnTopTraders(mint);
+      res.json({ traders });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'traders failed' });
     }
   });
 

@@ -15,7 +15,7 @@ import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, T
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 
-type FeedType = 'new' | 'bonding' | 'migrated';
+type FeedType = 'new' | 'bonding' | 'migrated' | 'trending';
 
 type Token = {
   mint: string;
@@ -37,6 +37,11 @@ type Token = {
   buys?: number;
   sells?: number;
   migrated?: boolean;
+  smartDegens?: number;
+  renownedCount?: number;
+  rugRatio?: number;
+  ratTraderRate?: number;
+  bundlerRate?: number;
 };
 
 function fmtUsd(n?: number): string {
@@ -143,9 +148,10 @@ function fmtCount(n?: number): string {
 }
 
 const TABS: { id: FeedType; label: string; icon: any; sub: string }[] = [
-  { id: 'new',       label: 'New',           icon: Sparkles, sub: 'All launchpads' },
-  { id: 'bonding',   label: 'Almost Migrated', icon: Flame,    sub: '50%–99% bonded' },
-  { id: 'migrated',  label: 'Migrated',      icon: Rocket,   sub: 'Graduated to AMM' },
+  { id: 'new',       label: 'New',           icon: Sparkles,    sub: 'Just launched' },
+  { id: 'bonding',   label: 'Bonding',       icon: Flame,       sub: 'Almost graduated' },
+  { id: 'migrated',  label: 'Graduated',     icon: Rocket,      sub: 'On open market' },
+  { id: 'trending',  label: 'Trending',      icon: TrendingUp,  sub: 'Hot right now' },
 ];
 
 function ago(ts?: number) {
@@ -340,7 +346,10 @@ export function TerminalView() {
   const { data, isFetching } = useQuery<{ tokens: Token[]; status: any }>({
     queryKey: ['/api/terminal/feed', tab],
     queryFn: async () => {
-      const r = await fetch(`/api/terminal/feed?type=${tab}&limit=25`);
+      const url = tab === 'trending'
+        ? '/api/terminal/trending?limit=50'
+        : `/api/terminal/feed?type=${tab}&limit=50`;
+      const r = await fetch(url);
       if (!r.ok) throw new Error('feed failed');
       const json = await r.json();
       try {
@@ -350,7 +359,7 @@ export function TerminalView() {
       } catch {}
       return json;
     },
-    refetchInterval: 1500,
+    refetchInterval: 30000,
     initialData: () => {
       try {
         const raw = localStorage.getItem(cacheKey);
@@ -399,7 +408,7 @@ export function TerminalView() {
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="grid grid-cols-4 gap-2 mb-4">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = tab === t.id;
@@ -487,7 +496,7 @@ export function TerminalView() {
                     <div className="text-white font-medium tabular-nums">{fmtUsd(t.marketCapUsd)}</div>
                   </div>
                   <div>
-                    <div className="text-white">Volume 24h</div>
+                    <div className="text-white">Volume</div>
                     <div className="text-white font-medium tabular-nums">{fmtUsd(t.volumeUsd)}</div>
                   </div>
                   <div>
@@ -495,10 +504,30 @@ export function TerminalView() {
                     <div className="text-white font-medium tabular-nums">{fmtUsd(t.liquidityUsd)}</div>
                   </div>
                   <div>
-                    <div className="text-white">Transactions</div>
+                    <div className="text-white">Txns</div>
                     <div className="text-white font-medium tabular-nums">{fmtCount(totalTx)}</div>
                   </div>
                 </div>
+                {/* GMGN badges */}
+                {((t.smartDegens ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3) && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(t.smartDegens ?? 0) > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">
+                        {t.smartDegens} SM
+                      </span>
+                    )}
+                    {(t.renownedCount ?? 0) > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">
+                        {t.renownedCount} KOL
+                      </span>
+                    )}
+                    {(t.rugRatio ?? 0) > 0.3 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 font-semibold">
+                        RUG {Math.round((t.rugRatio ?? 0) * 100)}%
+                      </span>
+                    )}
+                  </div>
+                )}
 
               </div>
             );
@@ -519,10 +548,10 @@ export function TerminalView() {
 }
 
 type JupMint = {
-  id: string; name?: string; symbol?: string; icon?: string;
+  id: string; mint?: string; name?: string; symbol?: string; icon?: string;
   decimals?: number; twitter?: string; website?: string; telegram?: string; discord?: string; dev?: string;
   circSupply?: number; totalSupply?: number; holderCount?: number;
-  fdv?: number; mcap?: number; usdPrice?: number; liquidity?: number;
+  fdv?: number; mcap?: number; usdPrice?: number; usdPrice_?: number; liquidity?: number;
   organicScore?: number; isVerified?: boolean;
   audit?: { mintAuthorityDisabled?: boolean; freezeAuthorityDisabled?: boolean; topHoldersPercentage?: number; devBalancePercentage?: number };
   stats5m?: { holderChange?: number;[k: string]: any }; stats1h?: { holderChange?: number;[k: string]: any }; stats6h?: { holderChange?: number;[k: string]: any }; stats24h?: { holderChange?: number;[k: string]: any };
@@ -530,6 +559,9 @@ type JupMint = {
   launchpad?: string; graduatedPool?: string;
   socials?: { twitter?: string; website?: string; telegram?: string; discord?: string };
   metadata?: { extensions?: { twitter?: string; website?: string; telegram?: string; discord?: string } };
+  // GMGN fields
+  smartDegens?: number; renownedWallets?: number; rugRatio?: number;
+  ratTraderRate?: number; bundlerRate?: number; bondingProgress?: number;
 };
 
 function pickSocials(info?: JupMint): { twitter?: string; website?: string; telegram?: string; discord?: string } {
@@ -539,8 +571,8 @@ function pickSocials(info?: JupMint): { twitter?: string; website?: string; tele
   return {
     twitter: info.twitter || s.twitter || ext.twitter,
     website: info.website || s.website || ext.website,
-    telegram: (info as any).telegram || s.telegram || ext.telegram,
-    discord: (info as any).discord || s.discord || ext.discord,
+    telegram: info.telegram || s.telegram || ext.telegram,
+    discord: info.discord || s.discord || ext.discord,
   };
 }
 
@@ -614,22 +646,12 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
       if (!r.ok) throw new Error('live failed');
       const j = await r.json();
       if (j?.live) return j;
-      // Fallback: search all 3 feeds (same source the cards render from)
-      for (const tab of ['new', 'bonding', 'migrated'] as const) {
-        try {
-          const fr = await fetch(`/api/terminal/feed?type=${tab}&limit=200`);
-          if (!fr.ok) continue;
-          const fj = await fr.json();
-          const found = (fj?.tokens || []).find((t: any) => t?.mint === mint);
-          if (found) return { live: found as Token };
-        } catch {}
-      }
       return { live: null };
     },
-    refetchInterval: 1500,
+    refetchInterval: 15000,
     enabled: !!mint,
   });
-  const { data: holdersData, isFetching: holdersLoading } = useQuery<{ holders: { address: string; owner?: string; amount: number; label?: string }[] }>({
+  const { data: holdersData, isFetching: holdersLoading } = useQuery<{ holders: { address: string; owner?: string; amount: number; uiAmount?: number; pct?: number; label?: string; profit?: number }[] }>({
     queryKey: ['/api/terminal/holders', mint],
     queryFn: async () => {
       const r = await fetch(`/api/terminal/holders/${mint}`);
@@ -772,25 +794,42 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         )}
 
         {tab === 'info' && (() => {
-          const graduatedPool = (info as any)?.graduatedPool || (info as any)?.firstPool?.graduatedPool;
-          const isGraduated = !!graduatedPool || (info as any)?.graduated === true || (info as any)?.firstPool?.graduated === true;
           const launchpad = info?.firstPool?.launchpad || (info as any)?.launchpad;
+          const smartDegens = (info as any)?.smartDegens ?? 0;
+          const renownedWallets = (info as any)?.renownedWallets ?? 0;
+          const rugRatio = (info as any)?.rugRatio;
+          const ratTraderRate = (info as any)?.ratTraderRate;
+          const bundlerRate = (info as any)?.bundlerRate;
+          const bondingProgress = (info as any)?.bondingProgress;
           return (
-            <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-2 divide-x divide-purple-500/20 border-b border-purple-500/20">
-                <div className="py-5 text-center">
-                  <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Total Supply</div>
-                  <div className="text-white text-2xl font-bold tabular-nums mt-1">{fmtNum(info?.totalSupply) || '—'}</div>
+            <div className="space-y-3">
+              {/* GMGN Security / Smart Money */}
+              <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-purple-500/20">
+                  <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Smart Money & Security</span>
                 </div>
-                <div className="py-5 text-center">
-                  <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Cir Supply</div>
-                  <div className="text-white text-2xl font-bold tabular-nums mt-1">{fmtNum(info?.circSupply) || '—'}</div>
+                <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
+                  {[
+                    { label: 'Smart Wallets', value: smartDegens > 0 ? `${smartDegens} SM` : '—', color: smartDegens >= 3 ? 'text-emerald-400' : smartDegens > 0 ? 'text-yellow-400' : 'text-white' },
+                    { label: 'KOL Wallets', value: renownedWallets > 0 ? `${renownedWallets} KOL` : '—', color: renownedWallets > 0 ? 'text-blue-400' : 'text-white' },
+                    { label: 'Rug Risk', value: rugRatio != null ? `${Math.round(rugRatio * 100)}%` : '—', color: rugRatio == null ? 'text-white' : rugRatio > 0.3 ? 'text-red-400' : rugRatio > 0.1 ? 'text-yellow-400' : 'text-emerald-400' },
+                    { label: 'Rat Traders', value: ratTraderRate != null ? `${Math.round(ratTraderRate * 100)}%` : '—', color: ratTraderRate != null && ratTraderRate > 0.3 ? 'text-red-400' : 'text-white' },
+                    { label: 'Bundler Rate', value: bundlerRate != null ? `${Math.round(bundlerRate * 100)}%` : '—', color: bundlerRate != null && bundlerRate > 0.3 ? 'text-red-400' : 'text-white' },
+                    { label: 'Bonding', value: bondingProgress != null ? `${Math.round(bondingProgress * 100)}%` : '—', color: 'text-white' },
+                  ].map((s) => (
+                    <div key={s.label} className="px-3 py-3 text-center">
+                      <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">{s.label}</div>
+                      <div className={`text-base font-bold tabular-nums mt-1 ${s.color}`}>{s.value}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <InfoAddressRow label="Contract Address" value={mint} />
-              <InfoAddressRow label="Developer Address" value={info?.dev} />
-              <InfoTextRow label="Launchpad" value={launchpad} isLast={!isGraduated} />
-              {isGraduated && <InfoTextRow label="Graduated Pool" value={graduatedPool} isLast />}
+              {/* Token addresses */}
+              <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+                <InfoAddressRow label="Contract Address" value={mint} />
+                {info?.dev && <InfoAddressRow label="Developer Address" value={info.dev} />}
+                {launchpad && <InfoTextRow label="Launchpad" value={launchpad} isLast />}
+              </div>
             </div>
           );
         })()}
@@ -834,15 +873,11 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   return null;
                 };
                 const list = [...(holdersData?.holders || [])];
-                const devPct = info?.audit?.devBalancePercentage;
-                if (devAddr && totalSupply > 0 && devPct && devPct > 0 && !list.some((h) => (h.owner || h.address) === devAddr)) {
-                  list.push({ address: devAddr, owner: devAddr, amount: (devPct / 100) * totalSupply });
-                  list.sort((a, b) => b.amount - a.amount);
-                }
                 return list.slice(0, 20).map((h) => {
-                  const pct = totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0;
+                  const pct = h.pct != null ? h.pct * 100 : (totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0);
                   const tag = tagFor(h);
                   const linkAddr = h.owner || h.address;
+                  const tags = h.label ? h.label.split(',').filter(Boolean) : [];
                   return (
                     <a
                       key={h.address}
@@ -852,7 +887,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                       className="flex items-center justify-between py-3 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors"
                       data-testid={`holder-row-${linkAddr}`}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         {tag ? (
                           <>
                             <span className="text-white">{tag.name}</span>
@@ -863,8 +898,17 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                             {shortMint(linkAddr)}
                           </span>
                         )}
+                        {tags.includes('smart_degen') && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SM</span>}
+                        {tags.includes('renowned') && <span className="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">KOL</span>}
                       </div>
-                      <div className="text-white tabular-nums">{pct.toFixed(2)}%</div>
+                      <div className="flex items-center gap-3 text-right">
+                        {h.profit != null && h.profit !== 0 && (
+                          <div className={`text-xs tabular-nums ${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {h.profit > 0 ? '+' : ''}{fmtUsd(h.profit)}
+                          </div>
+                        )}
+                        <div className="text-white tabular-nums">{pct.toFixed(2)}%</div>
+                      </div>
                     </a>
                   );
                 });
