@@ -10892,12 +10892,8 @@ Claimer: ${walletAddress}`;
 
   app.get("/api/coinflip/vault", async (_req, res) => {
     try {
-      const { readFileSync } = await import('fs');
-      const { join } = await import('path');
-      const envLines = readFileSync(join(process.cwd(), '.env'), 'utf-8').split('\n');
-      const getEnvVal = (k: string) => { for (const l of envLines) { const t = l.trim(); if (t.startsWith(k + '=')) return t.slice(k.length + 1).trim(); } return ''; };
-      const vaultPrivKey = getEnvVal('COINFLIP_VAULT_KEY') || getEnvVal('RELAYER_PRIVATE_KEY');
-      const feesWallet = getEnvVal('FEES_WALLET') || 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+      const vaultPrivKey = process.env.COINFLIP_VAULT_KEY || process.env.RELAYER_PRIVATE_KEY || '';
+      const feesWallet = process.env.FEES_WALLET || 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       const kp = Keypair.fromSecretKey(bs58.decode(vaultPrivKey));
       const address = kp.publicKey.toBase58();
       const conn = getHeliusConnection('confirmed');

@@ -2422,96 +2422,1018 @@ bigint: Failed to load bindings, pure JS will be used (try npm run rebuild?)
 [pumpStream] connected
 [2m10:15:00 PM[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
 [2m10:15:00 PM[22m [36m[1m[vite][22m[39m server restarted.
-��
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] stale, reconnecting
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
+[pumpStream] connected
+[pumpStream] connecting…
 [pumpStream] connected
-9:25:11 PM [express] GET /api/sol-refund/stats 304 in 139ms :: {"success":true,"totalSolRecovered":0…
-9:25:12 PM [express] GET /api/transactions/history 304 in 52ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:16 PM [express] GET /api/sol-refund/stats 304 in 147ms :: {"success":true,"totalSolRecovered":0…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:18 PM [express] GET /api/transactions/history 304 in 65ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:21 PM [express] GET /api/sol-refund/stats 304 in 145ms :: {"success":true,"totalSolRecovered":0…
-9:25:23 PM [express] GET /api/transactions/history 304 in 49ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:26 PM [express] GET /api/sol-refund/stats 304 in 146ms :: {"success":true,"totalSolRecovered":0…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:28 PM [express] GET /api/transactions/history 304 in 71ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:31 PM [express] GET /api/sol-refund/stats 304 in 149ms :: {"success":true,"totalSolRecovered":0…
 [pumpStream] connecting…
-9:25:33 PM [express] GET /api/transactions/history 304 in 54ms :: {"success":true,"transactions":[{"…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:37 PM [express] GET /api/sol-refund/stats 304 in 172ms :: {"success":true,"totalSolRecovered":0…
-9:25:38 PM [express] GET /api/transactions/history 304 in 57ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:42 PM [express] GET /api/sol-refund/stats 304 in 170ms :: {"success":true,"totalSolRecovered":0…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:43 PM [express] GET /api/transactions/history 304 in 55ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:47 PM [express] GET /api/sol-refund/stats 304 in 150ms :: {"success":true,"totalSolRecovered":0…
-9:25:48 PM [express] GET /api/transactions/history 304 in 85ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
-9:25:52 PM [express] GET /api/sol-refund/stats 304 in 156ms :: {"success":true,"totalSolRecovered":0…
 [pumpStream] connected
-9:25:53 PM [express] GET /api/transactions/history 304 in 63ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:25:57 PM [express] GET /api/sol-refund/stats 304 in 132ms :: {"success":true,"totalSolRecovered":0…
-9:25:58 PM [express] GET /api/transactions/history 304 in 89ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:26:03 PM [express] GET /api/sol-refund/stats 304 in 162ms :: {"success":true,"totalSolRecovered":0…
-9:26:03 PM [express] GET /api/transactions/history 304 in 54ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:26:08 PM [express] GET /api/sol-refund/stats 304 in 169ms :: {"success":true,"totalSolRecovered":0…
 [pumpStream] connecting…
 [pumpStream] connected
-9:26:09 PM [express] GET /api/transactions/history 304 in 61ms :: {"success":true,"transactions":[{"…
-bigint: Failed to load bindings, pure JS will be used (try npm run rebuild?)
-❌ X_API_KEY or X_API_SECRET not found in environment
-⚠️ Backpack API credentials not configured
-9:27:52 PM [express] Initializing server...
-9:27:52 PM [express] NODE_ENV: development
-9:27:52 PM [express] PORT: 5000
-9:27:52 PM [express] DATABASE_URL exists: true
-9:27:52 PM [express] Testing database connection...
-9:27:52 PM [express] Database connection successful
-⚠️ X API credentials not found in environment variables
-🤖 Starting X bot scheduled jobs...
-✅ X bot scheduled jobs started
-🔐 Loaded encryption key from .fee_encryption_key file
 [pumpStream] connecting…
-9:27:52 PM [express] Routes registered successfully
-9:27:52 PM [express] Discord bot disabled in development mode to avoid double responses
-TELEGRAM_BOT_TOKEN not configured - Telegram bot disabled
-9:27:52 PM [express] Starting server in development mode...
-9:27:52 PM [express] Setting up Vite for development mode...
-9:27:52 PM [express] Vite setup completed
-9:27:52 PM [express] Server started successfully on port 5000
-9:27:52 PM [express] Environment: development
-9:27:52 PM [express] 🔔 Starting alert monitoring system (schedule: */5 * * * *)
-9:27:52 PM [express] 🔔 Running initial alert check...
-🔔 Checking alerts for all wallets...
-Found 0 wallets with enabled alerts
-✅ Alert check complete
-9:27:53 PM [express] ✅ Initial alert check complete, starting scheduled checks
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
@@ -2591,10 +3513,6 @@ Found 0 wallets with enabled alerts
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-🔔 Checking alerts for all wallets...
-Found 0 wallets with enabled alerts
-✅ Alert check complete
-9:30:00 PM [express] ✅ Alert check completed in 268ms
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
@@ -2741,421 +3659,221 @@ Found 0 wallets with enabled alerts
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:33:54 PM [express] GET /api/transactions/history 304 in 193ms :: {"success":true,"transactions":[{…
-9:33:54 PM [express] GET /api/sol-refund/stats 200 in 311ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:33:59 PM [express] GET /api/transactions/history 304 in 66ms :: {"success":true,"transactions":[{"…
-9:33:59 PM [express] GET /api/sol-refund/stats 304 in 146ms :: {"success":true,"totalSolRecovered":4…
-9:34:01 PM [express] GET /api/sol-refund/stats 200 in 142ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:03 PM [express] GET /api/transactions/history 304 in 143ms :: {"success":true,"transactions":[{…
-9:34:03 PM [express] GET /api/sol-refund/stats 200 in 230ms :: {"success":true,"totalSolRecovered":4…
-9:34:03 PM [express] GET /api/coinflip/vault 304 in 262ms :: {"success":true,"address":"6ZCV6FWis2qx…
-9:34:03 PM [express] GET /api/coinflip/recent 304 in 299ms :: {"success":true,"flips":[{"id":"4a9e14…
-9:34:03 PM [express] GET /api/coinflip/top 304 in 297ms :: {"success":true,"top":[]}
-9:34:04 PM [express] GET /api/transactions/history 304 in 53ms :: {"success":true,"transactions":[{"…
-9:34:05 PM [express] GET /api/sol-refund/stats 304 in 144ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:09 PM [express] GET /api/transactions/history 304 in 62ms :: {"success":true,"transactions":[{"…
-9:34:10 PM [express] GET /api/sol-refund/stats 304 in 185ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:14 PM [express] GET /api/transactions/history 304 in 70ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
-9:34:15 PM [express] GET /api/sol-refund/stats 304 in 147ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:20 PM [express] GET /api/transactions/history 304 in 53ms :: {"success":true,"transactions":[{"…
-9:34:20 PM [express] GET /api/sol-refund/stats 304 in 170ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:25 PM [express] GET /api/transactions/history 304 in 43ms :: {"success":true,"transactions":[{"…
-9:34:25 PM [express] GET /api/sol-refund/stats 304 in 182ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:30 PM [express] GET /api/transactions/history 304 in 78ms :: {"success":true,"transactions":[{"…
-9:34:31 PM [express] GET /api/sol-refund/stats 304 in 159ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:35 PM [express] GET /api/transactions/history 304 in 49ms :: {"success":true,"transactions":[{"…
-9:34:36 PM [express] GET /api/sol-refund/stats 304 in 161ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:40 PM [express] GET /api/transactions/history 304 in 72ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:41 PM [express] GET /api/sol-refund/stats 304 in 153ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:45 PM [express] GET /api/transactions/history 304 in 56ms :: {"success":true,"transactions":[{"…
-9:34:46 PM [express] GET /api/sol-refund/stats 304 in 162ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:50 PM [express] GET /api/transactions/history 304 in 72ms :: {"success":true,"transactions":[{"…
-9:34:51 PM [express] GET /api/sol-refund/stats 304 in 156ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:55 PM [express] GET /api/transactions/history 304 in 40ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:34:56 PM [express] GET /api/sol-refund/stats 304 in 153ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-🔔 Checking alerts for all wallets...
-Found 0 wallets with enabled alerts
-✅ Alert check complete
-9:35:00 PM [express] ✅ Alert check completed in 74ms
-9:35:00 PM [express] GET /api/transactions/history 304 in 58ms :: {"success":true,"transactions":[{"…
-9:35:02 PM [express] GET /api/sol-refund/stats 304 in 150ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:05 PM [express] GET /api/transactions/history 304 in 60ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:07 PM [express] GET /api/sol-refund/stats 304 in 145ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:10 PM [express] GET /api/transactions/history 304 in 61ms :: {"success":true,"transactions":[{"…
-9:35:12 PM [express] GET /api/sol-refund/stats 304 in 155ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
-9:35:15 PM [express] GET /api/transactions/history 304 in 45ms :: {"success":true,"transactions":[{"…
 [pumpStream] connected
-9:35:17 PM [express] GET /api/sol-refund/stats 304 in 127ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:20 PM [express] GET /api/transactions/history 304 in 68ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:22 PM [express] GET /api/sol-refund/stats 304 in 151ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:26 PM [express] GET /api/transactions/history 304 in 68ms :: {"success":true,"transactions":[{"…
-9:35:27 PM [express] GET /api/sol-refund/stats 304 in 176ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:31 PM [express] GET /api/transactions/history 304 in 85ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:33 PM [express] GET /api/sol-refund/stats 304 in 170ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:36 PM [express] GET /api/transactions/history 304 in 51ms :: {"success":true,"transactions":[{"…
-9:35:38 PM [express] GET /api/sol-refund/stats 304 in 162ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:41 PM [express] GET /api/transactions/history 304 in 49ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:43 PM [express] GET /api/sol-refund/stats 304 in 163ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:46 PM [express] GET /api/transactions/history 304 in 62ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:48 PM [express] GET /api/sol-refund/stats 304 in 159ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:51 PM [express] GET /api/transactions/history 304 in 65ms :: {"success":true,"transactions":[{"…
-9:35:53 PM [express] GET /api/sol-refund/stats 304 in 141ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:56 PM [express] GET /api/transactions/history 304 in 80ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:35:59 PM [express] GET /api/sol-refund/stats 304 in 139ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:01 PM [express] GET /api/transactions/history 304 in 69ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
-9:36:04 PM [express] GET /api/sol-refund/stats 304 in 147ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connected
-9:36:06 PM [express] GET /api/transactions/history 304 in 60ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:09 PM [express] GET /api/sol-refund/stats 304 in 155ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:11 PM [express] GET /api/transactions/history 304 in 44ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:14 PM [express] GET /api/sol-refund/stats 304 in 148ms :: {"success":true,"totalSolRecovered":4…
-9:36:16 PM [express] GET /api/transactions/history 304 in 85ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:19 PM [express] GET /api/sol-refund/stats 304 in 127ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:22 PM [express] GET /api/transactions/history 304 in 49ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:24 PM [express] GET /api/sol-refund/stats 304 in 169ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:27 PM [express] GET /api/transactions/history 304 in 69ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:30 PM [express] GET /api/sol-refund/stats 304 in 195ms :: {"success":true,"totalSolRecovered":4…
-9:36:32 PM [express] GET /api/transactions/history 304 in 61ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:35 PM [express] GET /api/sol-refund/stats 304 in 175ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:37 PM [express] GET /api/transactions/history 304 in 46ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:40 PM [express] GET /api/sol-refund/stats 304 in 156ms :: {"success":true,"totalSolRecovered":4…
-9:36:42 PM [express] GET /api/transactions/history 304 in 58ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:45 PM [express] GET /api/sol-refund/stats 304 in 165ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:47 PM [express] GET /api/transactions/history 304 in 63ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:50 PM [express] GET /api/sol-refund/stats 304 in 142ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:52 PM [express] GET /api/transactions/history 304 in 61ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:36:56 PM [express] GET /api/sol-refund/stats 304 in 157ms :: {"success":true,"totalSolRecovered":4…
-9:36:57 PM [express] GET /api/transactions/history 304 in 57ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:01 PM [express] GET /api/sol-refund/stats 304 in 165ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:02 PM [express] GET /api/transactions/history 304 in 72ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:06 PM [express] GET /api/sol-refund/stats 304 in 134ms :: {"success":true,"totalSolRecovered":4…
-9:37:07 PM [express] GET /api/transactions/history 304 in 47ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:11 PM [express] GET /api/sol-refund/stats 304 in 132ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:13 PM [express] GET /api/transactions/history 304 in 65ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:16 PM [express] GET /api/sol-refund/stats 304 in 134ms :: {"success":true,"totalSolRecovered":4…
-9:37:18 PM [express] GET /api/transactions/history 304 in 45ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:21 PM [express] GET /api/sol-refund/stats 304 in 170ms :: {"success":true,"totalSolRecovered":4…
-9:37:23 PM [express] GET /api/transactions/history 304 in 57ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:27 PM [express] GET /api/sol-refund/stats 304 in 129ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:28 PM [express] GET /api/transactions/history 304 in 54ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:32 PM [express] GET /api/sol-refund/stats 304 in 174ms :: {"success":true,"totalSolRecovered":4…
-9:37:33 PM [express] GET /api/transactions/history 304 in 57ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:37 PM [express] GET /api/sol-refund/stats 304 in 151ms :: {"success":true,"totalSolRecovered":4…
-9:37:38 PM [express] GET /api/transactions/history 304 in 36ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:42 PM [express] GET /api/sol-refund/stats 304 in 153ms :: {"success":true,"totalSolRecovered":4…
-9:37:43 PM [express] GET /api/transactions/history 304 in 64ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:47 PM [express] GET /api/sol-refund/stats 304 in 146ms :: {"success":true,"totalSolRecovered":4…
-9:37:48 PM [express] GET /api/transactions/history 304 in 54ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:52 PM [express] GET /api/sol-refund/stats 304 in 133ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:53 PM [express] GET /api/transactions/history 304 in 56ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:37:58 PM [express] GET /api/sol-refund/stats 304 in 177ms :: {"success":true,"totalSolRecovered":4…
-9:37:58 PM [express] GET /api/transactions/history 304 in 55ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:03 PM [express] GET /api/sol-refund/stats 304 in 158ms :: {"success":true,"totalSolRecovered":4…
-9:38:03 PM [express] GET /api/transactions/history 304 in 60ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:08 PM [express] GET /api/sol-refund/stats 304 in 138ms :: {"success":true,"totalSolRecovered":4…
-9:38:08 PM [express] GET /api/transactions/history 304 in 34ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:13 PM [express] GET /api/sol-refund/stats 304 in 143ms :: {"success":true,"totalSolRecovered":4…
-9:38:13 PM [express] GET /api/transactions/history 304 in 64ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:18 PM [express] GET /api/sol-refund/stats 304 in 184ms :: {"success":true,"totalSolRecovered":4…
-9:38:18 PM [express] GET /api/transactions/history 304 in 44ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:23 PM [express] GET /api/sol-refund/stats 304 in 164ms :: {"success":true,"totalSolRecovered":4…
-9:38:24 PM [express] GET /api/transactions/history 304 in 263ms :: {"success":true,"transactions":[{…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:29 PM [express] GET /api/sol-refund/stats 304 in 129ms :: {"success":true,"totalSolRecovered":4…
-9:38:29 PM [express] GET /api/transactions/history 304 in 57ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:34 PM [express] GET /api/transactions/history 304 in 45ms :: {"success":true,"transactions":[{"…
-9:38:34 PM [express] GET /api/sol-refund/stats 304 in 114ms :: {"success":true,"totalSolRecovered":4…
-9:38:36 PM [express] GET /api/transactions/history 304 in 63ms :: {"success":true,"transactions":[{"…
-9:38:36 PM [express] GET /api/sol-refund/stats 304 in 162ms :: {"success":true,"totalSolRecovered":4…
-9:38:36 PM [express] GET /api/coinflip/vault 304 in 178ms :: {"success":true,"address":"6ZCV6FWis2qx…
-9:38:36 PM [express] GET /api/coinflip/top 304 in 209ms :: {"success":true,"top":[]}
-9:38:36 PM [express] GET /api/coinflip/recent 304 in 233ms :: {"success":true,"flips":[{"id":"4a9e14…
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:39 PM [express] GET /api/transactions/history 304 in 71ms :: {"success":true,"transactions":[{"…
-9:38:39 PM [express] GET /api/transactions/history 304 in 53ms :: {"success":true,"transactions":[{"…
-9:38:39 PM [express] GET /api/sol-refund/stats 304 in 148ms :: {"success":true,"totalSolRecovered":4…
-9:38:39 PM [express] GET /api/sol-refund/stats 304 in 157ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:41 PM [express] GET /api/coinflip/top 304 in 52ms :: {"success":true,"top":[]}
-9:38:41 PM [express] GET /api/coinflip/recent 304 in 51ms :: {"success":true,"flips":[{"id":"4a9e149…
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:44 PM [express] GET /api/transactions/history 304 in 68ms :: {"success":true,"transactions":[{"…
-9:38:44 PM [express] GET /api/transactions/history 304 in 113ms :: {"success":true,"transactions":[{…
-9:38:44 PM [express] GET /api/sol-refund/stats 304 in 249ms :: {"success":true,"totalSolRecovered":4…
-9:38:45 PM [express] GET /api/sol-refund/stats 304 in 224ms :: {"success":true,"totalSolRecovered":4…
-9:38:46 PM [express] GET /api/coinflip/top 304 in 80ms :: {"success":true,"top":[]}
-9:38:46 PM [express] GET /api/coinflip/recent 304 in 80ms :: {"success":true,"flips":[{"id":"4a9e149…
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:49 PM [express] GET /api/transactions/history 304 in 54ms :: {"success":true,"transactions":[{"…
-9:38:49 PM [express] GET /api/transactions/history 304 in 66ms :: {"success":true,"transactions":[{"…
-9:38:50 PM [express] GET /api/sol-refund/stats 304 in 154ms :: {"success":true,"totalSolRecovered":4…
-9:38:50 PM [express] GET /api/sol-refund/stats 304 in 203ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:51 PM [express] GET /api/coinflip/recent 304 in 70ms :: {"success":true,"flips":[{"id":"4a9e149…
-9:38:51 PM [express] GET /api/coinflip/top 304 in 82ms :: {"success":true,"top":[]}
 [pumpStream] connecting…
 [pumpStream] connected
-9:38:55 PM [express] GET /api/transactions/history 304 in 66ms :: {"success":true,"transactions":[{"…
-9:38:55 PM [express] GET /api/transactions/history 304 in 53ms :: {"success":true,"transactions":[{"…
-9:38:55 PM [express] GET /api/sol-refund/stats 304 in 169ms :: {"success":true,"totalSolRecovered":4…
-9:38:55 PM [express] GET /api/sol-refund/stats 304 in 191ms :: {"success":true,"totalSolRecovered":4…
-9:38:56 PM [express] GET /api/coinflip/recent 304 in 70ms :: {"success":true,"flips":[{"id":"4a9e149…
-9:38:56 PM [express] GET /api/coinflip/top 304 in 46ms :: {"success":true,"top":[]}
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:00 PM [express] GET /api/transactions/history 304 in 52ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:00 PM [express] GET /api/sol-refund/stats 304 in 238ms :: {"success":true,"totalSolRecovered":4…
-9:39:02 PM [express] GET /api/coinflip/top 304 in 60ms :: {"success":true,"top":[]}
-9:39:02 PM [express] GET /api/coinflip/recent 304 in 105ms :: {"success":true,"flips":[{"id":"4a9e14…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:04 PM [express] GET /api/transactions/history 304 in 51ms :: {"success":true,"transactions":[{"…
-9:39:04 PM [express] GET /api/sol-refund/stats 304 in 212ms :: {"success":true,"totalSolRecovered":4…
-9:39:05 PM [express] GET /api/transactions/history 304 in 74ms :: {"success":true,"transactions":[{"…
-9:39:05 PM [express] GET /api/sol-refund/stats 304 in 209ms :: {"success":true,"totalSolRecovered":4…
-9:39:06 PM [express] GET /api/coinflip/vault 304 in 259ms :: {"success":true,"address":"6ZCV6FWis2qx…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:07 PM [express] GET /api/coinflip/top 304 in 61ms :: {"success":true,"top":[]}
-9:39:07 PM [express] GET /api/coinflip/recent 304 in 89ms :: {"success":true,"flips":[{"id":"4a9e149…
-9:39:09 PM [express] GET /api/transactions/history 304 in 93ms :: {"success":true,"transactions":[{"…
-9:39:09 PM [express] GET /api/sol-refund/stats 304 in 132ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:10 PM [express] GET /api/transactions/history 304 in 41ms :: {"success":true,"transactions":[{"…
-9:39:11 PM [express] GET /api/sol-refund/stats 304 in 173ms :: {"success":true,"totalSolRecovered":4…
-9:39:12 PM [express] GET /api/coinflip/top 304 in 69ms :: {"success":true,"top":[]}
-9:39:12 PM [express] GET /api/coinflip/recent 304 in 75ms :: {"success":true,"flips":[{"id":"4a9e149…
-💰 Staking prices: SOL=$94.67, GSOL/SOL=1.110262904
-9:39:12 PM [express] GET /api/staking/position/GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT 200 in 1…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:14 PM [express] GET /api/transactions/history 304 in 56ms :: {"success":true,"transactions":[{"…
-9:39:15 PM [express] GET /api/sol-refund/stats 304 in 146ms :: {"success":true,"totalSolRecovered":4…
-9:39:15 PM [express] GET /api/transactions/history 304 in 82ms :: {"success":true,"transactions":[{"…
-9:39:16 PM [express] GET /api/sol-refund/stats 304 in 155ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:17 PM [express] GET /api/coinflip/top 304 in 84ms :: {"success":true,"top":[]}
-9:39:17 PM [express] GET /api/coinflip/recent 304 in 94ms :: {"success":true,"flips":[{"id":"4a9e149…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:19 PM [express] GET /api/transactions/history 304 in 65ms :: {"success":true,"transactions":[{"…
-9:39:20 PM [express] GET /api/sol-refund/stats 304 in 172ms :: {"success":true,"totalSolRecovered":4…
-9:39:20 PM [express] GET /api/transactions/history 304 in 62ms :: {"success":true,"transactions":[{"…
-9:39:21 PM [express] GET /api/sol-refund/stats 304 in 145ms :: {"success":true,"totalSolRecovered":4…
-9:39:22 PM [express] GET /api/coinflip/top 304 in 60ms :: {"success":true,"top":[]}
-9:39:22 PM [express] GET /api/coinflip/recent 304 in 79ms :: {"success":true,"flips":[{"id":"4a9e149…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:25 PM [express] GET /api/transactions/history 304 in 70ms :: {"success":true,"transactions":[{"…
-9:39:25 PM [express] GET /api/sol-refund/stats 304 in 142ms :: {"success":true,"totalSolRecovered":4…
-9:39:25 PM [express] GET /api/transactions/history 304 in 60ms :: {"success":true,"transactions":[{"…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:26 PM [express] GET /api/sol-refund/stats 304 in 165ms :: {"success":true,"totalSolRecovered":4…
-9:39:27 PM [express] GET /api/coinflip/top 304 in 49ms :: {"success":true,"top":[]}
-9:39:27 PM [express] GET /api/coinflip/recent 304 in 96ms :: {"success":true,"flips":[{"id":"4a9e149…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:30 PM [express] GET /api/transactions/history 304 in 62ms :: {"success":true,"transactions":[{"…
-9:39:30 PM [express] GET /api/sol-refund/stats 304 in 186ms :: {"success":true,"totalSolRecovered":4…
-9:39:30 PM [express] GET /api/transactions/history 304 in 59ms :: {"success":true,"transactions":[{"…
-9:39:31 PM [express] GET /api/sol-refund/stats 304 in 178ms :: {"success":true,"totalSolRecovered":4…
-9:39:32 PM [express] GET /api/wallet-pnl/GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT 200 in 11430ms…
-9:39:32 PM [express] GET /api/coinflip/top 304 in 51ms :: {"success":true,"top":[]}
 [pumpStream] connecting…
-9:39:32 PM [express] GET /api/coinflip/recent 304 in 111ms :: {"success":true,"flips":[{"id":"4a9e14…
 [pumpStream] connected
-9:39:35 PM [express] GET /api/transactions/history 304 in 71ms :: {"success":true,"transactions":[{"…
-9:39:35 PM [express] GET /api/transactions/history 304 in 53ms :: {"success":true,"transactions":[{"…
-9:39:35 PM [express] GET /api/sol-refund/stats 304 in 135ms :: {"success":true,"totalSolRecovered":4…
 [pumpStream] connecting…
 [pumpStream] connected
-9:39:37 PM [express] GET /api/coinflip/vault 304 in 230ms :: {"success":true,"address":"6ZCV6FWis2qx…
-9:39:37 PM [express] GET /api/sol-refund/stats 304 in 145ms :: {"success":true,"totalSolRecovered":4…
-9:39:37 PM [express] GET /api/coinflip/top 304 in 40ms :: {"success":true,"top":[]}
-9:39:37 PM [express] GET /api/coinflip/recent 304 in 100ms :: {"success":true,"flips":[{"id":"4a9e14…
+success":true,"flips":[{"id":"4a9e14…
 [pumpStream] connecting…
 [pumpStream] connected
 9:39:40 PM [express] GET /api/transactions/history 304 in 75ms :: {"success":true,"transactions":[{"…
