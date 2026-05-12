@@ -1,11 +1,18 @@
-// GMGN Service — uses gmgn-cli subprocess for all data
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { writeFileSync, mkdirSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
+// GMGN Service — direct REST calls to https://openapi.gmgn.ai
+// Auth: X-APIKEY header + timestamp & client_id query params (no signature needed for market/token routes)
+import { randomUUID } from 'crypto';
 
-const execAsync = promisify(exec);
+const GMGN_HOST = 'https://openapi.gmgn.ai';
+
+// SOL launchpad platforms (from gmgn-cli source)
+const SOL_PLATFORMS = [
+  'Pump.fun', 'pump_mayhem', 'pump_mayhem_agent', 'pump_agent',
+  'letsbonk', 'bonkers', 'bags', 'memoo', 'liquid', 'bankr', 'zora',
+  'surge', 'anoncoin', 'moonshot_app', 'wendotdev', 'heaven', 'sugar',
+  'token_mill', 'believe', 'trendsfun', 'trends_fun', 'jup_studio',
+  'Moonshot', 'boop', 'ray_launchpad', 'meteora_virtual_curve', 'xstocks',
+];
+const SOL_QUOTE_TYPES = [4, 5, 3, 1, 13, 0];
 
 export interface GmgnToken {
   mint: string;
@@ -43,79 +50,109 @@ let connected = false;
 let lastUpdate = 0;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-async function runGmgn(args: string): Promise<any> {
-  const apiKey = process.env.GMGN_API_KEY || '';
-  const env = {
-    ...process.env,
-    GMGN_API_KEY: apiKey,
-    PATH: `${process.cwd()}/node_modules/.bin:${process.env.PATH || ''}`,
+function getHeaders(): Record<string, string> {
+  return {
+    'X-APIKEY': process.env.GMGN_API_KEY || '',
+    'Content-Type': 'application/json',
   };
-  const { stdout, stderr } = await execAsync(`gmgn-cli ${args}`, { timeout: 30000, env });
-  const text = stdout.trim();
-  if (!text) {
-    throw new Error(`empty response from gmgn-cli. stderr: ${stderr?.slice(0, 200)}`);
+}
+
+function buildUrl(path: string, query: Record<string, any> = {}): string {
+  const params = new URLSearchParams();
+  params.set('timestamp', String(Math.floor(Date.now() / 1000)));
+  params.set('client_id', randomUUID());
+  for (const [k, v] of Object.entries(query)) {
+    if (Array.isArray(v)) {
+      for (const item of v) params.append(k, String(item));
+    } else {
+      params.set(k, String(v));
+    }
   }
-  return JSON.parse(text);
+  return `${GMGN_HOST}${path}?${params}`;
+}
+
+async function gmgnGet(path: string, query: Record<string, any> = {}): Promise<any> {
+  const url = buildUrl(path, query);
+  const res = await fetch(url, {
+    headers: getHeaders(),
+    signal: AbortSignal.timeout(10000),
+  });
+  const json: any = await res.json();
+  if (!res.ok || json?.code !== 0) {
+    throw new Error(`GMGN ${res.status} ${path}: ${json?.message || json?.error || 'error'}`);
+  }
+  return json.data;
+}
+
+async function gmgnPost(path: string, query: Record<string, any> = {}, body: any): Promise<any> {
+  const url = buildUrl(path, query);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10000),
+  });
+  const json: any = await res.json();
+  if (!res.ok || json?.code !== 0) {
+    throw new Error(`GMGN ${res.status} ${path}: ${json?.message || json?.error || 'error'}`);
+  }
+  return json.data;
+}
+
+function buildTrenchesBody(types: string[]): any {
+  const section = {
+    filters: ['offchain', 'onchain'],
+    launchpad_platform: SOL_PLATFORMS,
+    quote_address_type: SOL_QUOTE_TYPES,
+    launchpad_platform_v2: true,
+    limit: 50,
+  };
+  const body: any = { version: 'v2' };
+  for (const type of types) {
+    body[type] = { ...section };
+  }
+  return body;
 }
 
 function mapToken(t: any): GmgnToken {
-  // market_cap is used in both trenches and trending; usd_market_cap is trenches alias
   const mcap = Number(t.usd_market_cap ?? t.market_cap) || undefined;
-  // volume: trending uses `volume` (1h window), trenches uses volume_1h/volume_24h
   const vol = Number(t.volume_1h ?? t.volume ?? t.volume_24h) || undefined;
-  // bonding curve progress: trenches has `progress` (0-1)
-  const bondPct = t.progress != null ? Number(t.progress) : undefined;
   return {
     mint: t.address || '',
     name: t.name || '',
     symbol: t.symbol || '',
     imageUri: t.logo || '',
     priceUsd: Number(t.price) || undefined,
-    pctChange: t.price_change_percent != null ? Number(t.price_change_percent) : (t.price_change_percent1h != null ? Number(t.price_change_percent1h) : undefined),
+    pctChange: t.price_change_percent != null ? Number(t.price_change_percent)
+             : (t.price_change_percent1h != null ? Number(t.price_change_percent1h) : undefined),
     marketCapUsd: mcap,
     liquidityUsd: Number(t.liquidity) || undefined,
     volumeUsd: vol,
     buys: Number(t.buys_24h ?? t.buys) || 0,
     sells: Number(t.sells_24h ?? t.sells) || 0,
     createdAt: t.created_timestamp ? Number(t.created_timestamp) * 1000 : undefined,
-    bondingPct: bondPct,
+    bondingPct: t.progress != null ? Number(t.progress) : undefined,
     migrated: !!(t.complete_timestamp && t.complete_timestamp > 0) || !!(t.open_timestamp && t.open_timestamp > 0),
     launchpad: t.launchpad_platform || t.launchpad || t.exchange || 'pump.fun',
     smartDegens: Number(t.smart_degen_count) || 0,
     renownedCount: Number(t.renowned_count) || 0,
     rugRatio: t.rug_ratio != null ? Number(t.rug_ratio) : undefined,
     ratTraderRate: t.rat_trader_amount_rate != null ? Number(t.rat_trader_amount_rate) : undefined,
-    bundlerRate: t.bundler_trader_amount_rate != null ? Number(t.bundler_trader_amount_rate) : (t.bundler_rate != null ? Number(t.bundler_rate) : undefined),
+    bundlerRate: t.bundler_trader_amount_rate != null ? Number(t.bundler_trader_amount_rate)
+               : (t.bundler_rate != null ? Number(t.bundler_rate) : undefined),
   };
-}
-
-function setupConfig() {
-  const apiKey = process.env.GMGN_API_KEY;
-  if (!apiKey) {
-    console.warn('[gmgn] GMGN_API_KEY not set — skipping config write');
-    return;
-  }
-  try {
-    const configDir = join(homedir(), '.config', 'gmgn');
-    mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, '.env'), `GMGN_API_KEY=${apiKey}\n`, { mode: 0o600 });
-    console.log('[gmgn] Config written to ~/.config/gmgn/.env');
-  } catch (e: any) {
-    console.error('[gmgn] Failed to write config:', e.message);
-  }
 }
 
 async function poll() {
   try {
-    // All trenches categories in one call
-    // Response structure: { new_creation: [...], pump: [...], completed: [...] }
+    // Trenches: POST /v1/trenches — returns { new_creation, pump, completed }
     try {
-      const j = await runGmgn(
-        'market trenches --chain sol --type new_creation --type near_completion --type completed --limit 50 --raw'
+      const data = await gmgnPost('/v1/trenches', { chain: 'sol' },
+        buildTrenchesBody(['new_creation', 'near_completion', 'completed'])
       );
-      const newArr: any[] = j?.new_creation || [];
-      const bondArr: any[] = j?.pump || j?.near_completion || [];
-      const migArr: any[] = j?.completed || [];
+      const newArr: any[] = data?.new_creation || [];
+      const bondArr: any[] = data?.pump || data?.near_completion || [];
+      const migArr: any[] = data?.completed || [];
       if (newArr.length) cache.new = newArr.map(mapToken).filter(t => t.mint);
       if (bondArr.length) cache.bonding = bondArr.map(mapToken).filter(t => t.mint);
       if (migArr.length) cache.migrated = migArr.map(mapToken).filter(t => t.mint);
@@ -124,31 +161,27 @@ async function poll() {
       console.error('[gmgn] trenches fetch failed:', e.message);
     }
 
-    // Trending — response structure: { code, data: { rank: [...] }, message }
+    // Trending: GET /v1/market/rank — returns { rank: [...] }
     try {
-      const j = await runGmgn(
-        'market trending --chain sol --interval 1h --order-by volume --limit 50 --raw'
-      );
-      const arr: any[] = j?.data?.rank || [];
+      const data = await gmgnGet('/v1/market/rank', { chain: 'sol', interval: '1h', orderby: 'volume', direction: 'desc', limit: 50 });
+      const arr: any[] = data?.rank || [];
       if (arr.length) cache.trending = arr.map(mapToken).filter(t => t.mint);
       console.log(`[gmgn] trending: ${arr.length} tokens`);
     } catch (e: any) {
       console.error('[gmgn] trending fetch failed:', e.message);
     }
 
-    // SOL price: fetch from a lightweight source
+    // SOL price from Jupiter
     try {
       const r = await fetch('https://price.jup.ag/v6/price?ids=SOL', { signal: AbortSignal.timeout(5000) });
       if (r.ok) {
         const j: any = await r.json();
-        const p = j?.data?.SOL?.price;
-        if (p) solUsdPrice = Number(p);
+        if (j?.data?.SOL?.price) solUsdPrice = Number(j.data.SOL.price);
       }
     } catch {}
 
     connected = true;
     lastUpdate = Date.now();
-    console.log(`[gmgn] Polled: new=${cache.new.length} bonding=${cache.bonding.length} migrated=${cache.migrated.length} trending=${cache.trending.length}`);
   } catch (e: any) {
     console.error('[gmgn] poll error:', e.message);
     connected = false;
@@ -157,8 +190,10 @@ async function poll() {
 
 export function startGmgnService() {
   if (pollInterval) return;
-  setupConfig();
-  console.log('[gmgn] Starting GMGN service...');
+  if (!process.env.GMGN_API_KEY) {
+    console.warn('[gmgn] GMGN_API_KEY not set — terminal feed will be empty');
+  }
+  console.log('[gmgn] Starting GMGN service (direct REST)...');
   poll();
   pollInterval = setInterval(poll, 30000);
 }
@@ -180,13 +215,11 @@ export function getSolUsd(): number {
 }
 
 export async function getTokenInfo(mint: string): Promise<any> {
-  const j = await runGmgn(`token info --chain sol --address ${mint} --raw`);
-  const t = j?.data || j;
+  // GET /v1/token/info — returns token info object
+  const t = await gmgnGet('/v1/token/info', { chain: 'sol', address: mint });
   if (!t) throw new Error('not found');
-  const mcap =
-    t.price && t.circulating_supply
-      ? Number(t.price) * Number(t.circulating_supply)
-      : undefined;
+  const mcap = t.price && t.circulating_supply
+    ? Number(t.price) * Number(t.circulating_supply) : undefined;
   return {
     id: mint,
     mint,
@@ -208,28 +241,19 @@ export async function getTokenInfo(mint: string): Promise<any> {
     rugRatio: Number(t.stat?.rug_ratio) || undefined,
     ratTraderRate: Number(t.stat?.top_rat_trader_percentage) || undefined,
     bundlerRate: Number(t.stat?.top_bundler_trader_percentage) || undefined,
-    stats24h: {
-      priceChange: 0,
-      numBuys: 0,
-      numSells: 0,
-      volume: 0,
-    },
+    stats24h: { priceChange: 0, numBuys: 0, numSells: 0, volume: 0 },
   };
 }
 
 export async function getTokenSecurity(mint: string): Promise<any> {
-  const j = await runGmgn(`token security --chain sol --address ${mint} --raw`);
-  return j?.data || j;
+  return gmgnGet('/v1/token/security', { chain: 'sol', address: mint });
 }
 
 export async function getTokenLive(mint: string): Promise<any> {
-  const j = await runGmgn(`token info --chain sol --address ${mint} --raw`);
-  const t = j?.data || j;
+  const t = await gmgnGet('/v1/token/info', { chain: 'sol', address: mint });
   if (!t) return null;
-  const mcap =
-    t.price && t.circulating_supply
-      ? Number(t.price) * Number(t.circulating_supply)
-      : undefined;
+  const mcap = t.price && t.circulating_supply
+    ? Number(t.price) * Number(t.circulating_supply) : undefined;
   return {
     mint,
     name: t.name || '',
@@ -245,10 +269,10 @@ export async function getTokenLive(mint: string): Promise<any> {
 
 export async function getTopTraders(mint: string): Promise<any[]> {
   try {
-    const j = await runGmgn(
-      `token traders --chain sol --address ${mint} --limit 10 --order-by profit --direction desc --raw`
-    );
-    const arr: any[] = j?.data?.list || j?.list || [];
+    const data = await gmgnGet('/v1/market/token_top_traders', {
+      chain: 'sol', address: mint, limit: 10, orderby: 'profit', direction: 'desc',
+    });
+    const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
     return arr.map((h: any) => ({
       address: h.address || '',
       amount: Number(h.amount_cur || h.balance || 0),
@@ -256,17 +280,15 @@ export async function getTopTraders(mint: string): Promise<any[]> {
       label: Array.isArray(h.tags) ? h.tags.join(',') : (h.tags || ''),
       profit: Number(h.profit) || 0,
     }));
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 export async function getTopHolders(mint: string): Promise<any[]> {
   try {
-    const j = await runGmgn(
-      `token holders --chain sol --address ${mint} --limit 10 --order-by amount_percentage --direction desc --raw`
-    );
-    const arr: any[] = j?.data?.list || j?.list || [];
+    const data = await gmgnGet('/v1/market/token_top_holders', {
+      chain: 'sol', address: mint, limit: 10, orderby: 'amount_percentage', direction: 'desc',
+    });
+    const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
     return arr.map((h: any) => ({
       address: h.address || '',
       amount: Number(h.amount_cur || h.balance || 0),
@@ -275,7 +297,5 @@ export async function getTopHolders(mint: string): Promise<any[]> {
       label: Array.isArray(h.tags) ? h.tags.join(',') : (h.tags || ''),
       profit: Number(h.profit) || 0,
     }));
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
