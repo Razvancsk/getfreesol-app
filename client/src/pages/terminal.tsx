@@ -1517,13 +1517,49 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
     return () => { active = false; };
   }, [publicKey, busy, token?.mint, balRefresh]);
 
+  const [jupQuote, setJupQuote] = useState<{ outRaw: number; loading: boolean } | null>(null);
+
   const live: any = token || {};
   const STANDARD_SUPPLY = 1_000_000_000;
-  // Prefer priceUsd/solUsd (DexScreener-anchored) over stream priceSol which can be stale for graduated tokens.
   const priceSol = (live.priceUsd && live.solUsd)
     ? Number(live.priceUsd) / Number(live.solUsd)
     : (live.priceSol ?? (live.marketCapSol ? live.marketCapSol / STANDARD_SUPPLY : undefined));
   const sym = (live.symbol || 'TOKEN').toString().slice(0, 8);
+
+  // Jupiter quote — debounced 500ms on amount/side change
+  useEffect(() => {
+    const amtNum = Number(amount);
+    if (!amount || amount.endsWith('%') || !isFinite(amtNum) || amtNum <= 0 || !token?.mint) {
+      setJupQuote(null);
+      return;
+    }
+    setJupQuote((prev) => prev ? { ...prev, loading: true } : { outRaw: 0, loading: true });
+    const SOL_MINT = 'So11111111111111111111111111111111111111112';
+    const decimals = (token as any).decimals ?? 6;
+    const inputMint = side === 'buy' ? SOL_MINT : token.mint;
+    const outputMint = side === 'buy' ? token.mint : SOL_MINT;
+    const rawAmount = side === 'buy'
+      ? Math.round(amtNum * 1e9)
+      : Math.round(amtNum * Math.pow(10, decimals));
+    if (rawAmount <= 0) { setJupQuote(null); return; }
+    const id = setTimeout(async () => {
+      try {
+        const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${rawAmount}&slippageBps=300`;
+        const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        if (!r.ok) { setJupQuote(null); return; }
+        const data = await r.json();
+        const outRaw = Number(data.outAmount);
+        if (isFinite(outRaw) && outRaw > 0) {
+          setJupQuote({ outRaw, loading: false });
+        } else {
+          setJupQuote(null);
+        }
+      } catch {
+        setJupQuote(null);
+      }
+    }, 500);
+    return () => clearTimeout(id);
+  }, [amount, side, token?.mint]);
 
   function fmtNum(n: number, max = 6) {
     if (!isFinite(n)) return '—';
@@ -1659,7 +1695,14 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
         const paySym = side === 'buy' ? 'SOL' : sym;
         const recvSym = side === 'buy' ? sym : 'SOL';
         let recvVal = '0.0';
-        if (priceSol && amount && !amount.endsWith('%') && isFinite(amtNum) && amtNum > 0) {
+        const decimals = (token as any).decimals ?? 6;
+        if (jupQuote && !jupQuote.loading && jupQuote.outRaw > 0) {
+          recvVal = side === 'buy'
+            ? fmtNum(jupQuote.outRaw / Math.pow(10, decimals), 2)
+            : fmtNum(jupQuote.outRaw / 1e9, 6);
+        } else if (jupQuote?.loading) {
+          recvVal = '…';
+        } else if (priceSol && amount && !amount.endsWith('%') && isFinite(amtNum) && amtNum > 0) {
           recvVal = side === 'buy' ? fmtNum(amtNum / priceSol, 2) : fmtNum(amtNum * priceSol, 6);
         }
         const balText = side === 'buy'
