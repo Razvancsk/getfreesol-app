@@ -596,7 +596,7 @@ export function TerminalView() {
             const pct = t.pctChange;
             const pctUp = (pct ?? 0) >= 0;
             const bondPct = Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
-            const isMigrated = tab === 'migrated' || (t.bondingPct ?? 0) >= 1;
+            const isMigrated = tab === 'migrated' || !!t.migrated || (t.bondingPct ?? 0) >= 1;
             const cardPrice = t.priceUsd;
             const cardMcap = t.marketCapUsd;
             const cardVolume = t.volumeUsd;
