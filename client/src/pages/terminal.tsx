@@ -852,26 +852,46 @@ export function TokenPage() {
 }
 
 const RESOLUTIONS = [
-  { label: '1M', value: '1' },
-  { label: '5M', value: '5' },
-  { label: '15M', value: '15' },
-  { label: '1H', value: '60' },
-  { label: '4H', value: '240' },
-  { label: '1D', value: '1D' },
+  { label: '1M', value: '1m' },
+  { label: '5M', value: '5m' },
+  { label: '15M', value: '15m' },
+  { label: '1H', value: '1h' },
+  { label: '4H', value: '4h' },
+  { label: '1D', value: '1d' },
 ];
+// Fallback order when selected resolution has no data
+const RES_FALLBACK: Record<string, string[]> = {
+  '15m': ['5m', '1m'], '1h': ['15m', '5m', '1m'], '4h': ['1h', '15m'],
+  '1d': ['4h', '1h'], '5m': ['1m'], '1m': [],
+};
 
 function PriceChart({ mint }: { mint: string }) {
-  const [res, setRes] = useState('15');
+  const [res, setRes] = useState('15m');
+  const [fallbackRes, setFallbackRes] = useState<string | null>(null);
+  const activeRes = fallbackRes || res;
+
+  useEffect(() => { setFallbackRes(null); }, [res]);
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['/api/terminal/kline', mint, res],
+    queryKey: ['/api/terminal/kline', mint, activeRes],
     queryFn: async () => {
-      const r = await fetch(`/api/terminal/kline/${mint}?resolution=${res}&limit=120`);
+      const r = await fetch(`/api/terminal/kline/${mint}?resolution=${activeRes}&limit=120`);
       if (!r.ok) throw new Error('kline failed');
       return r.json();
     },
     refetchInterval: 30_000,
     staleTime: 25_000,
   });
+
+  useEffect(() => {
+    if (!data) return;
+    if (!data?.candles?.length) {
+      const fallbacks = RES_FALLBACK[res] || [];
+      const tried = fallbackRes ? fallbacks.indexOf(fallbackRes) : -1;
+      const next = fallbacks[tried + 1];
+      if (next) setFallbackRes(next);
+    }
+  }, [data]);
 
   const candles: any[] = data?.candles || [];
   const prices = candles.map((c: any) => c.c).filter(Boolean);
@@ -891,7 +911,7 @@ function PriceChart({ mint }: { mint: string }) {
   };
   const fmtTime = (ms: number) => {
     const d = new Date(ms);
-    if (res === '1D') return `${d.getMonth() + 1}/${d.getDate()}`;
+    if (res === '1d') return `${d.getMonth() + 1}/${d.getDate()}`;
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
@@ -961,7 +981,7 @@ function PriceChart({ mint }: { mint: string }) {
 
 export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => void }) {
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<'chart' | 'info' | 'holders' | 'traders'>('chart');
+  const [tab, setTab] = useState<'chart' | 'info' | 'security' | 'holders' | 'traders'>('chart');
   const [tradeFor, setTradeFor] = useState<'buy' | 'sell' | null>(null);
 
   const { data: info, isLoading } = useQuery<JupMint>({
@@ -1134,7 +1154,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         </div>
 
         <div className="flex gap-2 mb-3 flex-wrap">
-          {(['chart', 'info', 'holders', 'traders'] as const).map((id) => (
+          {(['chart', 'info', 'security', 'holders', 'traders'] as const).map((id) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -1152,52 +1172,59 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
 
         {tab === 'info' && (() => {
           const launchpad = info?.firstPool?.launchpad || (info as any)?.launchpad;
+          const devAddr = (info as any)?.devAddress || info?.dev || '';
+          const poolAddr = (info as any)?.poolAddress || '';
+          const poolDex = (info as any)?.poolDex || '';
+          const poolLiq = (info as any)?.poolLiquidity;
+          return (
+            <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+              <InfoAddressRow label="Contract Address" value={mint} />
+              {devAddr && <InfoAddressRow label="Developer Wallet" value={devAddr} />}
+              {poolAddr && <InfoAddressRow label={`Pool (${poolDex || 'DEX'})`} value={poolAddr} />}
+              {poolLiq != null && <InfoTextRow label="Pool Liquidity" value={fmtUsd(poolLiq)} />}
+              {launchpad && <InfoTextRow label="Launchpad" value={launchpad} isLast />}
+            </div>
+          );
+        })()}
+
+        {tab === 'security' && (() => {
           const smartDegens = (info as any)?.smartDegens ?? 0;
           const renownedWallets = (info as any)?.renownedWallets ?? 0;
           const rugRatio = (info as any)?.rugRatio;
           const ratTraderRate = (info as any)?.ratTraderRate;
           const bundlerRate = (info as any)?.bundlerRate;
           const bondingProgress = (info as any)?.bondingProgress;
+          const top10 = (info as any)?.top10HolderRate;
+          const live: any = liveData?.live || {};
+          const priceUsd = live.priceUsd ?? (info as any)?.usdPrice;
+          const fmtP = (v?: number) => {
+            if (!v) return '—';
+            if (v < 0.000001) return `$${v.toExponential(2)}`;
+            if (v < 0.001) return `$${v.toFixed(7)}`;
+            if (v < 1) return `$${v.toFixed(5)}`;
+            return `$${v.toFixed(4)}`;
+          };
+          const stats = [
+            { label: 'Price', value: fmtP(priceUsd), color: 'text-emerald-400' },
+            { label: 'Smart Wallets', value: smartDegens > 0 ? `${smartDegens} SM` : '0 SM', color: smartDegens >= 3 ? 'text-emerald-400' : smartDegens > 0 ? 'text-yellow-400' : 'text-white/50' },
+            { label: 'KOL Wallets', value: renownedWallets > 0 ? `${renownedWallets} KOL` : '0 KOL', color: renownedWallets > 0 ? 'text-blue-400' : 'text-white/50' },
+            { label: 'Rug Risk', value: rugRatio != null ? `${Math.round(rugRatio * 100)}%` : '—', color: rugRatio == null ? 'text-white' : rugRatio > 0.3 ? 'text-red-400' : rugRatio > 0.1 ? 'text-yellow-400' : 'text-emerald-400' },
+            { label: 'Rat Traders', value: ratTraderRate != null ? `${Math.round(ratTraderRate * 100)}%` : '—', color: ratTraderRate != null && ratTraderRate > 0.3 ? 'text-red-400' : ratTraderRate != null ? 'text-emerald-400' : 'text-white' },
+            { label: 'Bundler Rate', value: bundlerRate != null ? `${Math.round(bundlerRate * 100)}%` : '—', color: bundlerRate != null && bundlerRate > 0.3 ? 'text-red-400' : bundlerRate != null ? 'text-emerald-400' : 'text-white' },
+            { label: 'Top 10 Hold', value: top10 != null ? `${Math.round(top10 * 100)}%` : bondingProgress != null ? `${Math.round(bondingProgress * 100)}% bond` : '—', color: top10 != null && top10 > 0.5 ? 'text-red-400' : top10 != null && top10 > 0.2 ? 'text-yellow-400' : 'text-emerald-400' },
+          ];
           return (
-            <div className="space-y-3">
-              {/* GMGN Security / Smart Money */}
-              <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-purple-500/20">
-                  <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Smart Money & Security</span>
-                </div>
-                <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
-                  {(() => {
-                    const top10 = (info as any)?.top10HolderRate;
-                    return [
-                    { label: 'Smart Wallets', value: smartDegens > 0 ? `${smartDegens} SM` : '0 SM', color: smartDegens >= 3 ? 'text-emerald-400' : smartDegens > 0 ? 'text-yellow-400' : 'text-white/50' },
-                    { label: 'KOL Wallets', value: renownedWallets > 0 ? `${renownedWallets} KOL` : '0 KOL', color: renownedWallets > 0 ? 'text-blue-400' : 'text-white/50' },
-                    { label: 'Rug Risk', value: rugRatio != null ? `${Math.round(rugRatio * 100)}%` : '—', color: rugRatio == null ? 'text-white' : rugRatio > 0.3 ? 'text-red-400' : rugRatio > 0.1 ? 'text-yellow-400' : 'text-emerald-400' },
-                    { label: 'Rat Traders', value: ratTraderRate != null ? `${Math.round(ratTraderRate * 100)}%` : '—', color: ratTraderRate != null && ratTraderRate > 0.3 ? 'text-red-400' : ratTraderRate != null ? 'text-emerald-400' : 'text-white' },
-                    { label: 'Bundler Rate', value: bundlerRate != null ? `${Math.round(bundlerRate * 100)}%` : '—', color: bundlerRate != null && bundlerRate > 0.3 ? 'text-red-400' : bundlerRate != null ? 'text-emerald-400' : 'text-white' },
-                    { label: 'Top 10 Hold', value: top10 != null ? `${Math.round(top10 * 100)}%` : bondingProgress != null ? `${Math.round(bondingProgress * 100)}% bond` : '—', color: top10 != null && top10 > 0.5 ? 'text-red-400' : top10 != null && top10 > 0.2 ? 'text-yellow-400' : 'text-emerald-400' },
-                  ]})().map((s) => (
-                    <div key={s.label} className="px-3 py-3 text-center">
-                      <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">{s.label}</div>
-                      <div className={`text-base font-bold tabular-nums mt-1 ${s.color}`}>{s.value}</div>
-                    </div>
-                  ))}
-                </div>
+            <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-purple-500/20">
+                <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Smart Money & Security</span>
               </div>
-              {/* Token addresses */}
-              <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
-                <InfoAddressRow label="Contract Address" value={mint} />
-                {(() => {
-                  const devAddr = (info as any)?.devAddress || info?.dev || '';
-                  const poolAddr = (info as any)?.poolAddress || '';
-                  const poolDex = (info as any)?.poolDex || '';
-                  const poolLiq = (info as any)?.poolLiquidity;
-                  return (<>
-                    {devAddr && <InfoAddressRow label="Developer Wallet" value={devAddr} />}
-                    {poolAddr && <InfoAddressRow label={`Pool (${poolDex || 'DEX'})`} value={poolAddr} />}
-                    {poolLiq != null && <InfoTextRow label="Pool Liquidity" value={fmtUsd(poolLiq)} />}
-                    {launchpad && <InfoTextRow label="Launchpad" value={launchpad} isLast />}
-                  </>);
-                })()}
+              <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
+                {stats.map((s) => (
+                  <div key={s.label} className="px-3 py-3 text-center">
+                    <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">{s.label}</div>
+                    <div className={`text-base font-bold tabular-nums mt-1 ${s.color}`}>{s.value}</div>
+                  </div>
+                ))}
               </div>
             </div>
           );

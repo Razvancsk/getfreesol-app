@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { triggerFeedbackCard } from "@/components/FeedbackWidget";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -109,6 +109,7 @@ export default function SolRefund() {
   
   // Note: UMI will be created inside the burn handler to avoid initialization errors
   
+  const autoScanRef = useRef(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'coinflip' | 'staking'>('reclaim');
@@ -410,6 +411,7 @@ export default function SolRefund() {
     if (isConnected && publicKey && activeTab !== 'referrals') {
       if (activeTab === 'reclaim') {
         if (claimSubTab === 'empty') {
+          autoScanRef.current = true;
           scanMutation.mutate(publicKey.toString());
         } else if (claimSubTab === 'programs') {
           // Auto-scan for buffer accounts
@@ -1170,14 +1172,17 @@ export default function SolRefund() {
     },
     onSuccess: (data: ScanResult) => {
       setScanResult(data);
-      // Removed scan completion notification per user request
+      autoScanRef.current = false;
     },
     onError: (error: any) => {
-      toast({
-        title: "Scan Failed",
-        description: error.message || "Failed to scan wallet for empty accounts",
-        variant: "destructive",
-      });
+      if (!autoScanRef.current) {
+        toast({
+          title: "Scan Failed",
+          description: error.message || "Failed to scan wallet for empty accounts",
+          variant: "destructive",
+        });
+      }
+      autoScanRef.current = false;
     },
   });
 

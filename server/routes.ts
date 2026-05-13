@@ -12951,7 +12951,7 @@ Claimer: ${walletAddress}`;
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
-      const resolution = String(req.query.resolution || '15');
+      const resolution = String(req.query.resolution || '15m');
       const limit = Math.min(200, Number(req.query.limit || 100));
       const candles = await getGmgnKline(mint, resolution, limit);
       res.json({ candles });

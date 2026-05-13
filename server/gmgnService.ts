@@ -223,10 +223,10 @@ export async function getTokenSecurity(mint: string): Promise<any> {
 
 export async function getTokenKlineData(mint: string, resolution: string, limit: number): Promise<any[]> {
   try {
-    const resSeconds: Record<string, number> = { '1': 60, '5': 300, '15': 900, '60': 3600, '240': 14400, '1D': 86400 };
-    const sec = resSeconds[resolution] || 900;
-    const to = Math.floor(Date.now() / 1000);
-    const from = to - sec * limit;
+    const resMs: Record<string, number> = { '1m': 60000, '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000 };
+    const ms = resMs[resolution] || 900000;
+    const to = Date.now();
+    const from = to - ms * limit;
     const data: any = await getClient().getTokenKline('sol', mint, resolution, from, to);
     const list: any[] = Array.isArray(data) ? data : (data?.list || []);
     return list.map((c: any) => ({
@@ -241,8 +241,8 @@ export async function getTokenKlineData(mint: string, resolution: string, limit:
 }
 
 export async function getTokenLive(mint: string): Promise<any> {
-  const now = Math.floor(Date.now() / 1000);
-  const from24h = now - 86400;
+  const now = Date.now();
+  const from24h = now - 86400000;
   const [t, klines] = await Promise.all([
     getClient().getTokenInfo('sol', mint) as Promise<any>,
     getClient().getTokenKline('sol', mint, '1h', from24h, now).catch(() => null) as Promise<any>,
