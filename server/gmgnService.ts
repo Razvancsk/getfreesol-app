@@ -59,9 +59,10 @@ function mapToken(t: any): GmgnToken {
   const mcap = n(t.usd_market_cap ?? t.market_cap ?? t.fdv);
   const vol = n(t.volume_1h ?? t.volume_24h ?? t.volume ?? t.swaps_1h);
   const liq = n(t.liquidity ?? t.pool_liquidity);
-  const rawPrice = n(t.price ?? t.usd_price ?? t.last_price);
-  // Derive price from market cap if not directly provided (pump.fun = 1B supply)
-  const price = rawPrice ?? (mcap ? mcap / 1_000_000_000 : undefined);
+  // GMGN trenches has no direct price field — compute from market_cap / total_supply
+  const rawMcap = n(t.usd_market_cap ?? t.market_cap);
+  const supply = n(t.total_supply);
+  const price = (rawMcap && rawMcap > 0 && supply && supply > 0) ? rawMcap / supply : undefined;
   const buys = n(t.buys_1h ?? t.swaps_1h ?? t.buys_24h ?? t.buys) ?? 0;
   const sells = n(t.sells_1h ?? t.sells_24h ?? t.sells) ?? 0;
   const txns = n(t.swaps_1h ?? t.swaps_24h ?? t.swaps);
@@ -102,13 +103,6 @@ async function poll() {
     // Trenches — poll every cycle for near-live new tokens
     try {
       const data: any = await c.getTrenches('sol', ['new_creation', 'near_completion', 'completed']);
-      // Print full first token once so we know every field name and value
-      if (trendingTick === 0) {
-        const keys = Object.keys(data || {});
-        console.log('[gmgn] trenches top-level keys:', keys);
-        const sample = data?.new_creation?.[0] || data?.[keys[0]]?.[0];
-        if (sample) console.log('[gmgn] FULL sample token:', JSON.stringify(sample, null, 2));
-      }
       const newArr: any[] = data?.new_creation || [];
       const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
