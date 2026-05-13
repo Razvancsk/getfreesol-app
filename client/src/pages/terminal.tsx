@@ -426,7 +426,7 @@ export function TerminalView() {
   const [tab, setTab] = useState<FeedType>('new');
   const [search, setSearch] = useState('');
   const [trendingInterval, setTrendingInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
-  const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded' | 'toporganicscore'>('toptrending');
+  const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded'>('toptrending');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
   const [, navigate] = useLocation();
 
@@ -561,7 +561,7 @@ export function TerminalView() {
             </div>
             <div className="h-4 w-px bg-white/10" />
             <div className="flex gap-1">
-              {([['toptrending', 'Trending'], ['toptraded', 'Top Traded'], ['toporganicscore', 'Organic']] as const).map(([cat, label]) => (
+              {([['toptrending', 'Trending'], ['toptraded', 'Top Traded']] as const).map(([cat, label]) => (
                 <button key={cat} onClick={() => setTrendingCategory(cat)}
                   className={`text-xs px-2.5 py-1 rounded-full border transition font-semibold ${trendingCategory === cat ? 'bg-purple-600 border-purple-500 text-white' : 'border-white/20 text-white/50 hover:text-white/80'}`}>
                   {label}
@@ -637,7 +637,7 @@ export function TerminalView() {
                   </div>
                 </div>
                 {/* Badges */}
-                {((t.smartDegens ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3 || (t as any).organicScore != null || (t as any).isVerified) && (
+                {((t.smartDegens ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3 || (t as any).isVerified) && (
                   <div className="flex flex-wrap gap-1.5">
                     {(t.smartDegens ?? 0) > 0 && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">
@@ -652,11 +652,6 @@ export function TerminalView() {
                     {(t.rugRatio ?? 0) > 0.3 && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 font-semibold">
                         RUG {Math.round((t.rugRatio ?? 0) * 100)}%
-                      </span>
-                    )}
-                    {(t as any).organicScore != null && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${(t as any).organicScore >= 70 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : (t as any).organicScore >= 40 ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300' : 'bg-red-500/20 border-red-500/40 text-red-300'}`}>
-                        {Math.round((t as any).organicScore)} organic
                       </span>
                     )}
                     {(t as any).isVerified && (

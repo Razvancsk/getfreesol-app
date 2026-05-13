@@ -12889,29 +12889,30 @@ Claimer: ${walletAddress}`;
 
       const arr: any[] = await r.json();
       const tokens = (Array.isArray(arr) ? arr : []).map((m: any) => {
-        const stats: any = m?.stats?.[interval] || m?.stats?.['1h'] || {};
-        const buyVol = Number(stats.buyVolume ?? stats.buy_volume) || 0;
-        const sellVol = Number(stats.sellVolume ?? stats.sell_volume) || 0;
-        const buys = Number(stats.buyOrganicCount ?? stats.buys ?? stats.buy_count) || 0;
-        const sells = Number(stats.sellOrganicCount ?? stats.sells ?? stats.sell_count) || 0;
-        const pctChange = Number(stats.priceChange ?? stats.price_change_percent) || 0;
+        // Try interval-specific stats first, fall back through common field names
+        const stats: any = m?.stats?.[interval] ?? m?.stats?.['24h'] ?? m?.stats?.['1h'] ?? m?.stats24h ?? {};
+        const buyVol = Number(stats.buyVolume ?? stats.buy_volume ?? stats.volume ?? 0);
+        const sellVol = Number(stats.sellVolume ?? stats.sell_volume ?? 0);
+        const totalVol = buyVol + sellVol || Number(m.volume24h ?? m.daily_volume ?? 0) || undefined;
+        const buys = Number(stats.buys ?? stats.buyCount ?? stats.buyOrganicCount ?? stats.buy_count ?? stats.numBuys ?? 0);
+        const sells = Number(stats.sells ?? stats.sellCount ?? stats.sellOrganicCount ?? stats.sell_count ?? stats.numSells ?? 0);
+        const pctChange = Number(stats.priceChange ?? stats.priceChangePct ?? stats.price_change_percent ?? 0) || undefined;
         return {
           mint: m.id ?? m.address ?? '',
           name: m.name || '',
           symbol: m.symbol || '',
           imageUri: m.icon || m.logoURI || '',
           priceUsd: m.usdPrice ? parseFloat(String(m.usdPrice)) : undefined,
-          pctChange: pctChange || undefined,
+          pctChange,
           marketCapUsd: m.mcap ? Number(m.mcap) : undefined,
           liquidityUsd: m.liquidity ? Number(m.liquidity) : undefined,
-          volumeUsd: buyVol + sellVol || undefined,
+          volumeUsd: totalVol,
           buys: buys || undefined,
           sells: sells || undefined,
           smartDegens: undefined,
           rugRatio: undefined,
           bondingPct: undefined,
           migrated: true,
-          organicScore: m.organicScore ?? undefined,
           isVerified: m.isVerified ?? false,
         };
       }).filter(t => t.mint);
