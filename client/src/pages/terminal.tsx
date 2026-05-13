@@ -637,7 +637,7 @@ export function TerminalView() {
                   </div>
                 </div>
                 {/* Badges */}
-                {((t.smartDegens ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3 || (t as any).isVerified) && (
+                {((t.smartDegens ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3) && (
                   <div className="flex flex-wrap gap-1.5">
                     {(t.smartDegens ?? 0) > 0 && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">
@@ -653,9 +653,6 @@ export function TerminalView() {
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 font-semibold">
                         RUG {Math.round((t.rugRatio ?? 0) * 100)}%
                       </span>
-                    )}
-                    {(t as any).isVerified && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">JUP ✓</span>
                     )}
                   </div>
                 )}
@@ -875,16 +872,9 @@ export function TokenPage() {
                 data-testid="button-portfolio"
               >
                 <WalletIcon className="h-4 w-4" />
-                <span className="font-semibold">Portfolio</span>
+                <span className="font-semibold">{publicKey ? shortAddr : 'Connect Wallet'}</span>
               </button>
             } />
-            <Button
-              onClick={() => setVisible(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-              data-testid="button-connect-wallet"
-            >
-              {publicKey ? shortAddr : 'Connect Wallet'}
-            </Button>
           </div>
         </div>
         <TokenContent mint={mint} onBack={() => navigate('/?tab=terminal')} />
@@ -1154,9 +1144,6 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                           <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${jupMarket.organicScore >= 70 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : jupMarket.organicScore >= 40 ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300' : 'bg-red-500/20 border-red-500/40 text-red-300'}`}>
                             {jupMarket.organicScoreLabel || `${Math.round(jupMarket.organicScore)} organic`}
                           </span>
-                        )}
-                        {jupMarket?.isVerified && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">JUP ✓</span>
                         )}
                       </div>
                     );
