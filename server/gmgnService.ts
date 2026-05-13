@@ -85,7 +85,7 @@ async function poll() {
     try {
       const data: any = await c.getTrenches('sol', ['new_creation', 'near_completion', 'completed']);
       const newArr: any[] = data?.new_creation || [];
-      const bondArr: any[] = data?.near_completion || data?.pump || [];
+      const bondArr: any[] = data?.pump || [];
       const migArr: any[] = data?.completed || [];
       if (newArr.length) cache.new = newArr.map(mapToken).filter(t => t.mint);
       if (bondArr.length) cache.bonding = bondArr.map(mapToken).filter(t => t.mint);
