@@ -13475,6 +13475,8 @@ Claimer: ${walletAddress}`;
         outputMint: String(outputMint),
         amount: String(amount),
         taker: String(taker),
+        referralAccount: '5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB',
+        referralFee: '50',
       });
       const r = await fetch(`https://api.jup.ag/swap/v2/order?${params}`, { headers });
       const data = await r.json();
