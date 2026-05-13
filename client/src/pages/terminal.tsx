@@ -35,6 +35,7 @@ type Token = {
   lastSeen?: number;
   buys?: number;
   sells?: number;
+  txns?: number;
   migrated?: boolean;
   smartDegens?: number;
   renownedCount?: number;
@@ -600,7 +601,7 @@ export function TerminalView() {
             const cardMcap = t.marketCapUsd;
             const cardVolume = t.volumeUsd;
             const cardLiquidity = t.liquidityUsd;
-            const cardTxns = totalTx || null;
+            const cardTxns = totalTx || t.txns || null;
             return (
               <div
                 key={t.mint}

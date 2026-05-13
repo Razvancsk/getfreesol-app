@@ -13,6 +13,7 @@ export interface GmgnToken {
   volumeUsd?: number;
   buys?: number;
   sells?: number;
+  txns?: number;
   createdAt?: number;
   bondingPct?: number;
   migrated?: boolean;
@@ -58,9 +59,12 @@ function mapToken(t: any): GmgnToken {
   const mcap = n(t.usd_market_cap ?? t.market_cap ?? t.fdv);
   const vol = n(t.volume_1h ?? t.volume_24h ?? t.volume ?? t.swaps_1h);
   const liq = n(t.liquidity ?? t.pool_liquidity);
-  const price = n(t.price ?? t.usd_price ?? t.last_price);
-  const buys = n(t.buys_1h ?? t.buys_24h ?? t.buys) ?? 0;
+  const rawPrice = n(t.price ?? t.usd_price ?? t.last_price);
+  // Derive price from market cap if not directly provided (pump.fun = 1B supply)
+  const price = rawPrice ?? (mcap ? mcap / 1_000_000_000 : undefined);
+  const buys = n(t.buys_1h ?? t.swaps_1h ?? t.buys_24h ?? t.buys) ?? 0;
   const sells = n(t.sells_1h ?? t.sells_24h ?? t.sells) ?? 0;
+  const txns = n(t.swaps_1h ?? t.swaps_24h ?? t.swaps);
   const pctChange = n(t.price_change_percent ?? t.price_change_percent1h ?? t.price_change_percent24h);
   return {
     mint: t.address || t.mint || '',
@@ -74,6 +78,7 @@ function mapToken(t: any): GmgnToken {
     volumeUsd: vol,
     buys: Number(buys) || 0,
     sells: Number(sells) || 0,
+    txns: txns ?? undefined,
     createdAt: t.created_timestamp ? Number(t.created_timestamp) * 1000
              : (t.open_timestamp ? Number(t.open_timestamp) * 1000 : undefined),
     bondingPct: t.progress != null ? Number(t.progress) : undefined,
