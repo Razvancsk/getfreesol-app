@@ -12873,6 +12873,55 @@ Claimer: ${walletAddress}`;
     res.json({ tokens: getGmgnTrending(limit), status: getGmgnStatus() });
   });
 
+  // Jupiter Tokens v2 trending — toptrending, toptraded, toporganicscore
+  app.get('/api/terminal/jup-trending', async (req, res) => {
+    try {
+      const interval = ['5m', '1h', '6h', '24h'].includes(String(req.query.interval)) ? String(req.query.interval) : '1h';
+      const category = ['toptrending', 'toptraded', 'toporganicscore'].includes(String(req.query.category)) ? String(req.query.category) : 'toptrending';
+      const limit = Math.min(100, Number(req.query.limit) || 50);
+      const apiKey = process.env.JUPITER_API_KEY;
+      const base = apiKey ? 'https://api.jup.ag' : 'https://lite-api.jup.ag';
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      if (apiKey) headers['x-api-key'] = apiKey;
+
+      const r = await fetch(`${base}/tokens/v2/${category}/${interval}?limit=${limit}`, { headers });
+      if (!r.ok) return res.status(r.status).json({ error: `Jupiter ${r.status}` });
+
+      const arr: any[] = await r.json();
+      const tokens = (Array.isArray(arr) ? arr : []).map((m: any) => {
+        const stats: any = m?.stats?.[interval] || m?.stats?.['1h'] || {};
+        const buyVol = Number(stats.buyVolume ?? stats.buy_volume) || 0;
+        const sellVol = Number(stats.sellVolume ?? stats.sell_volume) || 0;
+        const buys = Number(stats.buyOrganicCount ?? stats.buys ?? stats.buy_count) || 0;
+        const sells = Number(stats.sellOrganicCount ?? stats.sells ?? stats.sell_count) || 0;
+        const pctChange = Number(stats.priceChange ?? stats.price_change_percent) || 0;
+        return {
+          mint: m.id ?? m.address ?? '',
+          name: m.name || '',
+          symbol: m.symbol || '',
+          imageUri: m.icon || m.logoURI || '',
+          priceUsd: m.usdPrice ? parseFloat(String(m.usdPrice)) : undefined,
+          pctChange: pctChange || undefined,
+          marketCapUsd: m.mcap ? Number(m.mcap) : undefined,
+          liquidityUsd: m.liquidity ? Number(m.liquidity) : undefined,
+          volumeUsd: buyVol + sellVol || undefined,
+          buys: buys || undefined,
+          sells: sells || undefined,
+          smartDegens: undefined,
+          rugRatio: undefined,
+          bondingPct: undefined,
+          migrated: true,
+          organicScore: m.organicScore ?? undefined,
+          isVerified: m.isVerified ?? false,
+        };
+      }).filter(t => t.mint);
+
+      res.json({ tokens });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'jup-trending failed' });
+    }
+  });
+
   app.get('/api/terminal/search', async (req, res) => {
     try {
       const q = String(req.query.q || '').trim();

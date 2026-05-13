@@ -425,6 +425,8 @@ function HoldingsDrawer({ trigger }: { trigger: React.ReactNode }) {
 export function TerminalView() {
   const [tab, setTab] = useState<FeedType>('new');
   const [search, setSearch] = useState('');
+  const [trendingInterval, setTrendingInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
+  const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded' | 'toporganicscore'>('toptrending');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
   const [, navigate] = useLocation();
 
@@ -464,15 +466,27 @@ export function TerminalView() {
     staleTime: 15_000,
   });
 
+  const { data: jupTrendingData, isFetching: jupTrendingFetching } = useQuery<{ tokens: Token[] }>({
+    queryKey: ['/api/terminal/jup-trending', trendingInterval, trendingCategory],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/jup-trending?interval=${trendingInterval}&category=${trendingCategory}&limit=50`);
+      if (!r.ok) throw new Error('jup-trending failed');
+      return r.json();
+    },
+    enabled: tab === 'trending',
+    refetchInterval: 60_000,
+    staleTime: 55_000,
+  });
+
   const tokens = useMemo(() => {
     if (debouncedSearch.length > 0) return searchData?.tokens ?? [];
+    if (tab === 'trending') return jupTrendingData?.tokens ?? [];
     if (!liveData) return [];
     if (tab === 'new') return liveData.new;
     if (tab === 'bonding') return liveData.bonding;
     if (tab === 'migrated') return liveData.migrated;
-    if (tab === 'trending') return liveData.trending;
     return [];
-  }, [liveData, tab, searchData, debouncedSearch]);
+  }, [liveData, tab, searchData, debouncedSearch, jupTrendingData]);
 
   const status = liveData?.status;
 
@@ -535,10 +549,32 @@ export function TerminalView() {
         {tab === 'signals' && <SignalsView />}
         {tab === 'smartmoney' && <SmartMoneyView />}
 
+        {tab === 'trending' && (
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <div className="flex gap-1">
+              {(['5m', '1h', '6h', '24h'] as const).map(iv => (
+                <button key={iv} onClick={() => setTrendingInterval(iv)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition font-semibold ${trendingInterval === iv ? 'bg-purple-600 border-purple-500 text-white' : 'border-white/20 text-white/50 hover:text-white/80'}`}>
+                  {iv}
+                </button>
+              ))}
+            </div>
+            <div className="h-4 w-px bg-white/10" />
+            <div className="flex gap-1">
+              {([['toptrending', 'Trending'], ['toptraded', 'Top Traded'], ['toporganicscore', 'Organic']] as const).map(([cat, label]) => (
+                <button key={cat} onClick={() => setTrendingCategory(cat)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition font-semibold ${trendingCategory === cat ? 'bg-purple-600 border-purple-500 text-white' : 'border-white/20 text-white/50 hover:text-white/80'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {!isSpecialTab && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[70vh] overflow-y-auto no-scrollbar">
           {tokens.length === 0 && (
             <div className="px-4 py-16 text-center text-white/50 text-sm bg-purple-900/20 border border-white/10 rounded-2xl">
-              {isFetching ? 'Loading feed…' : 'No tokens yet — waiting for stream events.'}
+              {tab === 'trending' ? (jupTrendingFetching ? 'Loading Jupiter trending…' : 'No trending tokens found.') : (isFetching ? 'Loading feed…' : 'No tokens yet — waiting for stream events.')}
             </div>
           )}
           {tokens.map((t) => {
@@ -600,8 +636,8 @@ export function TerminalView() {
                     <div className="text-white font-medium tabular-nums">{fmtCount(totalTx)}</div>
                   </div>
                 </div>
-                {/* GMGN badges */}
-                {((t.smartDegens ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3) && (
+                {/* Badges */}
+                {((t.smartDegens ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3 || (t as any).organicScore != null || (t as any).isVerified) && (
                   <div className="flex flex-wrap gap-1.5">
                     {(t.smartDegens ?? 0) > 0 && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">
@@ -617,6 +653,14 @@ export function TerminalView() {
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 font-semibold">
                         RUG {Math.round((t.rugRatio ?? 0) * 100)}%
                       </span>
+                    )}
+                    {(t as any).organicScore != null && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${(t as any).organicScore >= 70 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : (t as any).organicScore >= 40 ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300' : 'bg-red-500/20 border-red-500/40 text-red-300'}`}>
+                        {Math.round((t as any).organicScore)} organic
+                      </span>
+                    )}
+                    {(t as any).isVerified && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">JUP ✓</span>
                     )}
                   </div>
                 )}
