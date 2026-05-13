@@ -13015,7 +13015,97 @@ Claimer: ${walletAddress}`;
     try {
       const address = String(req.params.address || '').trim();
       if (!address) return res.status(400).json({ error: 'address required' });
-      const holdings = await getGmgnWalletHoldings(address);
+
+      const apiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      if (apiKey) headers['x-api-key'] = apiKey;
+
+      const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
+      // 1. Get all balances via Jupiter Ultra Holdings
+      let solBalance = 0;
+      const tokenMap: Record<string, number> = {}; // mint → uiAmount
+
+      try {
+        const hr = await fetch(`https://api.jup.ag/ultra/v1/holdings/${address}`, { headers });
+        if (hr.ok) {
+          const hd: any = await hr.json();
+          solBalance = Number(hd?.uiAmount ?? hd?.nativeBalance?.uiAmount ?? 0);
+          const tokens: any = hd?.tokens ?? {};
+          for (const [mint, tData] of Object.entries<any>(tokens)) {
+            const qty = Array.isArray(tData)
+              ? tData.reduce((acc: number, v: any) => acc + Number(v?.uiAmount ?? 0), 0)
+              : Number(tData?.uiAmount ?? 0);
+            if (qty > 0) tokenMap[mint] = qty;
+          }
+        }
+      } catch {}
+
+      const allMints = [SOL_MINT, ...Object.keys(tokenMap)];
+
+      // 2. Batch price lookup
+      const priceMap: Record<string, number> = {};
+      try {
+        const pr = await fetch(`https://api.jup.ag/price/v3?ids=${allMints.join(',')}`, { headers });
+        if (pr.ok) {
+          const pd: any = await pr.json();
+          for (const [mint, entry] of Object.entries<any>(pd?.data ?? {})) {
+            if (entry?.price) priceMap[mint] = parseFloat(entry.price);
+          }
+        }
+      } catch {}
+
+      // 3. Batch token metadata (symbol, icon, name)
+      const metaMap: Record<string, { symbol: string; name: string; icon: string }> = {};
+      const tokenMints = Object.keys(tokenMap);
+      if (tokenMints.length > 0) {
+        try {
+          const mr = await fetch(`https://api.jup.ag/tokens/v2/search?query=${tokenMints.slice(0, 50).join(',')}`, { headers });
+          if (mr.ok) {
+            const md: any[] = await mr.json();
+            for (const t of (Array.isArray(md) ? md : [])) {
+              const id = t?.id ?? t?.address;
+              if (id) metaMap[id] = { symbol: t?.symbol ?? '', name: t?.name ?? '', icon: t?.icon ?? '' };
+            }
+          }
+        } catch {}
+      }
+
+      // 4. Build holdings — always include SOL first even if 0
+      const solPrice = priceMap[SOL_MINT] ?? 0;
+      const holdings: any[] = [{
+        mint: SOL_MINT,
+        symbol: 'SOL',
+        name: 'Solana',
+        imageUri: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
+        balance: solBalance,
+        usdValue: solBalance * solPrice,
+        profit: 0,
+        unrealizedProfit: 0,
+      }];
+
+      for (const [mint, qty] of Object.entries(tokenMap)) {
+        const price = priceMap[mint] ?? 0;
+        const meta = metaMap[mint] ?? {};
+        holdings.push({
+          mint,
+          symbol: meta.symbol || mint.slice(0, 6),
+          name: meta.name || '',
+          imageUri: meta.icon || '',
+          balance: qty,
+          usdValue: qty * price,
+          profit: 0,
+          unrealizedProfit: 0,
+        });
+      }
+
+      // Sort: SOL first, then by USD value descending
+      holdings.sort((a, b) => {
+        if (a.mint === SOL_MINT) return -1;
+        if (b.mint === SOL_MINT) return 1;
+        return (b.usdValue ?? 0) - (a.usdValue ?? 0);
+      });
+
       res.json({ holdings });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'wallet holdings failed' });

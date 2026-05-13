@@ -358,34 +358,38 @@ function HoldingsDrawer({ trigger }: { trigger: React.ReactNode }) {
             {portfolioTab === 'holdings' && (
               <div className="space-y-2">
                 {holdingsFetching && holdings.length === 0 && <div className="text-white/50 text-sm text-center py-6">Loading…</div>}
-                {!holdingsFetching && holdings.length === 0 && <div className="text-white/50 text-sm text-center py-6">No holdings found.</div>}
-                {holdings.map((t) => (
-                  <button
-                    key={t.mint}
-                    onClick={() => { setOpen(false); navigate(`/terminal/token/${t.mint}`); }}
-                    className="w-full flex items-center justify-between gap-3 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20 hover:bg-purple-800/40 transition text-left"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {t.imageUri ? (
-                        <img src={t.imageUri} alt="" className="w-9 h-9 rounded-full bg-black/30 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                      ) : (
-                        <div className="w-9 h-9 rounded-full bg-purple-700/50 flex items-center justify-center text-xs font-bold">{(t.symbol || '?').slice(0, 2)}</div>
-                      )}
-                      <div className="min-w-0">
-                        <div className="text-white font-semibold text-sm truncate">{t.symbol || shortMint(t.mint)}</div>
-                        <div className="text-white/60 text-xs">{fmtUsd(t.usdValue)}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      {t.unrealizedProfit != null && t.unrealizedProfit !== 0 && (
-                        <div className={`text-xs font-semibold ${t.unrealizedProfit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {t.unrealizedProfit > 0 ? '+' : ''}{fmtUsd(t.unrealizedProfit)}
+                {holdings.map((t: any) => {
+                  const SOL_MINT = 'So11111111111111111111111111111111111111112';
+                  const isSol = t.mint === SOL_MINT;
+                  const fmtBal = (n: number) => n >= 1000 ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : n >= 1 ? n.toFixed(4) : n.toFixed(6);
+                  return (
+                    <button
+                      key={t.mint}
+                      onClick={() => { if (!isSol) { setOpen(false); navigate(`/terminal/token/${t.mint}`); } }}
+                      className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20 transition text-left ${isSol ? 'cursor-default' : 'hover:bg-purple-800/40 cursor-pointer'}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {t.imageUri ? (
+                          <img src={t.imageUri} alt="" className="w-9 h-9 rounded-full bg-black/30 object-cover shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-purple-700/50 flex items-center justify-center text-xs font-bold shrink-0">{(t.symbol || '?').slice(0, 2).toUpperCase()}</div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-white font-semibold text-sm truncate">{t.symbol || shortMint(t.mint)}</div>
+                          <div className="text-white/50 text-xs tabular-nums">{fmtBal(t.balance ?? 0)} {t.symbol}</div>
                         </div>
-                      )}
-                      <div className="text-white/40 text-xs">{t.profit !== 0 ? `${t.profit > 0 ? '+' : ''}${fmtUsd(t.profit)}` : ''}</div>
-                    </div>
-                  </button>
-                ))}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-white font-semibold text-sm tabular-nums">{fmtUsd(t.usdValue)}</div>
+                        {t.unrealizedProfit != null && t.unrealizedProfit !== 0 && (
+                          <div className={`text-xs font-semibold ${t.unrealizedProfit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {t.unrealizedProfit > 0 ? '+' : ''}{fmtUsd(t.unrealizedProfit)}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
