@@ -4,7 +4,7 @@ import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activ
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
 import { buildTradeTx as buildPumpTradeTx, validateTradeInput } from './pumpStream';
-import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, addSseClient } from './gmgnService';
+import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, addSseClient } from './gmgnService';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -12944,6 +12944,19 @@ Claimer: ${walletAddress}`;
       res.json({ live });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'live failed' });
+    }
+  });
+
+  app.get('/api/terminal/kline/:mint', async (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const resolution = String(req.query.resolution || '15');
+      const limit = Math.min(200, Number(req.query.limit || 100));
+      const candles = await getGmgnKline(mint, resolution, limit);
+      res.json({ candles });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'kline failed' });
     }
   });
 

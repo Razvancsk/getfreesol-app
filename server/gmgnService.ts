@@ -221,6 +221,25 @@ export async function getTokenSecurity(mint: string): Promise<any> {
   return getClient().getTokenSecurity('sol', mint);
 }
 
+export async function getTokenKlineData(mint: string, resolution: string, limit: number): Promise<any[]> {
+  try {
+    const resSeconds: Record<string, number> = { '1': 60, '5': 300, '15': 900, '60': 3600, '240': 14400, '1D': 86400 };
+    const sec = resSeconds[resolution] || 900;
+    const to = Math.floor(Date.now() / 1000);
+    const from = to - sec * limit;
+    const data: any = await getClient().getTokenKline('sol', mint, resolution, from, to);
+    const list: any[] = Array.isArray(data) ? data : (data?.list || []);
+    return list.map((c: any) => ({
+      t: Number(c.time || c.t) * 1000,
+      o: Number(c.open || c.o) || 0,
+      h: Number(c.high || c.h) || 0,
+      l: Number(c.low || c.l) || 0,
+      c: Number(c.close || c.c) || 0,
+      v: Number(c.volume || c.v) || 0,
+    }));
+  } catch { return []; }
+}
+
 export async function getTokenLive(mint: string): Promise<any> {
   const now = Math.floor(Date.now() / 1000);
   const from24h = now - 86400;

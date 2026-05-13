@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link, useLocation, useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -850,6 +851,114 @@ export function TokenPage() {
   );
 }
 
+const RESOLUTIONS = [
+  { label: '1M', value: '1' },
+  { label: '5M', value: '5' },
+  { label: '15M', value: '15' },
+  { label: '1H', value: '60' },
+  { label: '4H', value: '240' },
+  { label: '1D', value: '1D' },
+];
+
+function PriceChart({ mint }: { mint: string }) {
+  const [res, setRes] = useState('15');
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['/api/terminal/kline', mint, res],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/kline/${mint}?resolution=${res}&limit=120`);
+      if (!r.ok) throw new Error('kline failed');
+      return r.json();
+    },
+    refetchInterval: 30_000,
+    staleTime: 25_000,
+  });
+
+  const candles: any[] = data?.candles || [];
+  const prices = candles.map((c: any) => c.c).filter(Boolean);
+  const isUp = prices.length >= 2 ? prices[prices.length - 1] >= prices[0] : true;
+  const strokeColor = isUp ? '#10b981' : '#ef4444';
+  const fillId = isUp ? 'fillUp' : 'fillDown';
+  const upColor = '#10b981';
+  const downColor = '#ef4444';
+
+  const fmtPrice = (v: number) => {
+    if (!v) return '';
+    if (v < 0.000001) return v.toExponential(2);
+    if (v < 0.001) return v.toFixed(7);
+    if (v < 1) return v.toFixed(5);
+    if (v < 1000) return v.toFixed(4);
+    return fmtUsd(v);
+  };
+  const fmtTime = (ms: number) => {
+    const d = new Date(ms);
+    if (res === '1D') return `${d.getMonth() + 1}/${d.getDate()}`;
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  const minP = prices.length ? Math.min(...prices) : 0;
+  const maxP = prices.length ? Math.max(...prices) : 1;
+  const pad = (maxP - minP) * 0.08 || maxP * 0.05 || 0.001;
+  const domain: [number, number] = [minP - pad, maxP + pad];
+
+  return (
+    <div className="bg-black rounded-xl overflow-hidden border border-white/10 flex flex-col" style={{ height: 520 }}>
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 px-3 py-2 border-b border-white/5 shrink-0">
+        {RESOLUTIONS.map(r => (
+          <button key={r.value} onClick={() => setRes(r.value)}
+            className={`text-[11px] px-2.5 py-1 rounded font-medium transition-colors ${res === r.value ? 'bg-purple-600 text-white' : 'text-white/40 hover:text-white/70'}`}>
+            {r.label}
+          </button>
+        ))}
+        <span className="ml-auto text-[10px] text-white/20">GMGN</span>
+      </div>
+      {/* Chart body */}
+      <div className="flex-1 min-h-0">
+        {isLoading && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-white/30 text-sm animate-pulse">Loading…</div>
+          </div>
+        )}
+        {!isLoading && (isError || candles.length === 0) && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-white/20 text-sm">No chart data</div>
+          </div>
+        )}
+        {!isLoading && candles.length > 0 && (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={candles} margin={{ top: 8, right: 4, left: 0, bottom: 4 }}>
+              <defs>
+                <linearGradient id="fillUp" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={upColor} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={upColor} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="fillDown" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={downColor} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={downColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis dataKey="t" tickFormatter={fmtTime} tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                axisLine={false} tickLine={false} minTickGap={40} />
+              <YAxis domain={domain} tickFormatter={fmtPrice} tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                axisLine={false} tickLine={false} width={72} orientation="right" />
+              <Tooltip
+                contentStyle={{ background: '#0d0118', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8, padding: '6px 10px', fontSize: 11 }}
+                labelStyle={{ color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}
+                formatter={(v: any) => [fmtPrice(Number(v)), 'Price']}
+                labelFormatter={(t: any) => fmtTime(Number(t))}
+                cursor={{ stroke: 'rgba(168,85,247,0.4)', strokeWidth: 1, strokeDasharray: '4 2' }}
+              />
+              <Area type="monotone" dataKey="c" stroke={strokeColor} strokeWidth={1.5}
+                fill={`url(#${fillId})`} dot={false} activeDot={{ r: 3, fill: strokeColor }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => void }) {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState<'chart' | 'info' | 'holders' | 'traders'>('chart');
@@ -929,13 +1038,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         )}
 
         <div className="lg:flex lg:gap-4 mb-4">
-          <div className="hidden lg:block flex-1 min-w-0 rounded-xl overflow-hidden border border-white/10 bg-black">
-            <iframe
-              src={`https://www.gmgn.cc/kline/sol/${mint}?theme=dark&interval=15`}
-              className="w-full"
-              style={{ height: 600, border: 0 }}
-              title="chart"
-            />
+          <div className="hidden lg:block flex-1 min-w-0">
+            <PriceChart mint={mint} />
           </div>
 
           <div className="lg:w-[360px] lg:shrink-0 space-y-3">
@@ -1019,13 +1123,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         </div>
 
         {tab === 'chart' && (
-          <div className="rounded-xl overflow-hidden border border-white/10 bg-black lg:hidden">
-            <iframe
-              src={`https://www.gmgn.cc/kline/sol/${mint}?theme=dark&interval=15`}
-              className="w-full"
-              style={{ height: 600, border: 0 }}
-              title="chart"
-            />
+          <div className="lg:hidden">
+            <PriceChart mint={mint} />
           </div>
         )}
 
