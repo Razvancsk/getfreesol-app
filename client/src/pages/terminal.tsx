@@ -917,7 +917,8 @@ function PriceChart({ mint }: { mint: string }) {
 
   useEffect(() => {
     if (!data) return;
-    if (!data?.candles?.length) {
+    // Fall back to shorter resolution if fewer than 3 candles (new token)
+    if ((data?.candles?.length ?? 0) < 3) {
       const fallbacks = RES_FALLBACK[res] || [];
       const tried = fallbackRes ? fallbacks.indexOf(fallbackRes) : -1;
       const next = fallbacks[tried + 1];

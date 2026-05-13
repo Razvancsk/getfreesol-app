@@ -372,21 +372,31 @@ export async function getSignals(): Promise<any[]> {
   }
 }
 
+function mapWallet(w: any, type: 'sm' | 'kol'): any {
+  const address = w.address || w.wallet_address || w.wallet || w.addr || '';
+  const name = w.name || w.nick_name || w.nickname || w.display_name || w.twitter_name || w.twitter_username || '';
+  const twitter = w.twitter_username || w.twitter || '';
+  return {
+    address,
+    name,
+    twitter: twitter ? (twitter.startsWith('http') ? twitter : `https://x.com/${twitter}`) : '',
+    avatar: w.avatar || w.icon || w.profile_image || '',
+    tags: Array.isArray(w.tags) ? w.tags : [],
+    profit7d: Number(w.realized_profit_7d) || 0,
+    profit30d: Number(w.realized_profit_30d) || 0,
+    winRate: Number(w.win_rate) || 0,
+    txCount: Number(w.buy_30d || w.tx_count) || 0,
+    followerCount: Number(w.follower_count) || 0,
+  };
+}
+
 export async function getSmartMoneyWallets(limit = 20): Promise<any[]> {
   try {
     const data: any = await getClient().getSmartMoney('sol', limit);
-    const arr: any[] = Array.isArray(data) ? data : (data?.list || data?.wallets || []);
-    return arr.map((w: any) => ({
-      address: w.address || w.wallet_address || '',
-      name: w.name || w.twitter_name || '',
-      twitter: w.twitter_username ? `https://x.com/${w.twitter_username}` : '',
-      avatar: w.avatar || '',
-      tags: Array.isArray(w.tags) ? w.tags : [],
-      profit7d: Number(w.realized_profit_7d) || 0,
-      profit30d: Number(w.realized_profit_30d) || 0,
-      winRate: Number(w.win_rate) || 0,
-      txCount: Number(w.buy_30d || w.tx_count) || 0,
-    }));
+    const arr: any[] = Array.isArray(data) ? data : (data?.list || data?.rank || data?.wallets || []);
+    const mapped = arr.map((w: any) => mapWallet(w, 'sm')).filter((w: any) => w.address);
+    console.log(`[gmgn] smart money: ${mapped.length} wallets`);
+    return mapped;
   } catch (e: any) {
     console.error('[gmgn] smart money fetch failed:', e.message);
     return [];
@@ -396,16 +406,10 @@ export async function getSmartMoneyWallets(limit = 20): Promise<any[]> {
 export async function getKolWallets(limit = 20): Promise<any[]> {
   try {
     const data: any = await getClient().getKol('sol', limit);
-    const arr: any[] = Array.isArray(data) ? data : (data?.list || data?.wallets || []);
-    return arr.map((w: any) => ({
-      address: w.address || w.wallet_address || '',
-      name: w.name || w.twitter_name || '',
-      twitter: w.twitter_username ? `https://x.com/${w.twitter_username}` : '',
-      avatar: w.avatar || '',
-      tags: Array.isArray(w.tags) ? w.tags : [],
-      profit7d: Number(w.realized_profit_7d) || 0,
-      followerCount: Number(w.follower_count) || 0,
-    }));
+    const arr: any[] = Array.isArray(data) ? data : (data?.list || data?.rank || data?.wallets || []);
+    const mapped = arr.map((w: any) => mapWallet(w, 'kol')).filter((w: any) => w.address);
+    console.log(`[gmgn] kol: ${mapped.length} wallets`);
+    return mapped;
   } catch (e: any) {
     console.error('[gmgn] kol fetch failed:', e.message);
     return [];
