@@ -315,6 +315,8 @@ export async function getTopTraders(mint: string): Promise<any[]> {
       // Last trade: type from token_transfer, fallback inferred from sellRatio
       lastTradeType: h.token_transfer?.type || (h.end_holding_at ? 'sell' : (h.sell_amount_percentage >= 0.99 ? 'sell' : 'buy')),
       lastTradeUsd: Number(h.token_transfer?.cost_usd || h.token_transfer?.usd_value || 0),
+      lastTradeTokenAmount: Number(h.token_transfer?.token_amount || h.token_transfer?.amount || 0),
+      lastTradePrice: Number(h.token_transfer?.price || 0),
     }));
   } catch { return []; }
 }

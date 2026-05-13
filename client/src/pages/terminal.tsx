@@ -1359,91 +1359,64 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
 
         {tab === 'traders' && (
           <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 overflow-hidden">
-            {tradersLoading && <div className="text-center text-white/50 text-sm py-8">Loading traders…</div>}
+            {tradersLoading && <div className="text-center text-white/50 text-sm py-8">Loading…</div>}
             {!tradersLoading && (tradersData?.traders?.length ?? 0) === 0 && (
-              <div className="text-center text-white/50 text-sm py-8">No traders found.</div>
+              <div className="text-center text-white/50 text-sm py-8">No trades found.</div>
             )}
             {(tradersData?.traders || []).length > 0 && (
               <div className="overflow-x-auto">
                 {/* Header */}
-                <div className="grid text-xs text-purple-300/50 font-semibold tracking-wider uppercase px-4 py-2.5 border-b border-white/5"
-                  style={{ gridTemplateColumns: '1fr 110px 120px 120px 100px 100px' }}>
-                  <span>Wallet</span>
-                  <span className="text-right">SOL / Active</span>
-                  <span className="text-right">Bought</span>
-                  <span className="text-right">Sold</span>
-                  <span className="text-right">Unrealized</span>
-                  <span className="text-right">PnL</span>
+                <div className="grid text-[10px] text-purple-300/40 font-semibold tracking-wider uppercase px-3 py-2 border-b border-white/5"
+                  style={{ gridTemplateColumns: '52px 44px 90px 100px 1fr 110px' }}>
+                  <span>Time</span>
+                  <span>Type</span>
+                  <span>Value</span>
+                  <span>Price</span>
+                  <span>Amount</span>
+                  <span>By</span>
                 </div>
                 <div className="divide-y divide-white/5">
-                  {(tradersData?.traders || []).map((h: any, i: number) => {
+                  {(tradersData?.traders || []).map((h: any) => {
+                    const isBuy = h.lastTradeType !== 'sell';
+                    const timeAgo = h.lastActive ? relAge(h.lastActive * 1000) : '—';
+                    const value = h.lastTradeUsd > 0 ? fmtUsd(h.lastTradeUsd)
+                      : isBuy ? (h.buyCount > 0 ? fmtUsd(h.buyVolume / h.buyCount) : '—')
+                      : (h.sellCount > 0 ? fmtUsd(h.sellVolume / h.sellCount) : '—');
+                    const price = h.lastTradePrice > 0 ? `$${h.lastTradePrice < 0.000001 ? h.lastTradePrice.toExponential(2) : h.lastTradePrice < 0.001 ? h.lastTradePrice.toFixed(7) : h.lastTradePrice < 1 ? h.lastTradePrice.toFixed(5) : h.lastTradePrice.toFixed(4)}`
+                      : isBuy ? (h.avgCost > 0 ? `$${h.avgCost.toFixed(h.avgCost < 0.001 ? 7 : 5)}` : '—')
+                      : (h.avgSold > 0 ? `$${h.avgSold.toFixed(h.avgSold < 0.001 ? 7 : 5)}` : '—');
+                    const tokenAmt = h.lastTradeTokenAmount > 0 ? fmtCount(h.lastTradeTokenAmount)
+                      : isBuy ? (h.buyAmount > 0 ? fmtCount(h.buyAmount) : '—')
+                      : (h.sellAmount > 0 ? fmtCount(h.sellAmount) : '—');
                     const isSm = h.tags?.includes('smart_degen');
                     const isKol = h.tags?.includes('renowned');
-                    const isBundler = h.makerTags?.includes('bundler') || h.tags?.includes('bundler');
-                    const isRat = h.makerTags?.includes('rat_trader') || h.tags?.includes('rat_trader');
-                    const stillHolding = h.endHolding == null && h.balance > 0;
-                    const fullyExited = h.sellRatio >= 0.99 || (h.endHolding != null);
-                    const lastActiveAgo = h.lastActive ? relAge(h.lastActive * 1000) : null;
-                    const solBal = h.nativeBalance / 1e9;
-                    const pnlColor = (v: number) => v > 0 ? 'text-emerald-400' : v < 0 ? 'text-red-400' : 'text-white/40';
-                    const fmtProfit = (v: number) => v === 0 ? '$0' : `${v > 0 ? '+' : ''}${fmtUsd(v)}`;
-                    const lastType: 'buy' | 'sell' = h.lastTradeType === 'sell' ? 'sell' : 'buy';
-                    // Prefer token_transfer usd, else derive from avg * 1 unit
-                    const lastUsd = h.lastTradeUsd > 0 ? h.lastTradeUsd
-                      : lastType === 'sell' ? (h.sellCount > 0 ? h.sellVolume / h.sellCount : 0)
-                      : (h.buyCount > 0 ? h.buyVolume / h.buyCount : 0);
+                    const shortBy = h.name || `${h.address.slice(0, 6)}…${h.address.slice(-4)}`;
                     return (
                       <a
                         key={h.address}
                         href={`https://gmgn.ai/sol/address/${h.address}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="grid items-center py-3 px-4 hover:bg-white/5 transition-colors"
-                        style={{ gridTemplateColumns: '1fr 110px 120px 120px 100px 100px' }}
+                        className="grid items-center py-2.5 px-3 hover:bg-white/5 transition-colors"
+                        style={{ gridTemplateColumns: '52px 44px 90px 100px 1fr 110px' }}
                       >
-                        {/* Wallet — no avatar */}
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-white/30 text-xs w-5 tabular-nums shrink-0">{i + 1}</span>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-mono text-purple-100 text-sm font-medium">
-                                {h.name || `${h.address.slice(0, 6)}…${h.address.slice(-4)}`}
-                              </span>
-                              {isSm && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SM</span>}
-                              {isKol && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">KOL</span>}
-                              {isBundler && <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">BOT</span>}
-                              {isRat && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30">RAT</span>}
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              {/* One combined status tag: position (HOLD/SOLD) + last action type + amount */}
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${fullyExited ? 'bg-white/10 text-white/50 border-white/10' : lastType === 'buy' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/20' : 'bg-red-500/15 text-red-300 border-red-500/20'}`}>
-                                {fullyExited ? 'SOLD OUT' : stillHolding ? `HOLD · ${lastType === 'buy' ? 'BUY' : 'SELL'}${lastUsd > 0 ? ` ${fmtUsd(lastUsd)}` : ''}` : `${lastType === 'buy' ? 'BUY' : 'SELL'}${lastUsd > 0 ? ` ${fmtUsd(lastUsd)}` : ''}`}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        {/* SOL / Last active */}
-                        <div className="text-right">
-                          <div className="text-white text-sm tabular-nums font-medium">{solBal > 0 ? `≡${solBal < 0.01 ? '<0.01' : solBal.toFixed(2)}` : '—'}</div>
-                          <div className="text-white/40 text-xs mt-0.5">{lastActiveAgo || '—'}</div>
-                        </div>
-                        {/* Bought */}
-                        <div className="text-right">
-                          <div className="text-emerald-300 text-sm tabular-nums font-medium">{h.buyVolume > 0 ? fmtUsd(h.buyVolume) : '—'}</div>
-                          <div className="text-white/40 text-xs mt-0.5">{h.buyCount > 0 ? `${h.buyCount} TX` : ''}</div>
-                        </div>
-                        {/* Sold */}
-                        <div className="text-right">
-                          <div className="text-red-300 text-sm tabular-nums font-medium">{h.sellVolume > 0 ? fmtUsd(h.sellVolume) : '—'}</div>
-                          <div className="text-white/40 text-xs mt-0.5">{h.sellCount > 0 ? `${h.sellCount} TX` : ''}</div>
-                        </div>
-                        {/* Unrealized */}
-                        <div className={`text-right text-sm tabular-nums font-semibold ${pnlColor(h.unrealizedProfit)}`}>
-                          {fmtProfit(h.unrealizedProfit)}
-                        </div>
-                        {/* PnL */}
-                        <div className={`text-right text-sm tabular-nums font-bold ${pnlColor(h.profit)}`}>
-                          {fmtProfit(h.profit)}
+                        {/* Time */}
+                        <span className="text-white/50 text-xs tabular-nums">{timeAgo}</span>
+                        {/* Type */}
+                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-bold ${isBuy ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
+                          {isBuy ? 'B' : 'S'}
+                        </span>
+                        {/* Value */}
+                        <span className={`text-sm tabular-nums font-medium ${isBuy ? 'text-emerald-300' : 'text-red-300'}`}>{value}</span>
+                        {/* Price */}
+                        <span className="text-white/70 text-xs tabular-nums">{price}</span>
+                        {/* Amount */}
+                        <span className="text-white text-xs tabular-nums truncate">{tokenAmt}</span>
+                        {/* By */}
+                        <div className="flex items-center gap-1 justify-end min-w-0">
+                          {isSm && <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">SM</span>}
+                          {isKol && <span className="text-[9px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">KOL</span>}
+                          <span className="font-mono text-purple-200 text-xs truncate">{shortBy}</span>
                         </div>
                       </a>
                     );
