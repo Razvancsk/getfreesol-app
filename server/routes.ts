@@ -13421,7 +13421,7 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Jupiter Swap v2 — get unsigned order with referral fee
+  // Jupiter Swap v2 — get unsigned order with referral fee (buys + sells)
   app.get('/api/terminal/jupiter-order', async (req, res) => {
     try {
       const { inputMint, outputMint, amount, taker } = req.query;
@@ -13431,24 +13431,14 @@ Claimer: ${walletAddress}`;
       const apiKey = process.env.JUPITER_API_KEY;
       const headers: Record<string, string> = {};
       if (apiKey) headers['x-api-key'] = apiKey;
-
-      const SOL_MINT = 'So11111111111111111111111111111111111111112';
-      // WSOL referral ATA — collects fees when output is SOL (sells)
-      const WSOL_FEE_ACCOUNT = '2iDyu7fVbXPKuGnbas3PfZDZtY2MJuxr1mYh8Qahx1NF';
-
       const params = new URLSearchParams({
         inputMint: String(inputMint),
         outputMint: String(outputMint),
         amount: String(amount),
         taker: String(taker),
+        platformFeeBps: '50',
+        feeAccount: '2iDyu7fVbXPKuGnbas3PfZDZtY2MJuxr1mYh8Qahx1NF',
       });
-
-      // Only apply fee on sells (output = SOL) where we have a valid fee account
-      if (String(outputMint) === SOL_MINT) {
-        params.append('platformFeeBps', '50');
-        params.append('feeAccount', WSOL_FEE_ACCOUNT);
-      }
-
       const r = await fetch(`https://api.jup.ag/swap/v2/order?${params}`, { headers });
       const data = await r.json();
       if (!r.ok) return res.status(r.status).json(data);
