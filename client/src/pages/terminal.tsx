@@ -931,7 +931,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         <div className="lg:flex lg:gap-4 mb-4">
           <div className="hidden lg:block flex-1 min-w-0 rounded-xl overflow-hidden border border-white/10 bg-black">
             <iframe
-              src={`https://dexscreener.com/solana/${mint}?embed=1&theme=dark&trades=1&info=0`}
+              src={`https://www.gmgn.cc/kline/sol/${mint}?theme=dark&interval=15`}
               className="w-full"
               style={{ height: 600, border: 0 }}
               title="chart"
@@ -1021,7 +1021,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
         {tab === 'chart' && (
           <div className="rounded-xl overflow-hidden border border-white/10 bg-black lg:hidden">
             <iframe
-              src={`https://dexscreener.com/solana/${mint}?embed=1&theme=dark&trades=1&info=0`}
+              src={`https://www.gmgn.cc/kline/sol/${mint}?theme=dark&interval=15`}
               className="w-full"
               style={{ height: 600, border: 0 }}
               title="chart"
