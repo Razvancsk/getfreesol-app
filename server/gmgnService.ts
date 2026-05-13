@@ -1,18 +1,5 @@
-// GMGN Service — direct REST calls to https://openapi.gmgn.ai
-// Auth: X-APIKEY header + timestamp & client_id query params (no signature needed for market/token routes)
-import { randomUUID } from 'crypto';
-
-const GMGN_HOST = 'https://openapi.gmgn.ai';
-
-// SOL launchpad platforms (from gmgn-cli source)
-const SOL_PLATFORMS = [
-  'Pump.fun', 'pump_mayhem', 'pump_mayhem_agent', 'pump_agent',
-  'letsbonk', 'bonkers', 'bags', 'memoo', 'liquid', 'bankr', 'zora',
-  'surge', 'anoncoin', 'moonshot_app', 'wendotdev', 'heaven', 'sugar',
-  'token_mill', 'believe', 'trendsfun', 'trends_fun', 'jup_studio',
-  'Moonshot', 'boop', 'ray_launchpad', 'meteora_virtual_curve', 'xstocks',
-];
-const SOL_QUOTE_TYPES = [4, 5, 3, 1, 13, 0];
+// GMGN Service — uses OpenApiClient from gmgn-cli (cooperation API, no IP whitelist required)
+import { OpenApiClient } from 'gmgn-cli/dist/client/OpenApiClient.js';
 
 export interface GmgnToken {
   mint: string;
@@ -49,69 +36,16 @@ let solUsdPrice = 0;
 let connected = false;
 let lastUpdate = 0;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
+let client: OpenApiClient | null = null;
 
-function getHeaders(): Record<string, string> {
-  return {
-    'X-APIKEY': process.env.GMGN_API_KEY || '',
-    'Content-Type': 'application/json',
-  };
-}
-
-function buildUrl(path: string, query: Record<string, any> = {}): string {
-  const params = new URLSearchParams();
-  params.set('timestamp', String(Math.floor(Date.now() / 1000)));
-  params.set('client_id', randomUUID());
-  for (const [k, v] of Object.entries(query)) {
-    if (Array.isArray(v)) {
-      for (const item of v) params.append(k, String(item));
-    } else {
-      params.set(k, String(v));
-    }
+function getClient(): OpenApiClient {
+  if (!client) {
+    client = new OpenApiClient({
+      apiKey: process.env.GMGN_API_KEY || '',
+      host: 'https://openapi.gmgn.ai',
+    });
   }
-  return `${GMGN_HOST}${path}?${params}`;
-}
-
-async function gmgnGet(path: string, query: Record<string, any> = {}): Promise<any> {
-  const url = buildUrl(path, query);
-  const res = await fetch(url, {
-    headers: getHeaders(),
-    signal: AbortSignal.timeout(10000),
-  });
-  const json: any = await res.json();
-  if (!res.ok || json?.code !== 0) {
-    throw new Error(`GMGN ${res.status} ${path}: ${json?.message || json?.error || 'error'}`);
-  }
-  return json.data;
-}
-
-async function gmgnPost(path: string, query: Record<string, any> = {}, body: any): Promise<any> {
-  const url = buildUrl(path, query);
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(10000),
-  });
-  const json: any = await res.json();
-  if (!res.ok || json?.code !== 0) {
-    throw new Error(`GMGN ${res.status} ${path}: ${json?.message || json?.error || 'error'}`);
-  }
-  return json.data;
-}
-
-function buildTrenchesBody(types: string[]): any {
-  const section = {
-    filters: ['offchain', 'onchain'],
-    launchpad_platform: SOL_PLATFORMS,
-    quote_address_type: SOL_QUOTE_TYPES,
-    launchpad_platform_v2: true,
-    limit: 50,
-  };
-  const body: any = { version: 'v2' };
-  for (const type of types) {
-    body[type] = { ...section };
-  }
-  return body;
+  return client;
 }
 
 function mapToken(t: any): GmgnToken {
@@ -145,13 +79,13 @@ function mapToken(t: any): GmgnToken {
 
 async function poll() {
   try {
-    // Trenches: POST /v1/trenches — returns { new_creation, pump, completed }
+    const c = getClient();
+
+    // Trenches
     try {
-      const data = await gmgnPost('/v1/trenches', { chain: 'sol' },
-        buildTrenchesBody(['new_creation', 'near_completion', 'completed'])
-      );
+      const data: any = await c.getTrenches('sol', ['new_creation', 'near_completion', 'completed']);
       const newArr: any[] = data?.new_creation || [];
-      const bondArr: any[] = data?.pump || data?.near_completion || [];
+      const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
       if (newArr.length) cache.new = newArr.map(mapToken).filter(t => t.mint);
       if (bondArr.length) cache.bonding = bondArr.map(mapToken).filter(t => t.mint);
@@ -161,10 +95,10 @@ async function poll() {
       console.error('[gmgn] trenches fetch failed:', e.message);
     }
 
-    // Trending: GET /v1/market/rank — returns { rank: [...] }
+    // Trending
     try {
-      const data = await gmgnGet('/v1/market/rank', { chain: 'sol', interval: '1h', orderby: 'volume', direction: 'desc', limit: 50 });
-      const arr: any[] = data?.rank || [];
+      const data: any = await c.getTrendingSwaps('sol', '1h', { orderby: 'volume', direction: 'desc', limit: 50 });
+      const arr: any[] = data?.rank || (Array.isArray(data) ? data : []);
       if (arr.length) cache.trending = arr.map(mapToken).filter(t => t.mint);
       console.log(`[gmgn] trending: ${arr.length} tokens`);
     } catch (e: any) {
@@ -193,7 +127,7 @@ export function startGmgnService() {
   if (!process.env.GMGN_API_KEY) {
     console.warn('[gmgn] GMGN_API_KEY not set — terminal feed will be empty');
   }
-  console.log('[gmgn] Starting GMGN service (direct REST)...');
+  console.log('[gmgn] Starting GMGN service (cooperation API via OpenApiClient)...');
   poll();
   pollInterval = setInterval(poll, 30000);
 }
@@ -215,8 +149,7 @@ export function getSolUsd(): number {
 }
 
 export async function getTokenInfo(mint: string): Promise<any> {
-  // GET /v1/token/info — returns token info object
-  const t = await gmgnGet('/v1/token/info', { chain: 'sol', address: mint });
+  const t: any = await getClient().getTokenInfo('sol', mint);
   if (!t) throw new Error('not found');
   const mcap = t.price && t.circulating_supply
     ? Number(t.price) * Number(t.circulating_supply) : undefined;
@@ -246,11 +179,11 @@ export async function getTokenInfo(mint: string): Promise<any> {
 }
 
 export async function getTokenSecurity(mint: string): Promise<any> {
-  return gmgnGet('/v1/token/security', { chain: 'sol', address: mint });
+  return getClient().getTokenSecurity('sol', mint);
 }
 
 export async function getTokenLive(mint: string): Promise<any> {
-  const t = await gmgnGet('/v1/token/info', { chain: 'sol', address: mint });
+  const t: any = await getClient().getTokenInfo('sol', mint);
   if (!t) return null;
   const mcap = t.price && t.circulating_supply
     ? Number(t.price) * Number(t.circulating_supply) : undefined;
@@ -269,9 +202,7 @@ export async function getTokenLive(mint: string): Promise<any> {
 
 export async function getTopTraders(mint: string): Promise<any[]> {
   try {
-    const data = await gmgnGet('/v1/market/token_top_traders', {
-      chain: 'sol', address: mint, limit: 10, orderby: 'profit', direction: 'desc',
-    });
+    const data: any = await getClient().getTokenTopTraders('sol', mint, { limit: 10, orderby: 'profit', direction: 'desc' });
     const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
     return arr.map((h: any) => ({
       address: h.address || '',
@@ -285,9 +216,7 @@ export async function getTopTraders(mint: string): Promise<any[]> {
 
 export async function getTopHolders(mint: string): Promise<any[]> {
   try {
-    const data = await gmgnGet('/v1/market/token_top_holders', {
-      chain: 'sol', address: mint, limit: 10, orderby: 'amount_percentage', direction: 'desc',
-    });
+    const data: any = await getClient().getTokenTopHolders('sol', mint, { limit: 10, orderby: 'amount_percentage', direction: 'desc' });
     const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
     return arr.map((h: any) => ({
       address: h.address || '',
