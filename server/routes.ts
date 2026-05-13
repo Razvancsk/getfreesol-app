@@ -13145,6 +13145,72 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Jupiter Portfolio API — wallet holdings (SOL + token balances) for SwapCard
+  app.get('/api/terminal/jup-holdings/:address', async (req, res) => {
+    try {
+      const address = String(req.params.address || '').trim();
+      if (!address) return res.status(400).json({ error: 'address required' });
+      const apiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      if (apiKey) headers['x-api-key'] = apiKey;
+
+      let sol = 0;
+      const tokenBalances: Record<string, number> = {};
+
+      // Primary: Jupiter Portfolio v1 positions
+      try {
+        const r = await fetch(`https://api.jup.ag/portfolio/v1/positions/${address}`, { headers });
+        if (r.ok) {
+          const data: any = await r.json();
+          const elements: any[] = data?.elements || [];
+          for (const el of elements) {
+            const elData: any = el?.data || el || {};
+            // SOL as a direct balance field
+            const nativeMint = 'So11111111111111111111111111111111111111112';
+            if (elData?.mint === nativeMint || el?.type === 'native') {
+              sol += Number(elData?.uiAmount ?? elData?.balance ?? 0);
+            }
+            // Token array inside element
+            const tokens: any[] = elData?.tokens ?? elData?.assets ?? [];
+            for (const t of tokens) {
+              const mint: string = t?.mint ?? t?.address ?? '';
+              const amt = Number(t?.uiAmount ?? t?.balance ?? 0);
+              if (mint === nativeMint) { sol += amt; continue; }
+              if (mint && amt > 0) tokenBalances[mint] = (tokenBalances[mint] || 0) + amt;
+            }
+            // Element itself is a single token
+            if (elData?.mint && elData.mint !== nativeMint) {
+              const amt = Number(elData?.uiAmount ?? elData?.balance ?? 0);
+              if (amt > 0) tokenBalances[elData.mint] = (tokenBalances[elData.mint] || 0) + amt;
+            }
+          }
+        }
+      } catch {}
+
+      // Fallback: Ultra Holdings API (more reliable for simple spot balances)
+      if (sol === 0 && Object.keys(tokenBalances).length === 0) {
+        try {
+          const hr = await fetch(`https://api.jup.ag/ultra/v1/holdings/${address}`, { headers });
+          if (hr.ok) {
+            const hd: any = await hr.json();
+            sol = Number(hd?.uiAmount ?? hd?.nativeBalance?.uiAmount ?? 0);
+            const tokens: any = hd?.tokens ?? {};
+            for (const [mint, tData] of Object.entries<any>(tokens)) {
+              const qty = Array.isArray(tData)
+                ? tData.reduce((acc: number, v: any) => acc + Number(v?.uiAmount ?? 0), 0)
+                : Number(tData?.uiAmount ?? 0);
+              if (qty > 0) tokenBalances[mint] = qty;
+            }
+          }
+        } catch {}
+      }
+
+      res.json({ sol, tokenBalances });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'holdings failed' });
+    }
+  });
+
   // Jupiter Swap v2 — get unsigned order
   app.get('/api/terminal/jupiter-order', async (req, res) => {
     try {

@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import logoImage from '@assets/image_1757882056840.png';
-import { Connection, PublicKey, VersionedTransaction } from '@solana/web3.js';
+import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -1536,28 +1536,15 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
   useEffect(() => {
     if (!publicKey) { setBalance(null); setTokenBalance(null); return; }
     let active = true;
-    const conn = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
     (async () => {
       try {
-        const lamports = await conn.getBalance(publicKey);
-        if (active) setBalance(lamports / 1e9);
-      } catch { /* ignore */ }
-      try {
-        if (!token?.mint) return;
-        const mintPk = new PublicKey(token.mint);
-        const programs = [
-          new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
-          new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'),
-        ];
-        let total = 0;
-        for (const programId of programs) {
-          const r = await conn.getParsedTokenAccountsByOwner(publicKey, { mint: mintPk, programId });
-          for (const acc of r.value) {
-            const ui = acc.account.data?.parsed?.info?.tokenAmount?.uiAmount;
-            if (typeof ui === 'number') total += ui;
-          }
+        const r = await fetch(`/api/terminal/jup-holdings/${publicKey.toBase58()}`);
+        if (!r.ok) return;
+        const data = await r.json();
+        if (active) {
+          setBalance(data.sol ?? null);
+          setTokenBalance(token?.mint ? (data.tokenBalances?.[token.mint] ?? null) : null);
         }
-        if (active) setTokenBalance(total);
       } catch { /* ignore */ }
     })();
     return () => { active = false; };
