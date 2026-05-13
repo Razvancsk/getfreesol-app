@@ -812,13 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch {}
       }
 
-      // Helius-based PnL (FIFO, SOL-denominated cost basis from on-chain swap history)
-      let pnl: any = null;
-      try {
-        pnl = await computeWalletPnl(address);
-      } catch (e: any) {
-        console.error('Helius PnL failed:', e?.message || e);
-      }
+      const pnl: any = null; // Cost-basis PnL removed (no Helius on portfolio page)
 
       const solPx = Number(prices[WSOL]?.usdPrice ?? 0);
 
@@ -889,12 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // GSOL is an LST: PnL = current SOL value of holdings - SOL value at acquisition
       // (using historical GSOL/SOL exchange rate at each acquisition timestamp).
       const currentGsolRate = solPx > 0 && gsolPos ? Number(gsolPos.currentPrice) / solPx : 1.0;
-      let lst: any = null;
-      try {
-        lst = await computeGsolLstPnl(address, currentGsolRate, solPx);
-      } catch (e: any) {
-        console.error('GSOL LST PnL failed:', e?.message || e);
-      }
+      const lst: any = null; // GSOL LST PnL removed (no Helius on portfolio page)
 
       const hasLstData = lst && lst.movements > 0 && solPx > 0;
       const realizedUsd = hasLstData ? lst.realizedSol * solPx : null;

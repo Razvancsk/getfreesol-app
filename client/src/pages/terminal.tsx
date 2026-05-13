@@ -1815,12 +1815,7 @@ function TradeDialog({ token, action, onClose }: { token: Token; action: 'buy' |
         throw new Error('Server returned an unreadable transaction');
       }
       const signed = await signTransaction(tx);
-      // Use Helius public RPC if available via env, else mainnet-beta
-      const heliusKey = (import.meta as any).env?.VITE_HELIUS_API_KEY;
-      const rpc = heliusKey
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-        : 'https://api.mainnet-beta.solana.com';
-      const conn = new Connection(rpc, 'confirmed');
+      const conn = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
       const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: false, maxRetries: 3 });
       setSig(signature);
       toast({ title: `${action === 'buy' ? 'Buy' : 'Sell'} sent`, description: signature.slice(0, 12) + '…' });
