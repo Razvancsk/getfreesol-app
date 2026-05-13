@@ -102,12 +102,12 @@ async function poll() {
     // Trenches — poll every cycle for near-live new tokens
     try {
       const data: any = await c.getTrenches('sol', ['new_creation', 'near_completion', 'completed']);
-      // Log raw keys once to understand the API response shape
+      // Print full first token once so we know every field name and value
       if (trendingTick === 0) {
         const keys = Object.keys(data || {});
-        console.log('[gmgn] trenches response keys:', keys);
-        const sample = data?.[keys[0]]?.[0];
-        if (sample) console.log('[gmgn] sample token fields:', Object.keys(sample).join(', '));
+        console.log('[gmgn] trenches top-level keys:', keys);
+        const sample = data?.new_creation?.[0] || data?.[keys[0]]?.[0];
+        if (sample) console.log('[gmgn] FULL sample token:', JSON.stringify(sample, null, 2));
       }
       const newArr: any[] = data?.new_creation || [];
       const bondArr: any[] = data?.near_completion || data?.pump || [];
