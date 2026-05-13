@@ -1542,23 +1542,26 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       ? Math.round(amtNum * 1e9)
       : Math.round(amtNum * Math.pow(10, decimals));
     if (rawAmount <= 0) { setJupQuote(null); return; }
-    const id = setTimeout(async () => {
+    let cancelled = false;
+    (async () => {
       try {
         const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${rawAmount}&slippageBps=300`;
         const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
-        if (!r.ok) { setJupQuote(null); return; }
+        if (cancelled || !r.ok) { if (!cancelled) setJupQuote(null); return; }
         const data = await r.json();
         const outRaw = Number(data.outAmount);
-        if (isFinite(outRaw) && outRaw > 0) {
-          setJupQuote({ outRaw, loading: false });
-        } else {
-          setJupQuote(null);
+        if (!cancelled) {
+          if (isFinite(outRaw) && outRaw > 0) {
+            setJupQuote({ outRaw, loading: false });
+          } else {
+            setJupQuote(null);
+          }
         }
       } catch {
-        setJupQuote(null);
+        if (!cancelled) setJupQuote(null);
       }
-    }, 500);
-    return () => clearTimeout(id);
+    })();
+    return () => { cancelled = true; };
   }, [amount, side, token?.mint]);
 
   function fmtNum(n: number, max = 6) {
