@@ -1066,6 +1066,18 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
                     )}
                   </div>
+                  {/* Price display */}
+                  {(() => {
+                    const priceUsd = liveT.priceUsd ?? (info as any)?.usdPrice;
+                    if (!priceUsd) return null;
+                    const fmtP = (v: number) => v < 0.000001 ? `$${v.toExponential(2)}` : v < 0.001 ? `$${v.toFixed(7)}` : v < 1 ? `$${v.toFixed(5)}` : `$${v.toFixed(4)}`;
+                    return (
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className="text-lg md:text-xl font-bold text-emerald-300 tabular-nums">{fmtP(priceUsd)}</span>
+                        <span className="text-xs text-white/30">USD</span>
+                      </div>
+                    );
+                  })()}
                   <div className="flex items-center gap-2 mt-0.5 text-xs text-white/50">
                     {info?.firstPool?.createdAt && (
                       <span>{relAge(info.firstPool.createdAt)}</span>
@@ -1090,16 +1102,26 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                 {(() => {
                   const live: any = liveData?.live || {};
                   const tx = (Number(live.buys)||0) + (Number(live.sells)||0);
+                  const priceUsd = live.priceUsd ?? (info as any)?.usdPrice;
+                  const fmtP = (v?: number) => {
+                    if (!v) return '—';
+                    if (v < 0.000001) return `$${v.toExponential(2)}`;
+                    if (v < 0.001) return `$${v.toFixed(7)}`;
+                    if (v < 1) return `$${v.toFixed(5)}`;
+                    return `$${v.toFixed(4)}`;
+                  };
                   return [
-                    { label: 'LIQUIDITY', value: fmtUsd(live.liquidityUsd) },
+                    { label: 'PRICE', value: fmtP(priceUsd) },
                     { label: 'MARKET CAP', value: fmtUsd(live.marketCapUsd) },
-                    { label: 'VOLUME', value: fmtUsd(live.volumeUsd) },
-                    { label: 'TXNS', value: fmtCount(tx || undefined) },
+                    { label: 'LIQUIDITY', value: fmtUsd(live.liquidityUsd) },
+                    { label: 'VOLUME 24H', value: fmtUsd(live.volumeUsd) },
+                    { label: 'BUYS', value: live.buys > 0 ? String(live.buys) : '—' },
+                    { label: 'SELLS', value: live.sells > 0 ? String(live.sells) : '—' },
                   ];
                 })().map((s) => (
-                  <div key={s.label} className="px-3 py-3 md:px-4 md:py-4 text-center min-w-0">
-                    <div className="text-purple-300/70 text-[10px] md:text-xs font-semibold tracking-wider uppercase truncate">{s.label}</div>
-                    <div className="text-white text-base md:text-2xl font-bold tabular-nums mt-1 truncate">{s.value}</div>
+                  <div key={s.label} className="px-3 py-2.5 md:px-4 md:py-3 text-center min-w-0">
+                    <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase truncate">{s.label}</div>
+                    <div className="text-white text-sm md:text-lg font-bold tabular-nums mt-0.5 truncate">{s.value}</div>
                   </div>
                 ))}
               </div>
