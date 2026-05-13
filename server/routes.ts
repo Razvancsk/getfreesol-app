@@ -13285,6 +13285,27 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Jupiter live price — lightweight, safe to poll every 3s
+  app.get('/api/terminal/jup-price/:mint', async (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const apiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = {};
+      if (apiKey) headers['x-api-key'] = apiKey;
+      const r = await fetch(`https://api.jup.ag/price/v3?ids=${encodeURIComponent(mint)}`, { headers });
+      if (!r.ok) return res.status(r.status).json({ error: `jupiter ${r.status}` });
+      const data: any = await r.json();
+      const entry: any = data?.data?.[mint] || null;
+      res.json({
+        price: entry?.price ? parseFloat(entry.price) : null,
+        confidence: entry?.confidenceLevel || null,
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'jup-price failed' });
+    }
+  });
+
   // Jupiter Portfolio API — wallet holdings (SOL + token balances) for SwapCard
   app.get('/api/terminal/jup-holdings/:address', async (req, res) => {
     try {

@@ -1068,8 +1068,21 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
       return r.json();
     },
     enabled: !!mint,
-    refetchInterval: 20_000,
-    staleTime: 15_000,
+    refetchInterval: 30_000,
+    staleTime: 25_000,
+  });
+
+  // Live price — polls Jupiter Price v3 every 3 seconds
+  const { data: jupLivePrice } = useQuery<{ price: number | null; confidence: string | null }>({
+    queryKey: ['/api/terminal/jup-price', mint],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/jup-price/${mint}`);
+      if (!r.ok) throw new Error('jup-price failed');
+      return r.json();
+    },
+    enabled: !!mint,
+    refetchInterval: 3_000,
+    staleTime: 2_000,
   });
 
   const s24 = info?.stats24h || {};
@@ -1077,7 +1090,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
   const pctUp = (pct24 ?? 0) >= 0;
   const totalSupply = info?.totalSupply ?? info?.circSupply ?? 0;
   const liveT: any = liveData?.live || {};
-  const jupPrice = jupMarket?.price ?? null;
+  // Live price (3s) takes priority over full market data (30s) and GMGN fallback
+  const jupPrice = jupLivePrice?.price ?? jupMarket?.price ?? null;
   const priceUsd = jupPrice ?? liveT.priceUsd ?? (info as any)?.usdPrice;
   const tokenForTrade: Token = {
     mint,
