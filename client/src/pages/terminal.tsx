@@ -3,7 +3,7 @@ import { Link, useLocation, useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { useReownWallet } from '@/hooks/useReownWallet';
 import logoImage from '@assets/image_1757882056840.png';
-import { Connection, VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction } from '@solana/web3.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -1519,6 +1519,9 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
 
   const [jupQuote, setJupQuote] = useState<{ outRaw: number; loading: boolean } | null>(null);
   const [solUsdLocal, setSolUsdLocal] = useState<number | null>(null);
+  const [orderCache, setOrderCache] = useState<{
+    key: string; requestId: string; transaction: string; outRaw: number; ts: number;
+  } | null>(null);
 
   useEffect(() => {
     fetch('/api/terminal/jup-price/So11111111111111111111111111111111111111112')
@@ -1535,11 +1538,12 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
     : (live.priceSol ?? (live.marketCapSol ? live.marketCapSol / STANDARD_SUPPLY : undefined));
   const sym = (live.symbol || 'TOKEN').toString().slice(0, 8);
 
-  // Jupiter quote — debounced 500ms on amount/side change
+  // Jupiter quote for display — no wallet needed
   useEffect(() => {
     const amtNum = Number(amount);
     if (!amount || amount.endsWith('%') || !isFinite(amtNum) || amtNum <= 0 || !token?.mint) {
       setJupQuote(null);
+      setOrderCache(null);
       return;
     }
     setJupQuote((prev) => prev ? { ...prev, loading: true } : { outRaw: 0, loading: true });
@@ -1550,28 +1554,44 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
     const rawAmount = side === 'buy'
       ? Math.round(amtNum * 1e9)
       : Math.round(amtNum * Math.pow(10, decimals));
-    if (rawAmount <= 0) { setJupQuote(null); return; }
+    if (rawAmount <= 0) { setJupQuote(null); setOrderCache(null); return; }
+    const cacheKey = `${inputMint}:${outputMint}:${rawAmount}`;
     let cancelled = false;
     (async () => {
       try {
-        const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${rawAmount}&slippageBps=300`;
-        const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
-        if (cancelled || !r.ok) { if (!cancelled) setJupQuote(null); return; }
-        const data = await r.json();
-        const outRaw = Number(data.outAmount);
-        if (!cancelled) {
+        // Use quote endpoint (no wallet needed) for display
+        const qParams = new URLSearchParams({ inputMint, outputMint, amount: rawAmount.toString() });
+        const qr = await fetch(`/api/terminal/jupiter-quote?${qParams}`, { signal: AbortSignal.timeout(8000) });
+        if (cancelled) return;
+        if (qr.ok) {
+          const qdata = await qr.json();
+          const outRaw = Number(qdata.outAmount);
           if (isFinite(outRaw) && outRaw > 0) {
             setJupQuote({ outRaw, loading: false });
           } else {
             setJupQuote(null);
           }
+        } else {
+          setJupQuote(null);
+        }
+        // Also pre-fetch order if wallet connected (cache for fast submit)
+        if (publicKey && !cancelled) {
+          const oParams = new URLSearchParams({ inputMint, outputMint, amount: rawAmount.toString(), taker: publicKey.toBase58() });
+          const or = await fetch(`/api/terminal/jupiter-order?${oParams}`, { signal: AbortSignal.timeout(8000) });
+          if (cancelled) return;
+          if (or.ok) {
+            const odata = await or.json();
+            if (odata.transaction && odata.requestId) {
+              setOrderCache({ key: cacheKey, requestId: odata.requestId, transaction: odata.transaction, outRaw: Number(odata.outAmount), ts: Date.now() });
+            }
+          }
         }
       } catch {
-        if (!cancelled) setJupQuote(null);
+        if (!cancelled) { setJupQuote(null); setOrderCache(null); }
       }
     })();
     return () => { cancelled = true; };
-  }, [amount, side, token?.mint]);
+  }, [amount, side, token?.mint, publicKey?.toBase58()]);
 
   function fmtNum(n: number, max = 6) {
     if (!isFinite(n)) return '—';
@@ -1601,84 +1621,48 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
     try {
       const SOL_MINT = 'So11111111111111111111111111111111111111112';
       const numAmt = Number(amt);
+      const inputMint = side === 'buy' ? SOL_MINT : token.mint;
+      const outputMint = side === 'buy' ? token.mint : SOL_MINT;
+      let rawAmount: number;
+      if (side === 'buy') {
+        rawAmount = Math.round(numAmt * 1e9);
+      } else {
+        const decimals = (token as any).decimals ?? 6;
+        const tokenAmt = amt.endsWith('%') ? (tokenBalance || 0) * (numAmt / 100) : numAmt;
+        rawAmount = Math.round(tokenAmt * Math.pow(10, decimals));
+      }
+      if (rawAmount <= 0) throw new Error('Amount too small');
 
-      // Try Jupiter Swap v2 first
-      try {
-        const inputMint = side === 'buy' ? SOL_MINT : token.mint;
-        const outputMint = side === 'buy' ? token.mint : SOL_MINT;
-        let rawAmount: number;
-        if (side === 'buy') {
-          rawAmount = Math.round(numAmt * 1e9); // SOL → lamports
-        } else {
-          const decimals = (token as any).decimals ?? 6;
-          const tokenAmt = amt.endsWith('%') ? (tokenBalance || 0) * (numAmt / 100) : numAmt;
-          rawAmount = Math.round(tokenAmt * Math.pow(10, decimals));
-        }
-        if (rawAmount <= 0) throw new Error('Amount too small');
-
-        const orderParams = new URLSearchParams({
-          inputMint, outputMint,
-          amount: rawAmount.toString(),
-          taker: publicKey.toBase58(),
-        });
+      const cacheKey = `${inputMint}:${outputMint}:${rawAmount}`;
+      const cached = orderCache && orderCache.key === cacheKey && (Date.now() - orderCache.ts) < 55000 ? orderCache : null;
+      let order: { requestId: string; transaction: string };
+      if (cached) {
+        order = { requestId: cached.requestId, transaction: cached.transaction };
+      } else {
+        const orderParams = new URLSearchParams({ inputMint, outputMint, amount: rawAmount.toString(), taker: publicKey.toBase58() });
         const orderRes = await fetch(`/api/terminal/jupiter-order?${orderParams}`);
-        const order = await orderRes.json();
-        if (!orderRes.ok || order.error || !order.transaction) {
-          throw new Error(order.error || 'No Jupiter route found');
-        }
-
-        const tx = VersionedTransaction.deserialize(Buffer.from(order.transaction, 'base64'));
-        const signed = await signTransaction(tx);
-        const signedTx = Buffer.from(signed.serialize()).toString('base64');
-
-        const execRes = await fetch('/api/terminal/jupiter-execute', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ signedTransaction: signedTx, requestId: order.requestId }),
-        });
-        const result = await execRes.json();
-
-        if (result.status !== 'Success') throw new Error(result.error || `Status: ${result.status}`);
-
-        setTimeout(() => setBalRefresh((n) => n + 1), 1500);
-        const url = `https://solscan.io/tx/${result.signature}`;
-        toast({
-          title: 'Swap Successful!',
-          description: (<span>Jupiter swap confirmed<br /><a href={url} target="_blank" rel="noreferrer" className="underline">View on Solscan →</a></span>) as any,
-          className: 'bg-green-600 border-green-700 text-white',
-        });
-        setAmount('');
-        return;
-      } catch (jupErr: any) {
-        // Fall back to PumpPortal for bonding-curve tokens
-        if (!jupErr?.message?.includes('No Jupiter route')) throw jupErr;
+        const orderData = await orderRes.json();
+        if (!orderRes.ok || orderData.error || !orderData.transaction) throw new Error(orderData.error || 'No Jupiter route found');
+        order = orderData;
       }
 
-      // Fallback: PumpPortal (pump.fun bonding curve tokens)
-      const isFullSell = side === 'sell' && tokenBalance != null && tokenBalance > 0
-        && isFinite(numAmt) && Math.abs(numAmt - tokenBalance) / tokenBalance < 0.0001;
-      const r = await fetch('/api/terminal/build-tx', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          publicKey: publicKey.toBase58(),
-          action: side, mint: token.mint,
-          amount: isFullSell ? '100%' : numAmt,
-          denominatedInQuote: side === 'buy' || isFullSell,
-          slippage: isFullSell ? 99 : Number(slippage),
-          pool: (token as any).pool,
-        }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || 'build failed');
-      const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(j.tx), c => c.charCodeAt(0)));
+      const tx = VersionedTransaction.deserialize(Buffer.from(order.transaction, 'base64'));
       const signed = await signTransaction(tx);
-      const conn = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-      const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: false, maxRetries: 3 });
-      try { const bh = await conn.getLatestBlockhash('confirmed'); await conn.confirmTransaction({ signature, ...bh }, 'confirmed'); } catch { /* ignore */ }
+      const signedTx = Buffer.from(signed.serialize()).toString('base64');
+
+      const execRes = await fetch('/api/terminal/jupiter-execute', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signedTransaction: signedTx, requestId: order.requestId }),
+      });
+      const result = await execRes.json();
+
+      if (result.status !== 'Success') throw new Error(result.error || `Status: ${result.status}`);
+
       setTimeout(() => setBalRefresh((n) => n + 1), 1500);
-      const url = `https://solscan.io/tx/${signature}`;
+      const url = `https://solscan.io/tx/${result.signature}`;
       toast({
         title: 'Swap Successful!',
-        description: (<span>Transaction confirmed<br /><a href={url} target="_blank" rel="noreferrer" className="underline">View on Solscan →</a></span>) as any,
+        description: (<span>Jupiter swap confirmed<br /><a href={url} target="_blank" rel="noreferrer" className="underline">View on Solscan →</a></span>) as any,
         className: 'bg-green-600 border-green-700 text-white',
       });
       setAmount('');
@@ -1784,41 +1768,58 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
 function TradeDialog({ token, action, onClose }: { token: Token; action: 'buy' | 'sell'; onClose: () => void }) {
   const { publicKey, signTransaction } = useReownWallet();
   const { toast } = useToast();
-  const [amount, setAmount] = useState(action === 'buy' ? '0.01' : '100%');
-  const [slippage, setSlippage] = useState('20');
+  const [amount, setAmount] = useState(action === 'buy' ? '0.01' : '');
   const [busy, setBusy] = useState(false);
   const [sig, setSig] = useState<string | null>(null);
-
-  const denominatedInQuote = action === 'buy'; // buy: amount is SOL; sell: amount is tokens (or "100%")
 
   async function submit() {
     if (!publicKey) { toast({ title: 'Connect wallet first' }); return; }
     if (!signTransaction) { toast({ title: 'Wallet does not support signing', variant: 'destructive' }); return; }
+    const amt = amount.trim();
+    if (!amt) { toast({ title: 'Enter amount' }); return; }
     setBusy(true);
     try {
-      const r = await fetch('/api/terminal/build-tx', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          publicKey: publicKey.toBase58(),
-          action, mint: token.mint,
-          amount: action === 'sell' && amount.trim() === '100%' ? '100%' : Number(amount),
-          denominatedInQuote,
-          slippage: Number(slippage),
-        }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || 'build failed');
-      let tx: VersionedTransaction;
-      try {
-        tx = VersionedTransaction.deserialize(Uint8Array.from(atob(j.tx), c => c.charCodeAt(0)));
-      } catch {
-        throw new Error('Server returned an unreadable transaction');
+      const SOL_MINT = 'So11111111111111111111111111111111111111112';
+      const numAmt = Number(amt);
+      const inputMint = action === 'buy' ? SOL_MINT : token.mint;
+      const outputMint = action === 'buy' ? token.mint : SOL_MINT;
+      let rawAmount: number;
+      if (action === 'buy') {
+        rawAmount = Math.round(numAmt * 1e9);
+      } else {
+        const decimals = (token as any).decimals ?? 6;
+        rawAmount = Math.round(numAmt * Math.pow(10, decimals));
       }
+      if (rawAmount <= 0) throw new Error('Amount too small');
+
+      const orderParams = new URLSearchParams({
+        inputMint, outputMint,
+        amount: rawAmount.toString(),
+        taker: publicKey.toBase58(),
+      });
+      const orderRes = await fetch(`/api/terminal/jupiter-order?${orderParams}`);
+      const order = await orderRes.json();
+      if (!orderRes.ok || order.error || !order.transaction) {
+        throw new Error(order.error || 'No Jupiter route found');
+      }
+
+      const tx = VersionedTransaction.deserialize(Buffer.from(order.transaction, 'base64'));
       const signed = await signTransaction(tx);
-      const conn = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-      const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: false, maxRetries: 3 });
-      setSig(signature);
-      toast({ title: `${action === 'buy' ? 'Buy' : 'Sell'} sent`, description: signature.slice(0, 12) + '…' });
+      const signedTx = Buffer.from(signed.serialize()).toString('base64');
+
+      const execRes = await fetch('/api/terminal/jupiter-execute', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signedTransaction: signedTx, requestId: order.requestId }),
+      });
+      const result = await execRes.json();
+      if (result.status !== 'Success') throw new Error(result.error || `Status: ${result.status}`);
+
+      setSig(result.signature);
+      toast({
+        title: 'Swap Successful!',
+        description: result.signature.slice(0, 12) + '…',
+        className: 'bg-green-600 border-green-700 text-white',
+      });
     } catch (e: any) {
       toast({ title: 'Trade failed', description: e?.message || String(e), variant: 'destructive' });
     } finally {
@@ -1837,12 +1838,8 @@ function TradeDialog({ token, action, onClose }: { token: Token; action: 'buy' |
         <div className="space-y-3 text-sm">
           <div className="text-white/60 text-xs font-mono break-all">{token.mint}</div>
           <div>
-            <label className="text-xs text-white/60">Amount {action === 'buy' ? '(SOL)' : '(tokens, or "100%")'}</label>
+            <label className="text-xs text-white/60">Amount {action === 'buy' ? '(SOL)' : '(tokens)'}</label>
             <Input value={amount} onChange={(e) => setAmount(e.target.value)} className="bg-black/40 border-white/10 mt-1" data-testid="input-amount" />
-          </div>
-          <div>
-            <label className="text-xs text-white/60">Slippage (%)</label>
-            <Input value={slippage} onChange={(e) => setSlippage(e.target.value)} className="bg-black/40 border-white/10 mt-1" data-testid="input-slippage" />
           </div>
           {sig && (
             <div className="text-xs">

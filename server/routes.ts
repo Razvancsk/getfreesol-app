@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
-import { buildTradeTx as buildPumpTradeTx, validateTradeInput } from './pumpStream';
 import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, addSseClient } from './gmgnService';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
@@ -13173,54 +13172,6 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  app.post('/api/terminal/build-tx', async (req, res) => {
-    try {
-      const { publicKey, action, mint, amount, denominatedInQuote, slippage, priorityFee, pool, jitoTip, maxQuoteAmountIn, minBaseAmountOut, maxBaseAmountIn, minQuoteAmountOut } = req.body || {};
-      const v = validateTradeInput({ publicKey, action, mint, amount, slippage, priorityFee });
-      if (!v.ok) return res.status(400).json({ error: v.error });
-      let resolvedPool: string | undefined = typeof pool === 'string' && pool ? pool : undefined;
-      if (!resolvedPool) {
-        try {
-          const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${mint}`);
-          if (r.ok) {
-            const j: any = await r.json();
-            const pairs: any[] = (j?.pairs || []).filter((p: any) => p?.chainId === 'solana');
-            if (pairs.length) {
-              const best = pairs.reduce((a, b) => ((b?.liquidity?.usd || 0) > (a?.liquidity?.usd || 0) ? b : a));
-              const dex = String(best?.dexId || '').toLowerCase();
-              if (dex === 'pumpfun' || dex === 'pump') resolvedPool = 'pump';
-              else if (dex === 'pumpswap') resolvedPool = 'pump-amm';
-              else if (dex === 'raydium') resolvedPool = 'raydium-cpmm';
-              else if (dex === 'meteora') resolvedPool = 'meteora-damm-v2';
-              else if (dex === 'launchlab' || dex === 'raydium-launchpad' || dex === 'bonk') resolvedPool = 'raydium-launchpad';
-              else if (dex === 'moonshot') resolvedPool = 'moonshot';
-            }
-          }
-        } catch {}
-      }
-      const tx = await buildPumpTradeTx({
-        publicKey: String(publicKey),
-        action,
-        mint: String(mint),
-        amount: typeof amount === 'string' ? amount : Number(amount),
-        denominatedInQuote: !!denominatedInQuote,
-        slippage: slippage !== undefined ? Number(slippage) : undefined,
-        priorityFee: priorityFee !== undefined ? Number(priorityFee) : undefined,
-        partnerAddress: 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
-        partnerFeeRatio: 0.005,
-        pool: resolvedPool,
-        jitoTip: jitoTip !== undefined ? Number(jitoTip) : undefined,
-        maxQuoteAmountIn: maxQuoteAmountIn !== undefined ? Number(maxQuoteAmountIn) : undefined,
-        minBaseAmountOut: minBaseAmountOut !== undefined ? Number(minBaseAmountOut) : undefined,
-        maxBaseAmountIn: maxBaseAmountIn !== undefined ? Number(maxBaseAmountIn) : undefined,
-        minQuoteAmountOut: minQuoteAmountOut !== undefined ? Number(minQuoteAmountOut) : undefined,
-      });
-      res.json({ tx });
-    } catch (e: any) {
-      res.status(500).json({ error: e?.message || 'build-tx failed' });
-    }
-  });
-
   // Jupiter Tokens v2 + Price v3 — combined market data for a token
   app.get('/api/terminal/jup-market/:mint', async (req, res) => {
     try {
@@ -13442,6 +13393,31 @@ Claimer: ${walletAddress}`;
       res.json({ sol, tokenBalances });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'holdings failed' });
+    }
+  });
+
+  // Jupiter quote-only (no wallet needed, for display)
+  app.get('/api/terminal/jupiter-quote', async (req, res) => {
+    try {
+      const { inputMint, outputMint, amount } = req.query;
+      if (!inputMint || !outputMint || !amount) {
+        return res.status(400).json({ error: 'inputMint, outputMint, amount required' });
+      }
+      const apiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = {};
+      if (apiKey) headers['x-api-key'] = apiKey;
+      const params = new URLSearchParams({
+        inputMint: String(inputMint),
+        outputMint: String(outputMint),
+        amount: String(amount),
+        slippageBps: '50',
+      });
+      const r = await fetch(`https://api.jup.ag/swap/v1/quote?${params}`, { headers });
+      const data = await r.json();
+      if (!r.ok) return res.status(r.status).json(data);
+      res.json({ outAmount: data.outAmount });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'jupiter-quote failed' });
     }
   });
 
