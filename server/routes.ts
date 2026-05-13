@@ -13096,6 +13096,101 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Jupiter Tokens v2 + Price v3 — combined market data for a token
+  app.get('/api/terminal/jup-market/:mint', async (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const apiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = {};
+      if (apiKey) headers['x-api-key'] = apiKey;
+
+      const [tokenRes, priceRes] = await Promise.all([
+        fetch(`https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`, { headers }),
+        fetch(`https://api.jup.ag/price/v3?ids=${encodeURIComponent(mint)}`, { headers }),
+      ]);
+
+      const tokenArr: any[] = tokenRes.ok ? (await tokenRes.json()) : [];
+      const priceData: any = priceRes.ok ? (await priceRes.json()) : {};
+
+      const tokens: any[] = Array.isArray(tokenArr) ? tokenArr : (tokenArr?.tokens || []);
+      const token: any = tokens.find((t: any) => t.id === mint || t.address === mint) || tokens[0] || null;
+      const priceEntry: any = priceData?.data?.[mint] || null;
+
+      const stats24h: any = token?.stats?.['24h'] || token?.['24h'] || {};
+
+      res.json({
+        price: priceEntry?.price ? parseFloat(priceEntry.price) : (token?.usdPrice ? parseFloat(token.usdPrice) : null),
+        priceConfidence: priceEntry?.confidenceLevel || null,
+        marketCap: token?.mcap ?? token?.fdv ?? null,
+        liquidity: token?.liquidity ?? null,
+        volume24h: stats24h?.volume ?? stats24h?.buyVolume ?? token?.volume24h ?? null,
+        buys24h: stats24h?.buys ?? stats24h?.buy ?? null,
+        sells24h: stats24h?.sells ?? stats24h?.sell ?? null,
+        holders: token?.holderCount ?? null,
+        organicScore: token?.organicScore ?? null,
+        organicScoreLabel: token?.organicScoreLabel ?? null,
+        isVerified: token?.isVerified ?? false,
+        mintDisabled: token?.audit?.mintAuthorityDisabled ?? null,
+        freezeDisabled: token?.audit?.freezeAuthorityDisabled ?? null,
+        topHoldersPct: token?.audit?.topHoldersPercentage ?? null,
+        isSus: !!(token?.audit?.isSus),
+        name: token?.name ?? null,
+        symbol: token?.symbol ?? null,
+        decimals: token?.decimals ?? null,
+        icon: token?.icon ?? null,
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'jup-market failed' });
+    }
+  });
+
+  // Jupiter Swap v2 — get unsigned order
+  app.get('/api/terminal/jupiter-order', async (req, res) => {
+    try {
+      const { inputMint, outputMint, amount, taker } = req.query;
+      if (!inputMint || !outputMint || !amount || !taker) {
+        return res.status(400).json({ error: 'inputMint, outputMint, amount, taker required' });
+      }
+      const apiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['x-api-key'] = apiKey;
+      const params = new URLSearchParams({
+        inputMint: String(inputMint),
+        outputMint: String(outputMint),
+        amount: String(amount),
+        taker: String(taker),
+      });
+      const r = await fetch(`https://api.jup.ag/swap/v2/order?${params}`, { headers });
+      const data = await r.json();
+      if (!r.ok) return res.status(r.status).json(data);
+      res.json(data);
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'jupiter-order failed' });
+    }
+  });
+
+  // Jupiter Swap v2 — submit signed transaction (Jupiter handles landing, no RPC needed)
+  app.post('/api/terminal/jupiter-execute', async (req, res) => {
+    try {
+      const { signedTransaction, requestId } = req.body || {};
+      if (!signedTransaction || !requestId) {
+        return res.status(400).json({ error: 'signedTransaction and requestId required' });
+      }
+      const apiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['x-api-key'] = apiKey;
+      const r = await fetch('https://api.jup.ag/swap/v2/execute', {
+        method: 'POST', headers,
+        body: JSON.stringify({ signedTransaction, requestId }),
+      });
+      const data = await r.json();
+      res.status(r.ok ? 200 : r.status).json(data);
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'jupiter-execute failed' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -1027,17 +1027,31 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     staleTime: 60_000,
   });
 
+  const { data: jupMarket } = useQuery<any>({
+    queryKey: ['/api/terminal/jup-market', mint],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/jup-market/${mint}`);
+      if (!r.ok) throw new Error('jup-market failed');
+      return r.json();
+    },
+    enabled: !!mint,
+    refetchInterval: 20_000,
+    staleTime: 15_000,
+  });
+
   const s24 = info?.stats24h || {};
   const pct24 = typeof s24.priceChange === 'number' ? s24.priceChange : undefined;
   const pctUp = (pct24 ?? 0) >= 0;
   const totalSupply = info?.totalSupply ?? info?.circSupply ?? 0;
   const liveT: any = liveData?.live || {};
+  const jupPrice = jupMarket?.price ?? null;
+  const priceUsd = jupPrice ?? liveT.priceUsd ?? (info as any)?.usdPrice;
   const tokenForTrade: Token = {
     mint,
     name: info?.name,
     symbol: info?.symbol,
     imageUri: info?.icon,
-    priceUsd: liveT.priceUsd ?? info?.usdPrice,
+    priceUsd,
     marketCapSol: liveT.marketCapSol,
     priceSol: liveT.priceSol,
     pool: liveT.pool,
@@ -1088,13 +1102,20 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   </div>
                   {/* Price display */}
                   {(() => {
-                    const priceUsd = liveT.priceUsd ?? (info as any)?.usdPrice;
                     if (!priceUsd) return null;
                     const fmtP = (v: number) => v < 0.000001 ? `$${v.toExponential(2)}` : v < 0.001 ? `$${v.toFixed(7)}` : v < 1 ? `$${v.toFixed(5)}` : `$${v.toFixed(4)}`;
                     return (
-                      <div className="mt-1 flex items-baseline gap-2">
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
                         <span className="text-lg md:text-xl font-bold text-emerald-300 tabular-nums">{fmtP(priceUsd)}</span>
                         <span className="text-xs text-white/30">USD</span>
+                        {jupMarket?.organicScore != null && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${jupMarket.organicScore >= 70 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : jupMarket.organicScore >= 40 ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300' : 'bg-red-500/20 border-red-500/40 text-red-300'}`}>
+                            {jupMarket.organicScoreLabel || `${Math.round(jupMarket.organicScore)} organic`}
+                          </span>
+                        )}
+                        {jupMarket?.isVerified && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">JUP ✓</span>
+                        )}
                       </div>
                     );
                   })()}
@@ -1121,12 +1142,12 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
                 {(() => {
                   const live: any = liveData?.live || {};
-                  const tx = (Number(live.buys)||0) + (Number(live.sells)||0);
+                  const tx = (Number(jupMarket?.buys24h || live.buys) || 0) + (Number(jupMarket?.sells24h || live.sells) || 0);
                   return [
-                    { label: 'MARKET CAP', value: fmtUsd(live.marketCapUsd) },
-                    { label: 'LIQUIDITY', value: fmtUsd(live.liquidityUsd) },
-                    { label: 'VOLUME 24H', value: fmtUsd(live.volumeUsd) },
-                    { label: 'TXNS', value: tx > 0 ? String(tx) : '—' },
+                    { label: 'MARKET CAP', value: fmtUsd(jupMarket?.marketCap ?? live.marketCapUsd) },
+                    { label: 'LIQUIDITY', value: fmtUsd(jupMarket?.liquidity ?? live.liquidityUsd) },
+                    { label: 'VOLUME 24H', value: fmtUsd(jupMarket?.volume24h ?? live.volumeUsd) },
+                    { label: 'HOLDERS', value: jupMarket?.holders ? String(jupMarket.holders) : tx > 0 ? String(tx) : '—' },
                   ];
                 })().map((s) => (
                   <div key={s.label} className="px-3 py-2.5 md:px-4 md:py-3 text-center min-w-0">
@@ -1515,19 +1536,14 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
   useEffect(() => {
     if (!publicKey) { setBalance(null); setTokenBalance(null); return; }
     let active = true;
+    const conn = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
     (async () => {
       try {
-        const heliusKey = (import.meta as any).env?.VITE_HELIUS_API_KEY;
-        const rpc = heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com';
-        const conn = new Connection(rpc, 'confirmed');
         const lamports = await conn.getBalance(publicKey);
         if (active) setBalance(lamports / 1e9);
       } catch { /* ignore */ }
       try {
         if (!token?.mint) return;
-        const heliusKey = (import.meta as any).env?.VITE_HELIUS_API_KEY;
-        const rpc = heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com';
-        const conn = new Connection(rpc, 'confirmed');
         const mintPk = new PublicKey(token.mint);
         const programs = [
           new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
@@ -1581,22 +1597,71 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
     if (!amt) { toast({ title: 'Enter amount' }); return; }
     setBusy(true);
     try {
-      // If sell amount is the full token balance (within 0.01% rounding),
-      // send literal "100%" per pumpapi docs to avoid insufficient-funds errors.
+      const SOL_MINT = 'So11111111111111111111111111111111111111112';
       const numAmt = Number(amt);
+
+      // Try Jupiter Swap v2 first
+      try {
+        const inputMint = side === 'buy' ? SOL_MINT : token.mint;
+        const outputMint = side === 'buy' ? token.mint : SOL_MINT;
+        let rawAmount: number;
+        if (side === 'buy') {
+          rawAmount = Math.round(numAmt * 1e9); // SOL → lamports
+        } else {
+          const decimals = (token as any).decimals ?? 6;
+          const tokenAmt = amt.endsWith('%') ? (tokenBalance || 0) * (numAmt / 100) : numAmt;
+          rawAmount = Math.round(tokenAmt * Math.pow(10, decimals));
+        }
+        if (rawAmount <= 0) throw new Error('Amount too small');
+
+        const orderParams = new URLSearchParams({
+          inputMint, outputMint,
+          amount: rawAmount.toString(),
+          taker: publicKey.toBase58(),
+        });
+        const orderRes = await fetch(`/api/terminal/jupiter-order?${orderParams}`);
+        const order = await orderRes.json();
+        if (!orderRes.ok || order.error || !order.transaction) {
+          throw new Error(order.error || 'No Jupiter route found');
+        }
+
+        const tx = VersionedTransaction.deserialize(Buffer.from(order.transaction, 'base64'));
+        const signed = await signTransaction(tx);
+        const signedTx = Buffer.from(signed.serialize()).toString('base64');
+
+        const execRes = await fetch('/api/terminal/jupiter-execute', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ signedTransaction: signedTx, requestId: order.requestId }),
+        });
+        const result = await execRes.json();
+
+        if (result.status !== 'Success') throw new Error(result.error || `Status: ${result.status}`);
+
+        setTimeout(() => setBalRefresh((n) => n + 1), 1500);
+        const url = `https://solscan.io/tx/${result.signature}`;
+        toast({
+          title: 'Swap Successful!',
+          description: (<span>Jupiter swap confirmed<br /><a href={url} target="_blank" rel="noreferrer" className="underline">View on Solscan →</a></span>) as any,
+          className: 'bg-green-600 border-green-700 text-white',
+        });
+        setAmount('');
+        return;
+      } catch (jupErr: any) {
+        // Fall back to PumpPortal for bonding-curve tokens
+        if (!jupErr?.message?.includes('No Jupiter route')) throw jupErr;
+      }
+
+      // Fallback: PumpPortal (pump.fun bonding curve tokens)
       const isFullSell = side === 'sell' && tokenBalance != null && tokenBalance > 0
         && isFinite(numAmt) && Math.abs(numAmt - tokenBalance) / tokenBalance < 0.0001;
-      const denominatedInQuote = side === 'buy' || isFullSell;
-      const amountVal = isFullSell ? '100%' : numAmt;
-      const slipNum = isFullSell ? 99 : Number(slippage);
       const r = await fetch('/api/terminal/build-tx', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           publicKey: publicKey.toBase58(),
           action: side, mint: token.mint,
-          amount: amountVal,
-          denominatedInQuote,
-          slippage: slipNum,
+          amount: isFullSell ? '100%' : numAmt,
+          denominatedInQuote: side === 'buy' || isFullSell,
+          slippage: isFullSell ? 99 : Number(slippage),
           pool: (token as any).pool,
         }),
       });
@@ -1604,25 +1669,14 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       if (!r.ok) throw new Error(j.error || 'build failed');
       const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(j.tx), c => c.charCodeAt(0)));
       const signed = await signTransaction(tx);
-      const heliusKey = (import.meta as any).env?.VITE_HELIUS_API_KEY;
-      const rpc = heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com';
-      const conn = new Connection(rpc, 'confirmed');
+      const conn = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
       const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: false, maxRetries: 3 });
-      try {
-        const bh = await conn.getLatestBlockhash('confirmed');
-        await conn.confirmTransaction({ signature, ...bh }, 'confirmed');
-      } catch { /* ignore confirm timeout */ }
+      try { const bh = await conn.getLatestBlockhash('confirmed'); await conn.confirmTransaction({ signature, ...bh }, 'confirmed'); } catch { /* ignore */ }
       setTimeout(() => setBalRefresh((n) => n + 1), 1500);
       const url = `https://solscan.io/tx/${signature}`;
       toast({
         title: 'Swap Successful!',
-        description: (
-          <span>
-            Transaction confirmed on Solana blockchain
-            <br />
-            <a href={url} target="_blank" rel="noreferrer" className="underline">View Transaction →</a>
-          </span>
-        ) as any,
+        description: (<span>Transaction confirmed<br /><a href={url} target="_blank" rel="noreferrer" className="underline">View on Solscan →</a></span>) as any,
         className: 'bg-green-600 border-green-700 text-white',
       });
       setAmount('');
