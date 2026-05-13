@@ -1054,9 +1054,6 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xl md:text-2xl font-bold text-white leading-tight">{info?.symbol || '—'}</span>
                     <span className="text-sm md:text-base text-white/60 truncate">{info?.name || 'Unknown'}</span>
-                    {info?.isVerified && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/40">Verified</span>
-                    )}
                   </div>
                   {/* Price display */}
                   {(() => {
@@ -1066,11 +1063,6 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                       <div className="mt-1 flex items-center gap-2 flex-wrap">
                         <span className="text-lg md:text-xl font-bold text-emerald-300 tabular-nums">{fmtP(priceUsd)}</span>
                         <span className="text-xs text-white/30">USD</span>
-                        {jupMarket?.organicScore != null && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${jupMarket.organicScore >= 70 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : jupMarket.organicScore >= 40 ? 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300' : 'bg-red-500/20 border-red-500/40 text-red-300'}`}>
-                            {jupMarket.organicScoreLabel || `${Math.round(jupMarket.organicScore)} organic`}
-                          </span>
-                        )}
                       </div>
                     );
                   })()}
