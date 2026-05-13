@@ -1157,37 +1157,95 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
       </div>
 
         {tab === 'traders' && (
-          <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 p-4">
-            <h3 className="text-white font-semibold mb-3">Top Traders (by profit)</h3>
-            {tradersLoading && <div className="text-center text-white/50 text-sm py-6">Loading traders…</div>}
+          <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 overflow-hidden">
+            {tradersLoading && <div className="text-center text-white/50 text-sm py-8">Loading traders…</div>}
             {!tradersLoading && (tradersData?.traders?.length ?? 0) === 0 && (
-              <div className="text-center text-white/50 text-sm py-6">No traders found.</div>
+              <div className="text-center text-white/50 text-sm py-8">No traders found.</div>
             )}
-            <div className="divide-y divide-white/5">
-              {(tradersData?.traders || []).map((h: any) => {
-                const tags = h.label ? h.label.split(',').filter(Boolean) : [];
-                return (
-                  <a
-                    key={h.address}
-                    href={`https://solscan.io/account/${h.address}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between py-3 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors"
-                  >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="font-mono text-xs text-purple-300 truncate">
-                        {h.address.slice(0, 6)}…{h.address.slice(-4)}
-                      </span>
-                      {tags.includes('smart_degen') && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SM</span>}
-                      {tags.includes('renowned') && <span className="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">KOL</span>}
-                    </div>
-                    <div className={`text-xs tabular-nums font-semibold ${(h.profit || 0) > 0 ? 'text-emerald-400' : (h.profit || 0) < 0 ? 'text-red-400' : 'text-white/50'}`}>
-                      {(h.profit || 0) > 0 ? '+' : ''}{fmtUsd(h.profit || 0)}
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
+            {(tradersData?.traders || []).length > 0 && (
+              <div className="overflow-x-auto">
+                {/* Header */}
+                <div className="grid text-[10px] text-purple-300/60 font-semibold tracking-wider uppercase px-3 py-2 border-b border-white/5"
+                  style={{ gridTemplateColumns: '1fr 90px 100px 100px 80px 80px' }}>
+                  <span>Wallet</span>
+                  <span className="text-right">SOL / Active</span>
+                  <span className="text-right">Bought</span>
+                  <span className="text-right">Sold</span>
+                  <span className="text-right">Unrealized</span>
+                  <span className="text-right">PnL</span>
+                </div>
+                <div className="divide-y divide-white/5">
+                  {(tradersData?.traders || []).map((h: any, i: number) => {
+                    const isSm = h.tags?.includes('smart_degen');
+                    const isKol = h.tags?.includes('renowned');
+                    const isBundler = h.makerTags?.includes('bundler') || h.tags?.includes('bundler');
+                    const isRat = h.makerTags?.includes('rat_trader') || h.tags?.includes('rat_trader');
+                    const stillHolding = h.endHolding == null && h.balance > 0;
+                    const fullyExited = h.sellRatio >= 0.99 || (h.endHolding != null);
+                    const lastActiveAgo = h.lastActive ? relAge(h.lastActive * 1000) : null;
+                    const solBal = h.nativeBalance / 1e9;
+                    const pnlColor = (v: number) => v > 0 ? 'text-emerald-400' : v < 0 ? 'text-red-400' : 'text-white/40';
+                    const fmtProfit = (v: number) => v === 0 ? '$0' : `${v > 0 ? '+' : ''}${fmtUsd(v)}`;
+                    return (
+                      <a
+                        key={h.address}
+                        href={`https://gmgn.ai/sol/address/${h.address}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="grid items-center py-2.5 px-3 hover:bg-white/5 transition-colors text-xs"
+                        style={{ gridTemplateColumns: '1fr 90px 100px 100px 80px 80px' }}
+                      >
+                        {/* Wallet */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-white/30 text-[10px] w-4 tabular-nums">{i + 1}</span>
+                          {h.avatar
+                            ? <img src={h.avatar} className="h-6 w-6 rounded-full shrink-0 object-cover" alt="" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                            : <div className="h-6 w-6 rounded-full bg-purple-600/40 shrink-0" />}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <span className="font-mono text-purple-200 text-[11px]">
+                                {h.name || `${h.address.slice(0, 4)}…${h.address.slice(-4)}`}
+                              </span>
+                              {isSm && <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">SM</span>}
+                              {isKol && <span className="text-[8px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 leading-none">KOL</span>}
+                              {isBundler && <span className="text-[8px] px-1 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30 leading-none">BOT</span>}
+                              {isRat && <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 leading-none">RAT</span>}
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {stillHolding && <span className="text-[8px] px-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">HOLD</span>}
+                              {fullyExited && <span className="text-[8px] px-1 rounded bg-white/10 text-white/40 border border-white/10">SOLD</span>}
+                            </div>
+                          </div>
+                        </div>
+                        {/* SOL / Last active */}
+                        <div className="text-right">
+                          <div className="text-white/80 tabular-nums">{solBal > 0 ? `≡${solBal < 0.01 ? '<0.01' : solBal.toFixed(2)}` : '—'}</div>
+                          <div className="text-white/30 text-[10px]">{lastActiveAgo || '—'}</div>
+                        </div>
+                        {/* Bought */}
+                        <div className="text-right">
+                          <div className="text-emerald-300 tabular-nums">{h.buyVolume > 0 ? fmtUsd(h.buyVolume) : '—'}</div>
+                          <div className="text-white/30 text-[10px]">{h.buyCount > 0 ? `${h.buyCount} TX` : ''}</div>
+                        </div>
+                        {/* Sold */}
+                        <div className="text-right">
+                          <div className="text-red-300 tabular-nums">{h.sellVolume > 0 ? fmtUsd(h.sellVolume) : '—'}</div>
+                          <div className="text-white/30 text-[10px]">{h.sellCount > 0 ? `${h.sellCount} TX` : ''}</div>
+                        </div>
+                        {/* Unrealized */}
+                        <div className={`text-right tabular-nums font-semibold ${pnlColor(h.unrealizedProfit)}`}>
+                          {fmtProfit(h.unrealizedProfit)}
+                        </div>
+                        {/* PnL */}
+                        <div className={`text-right tabular-nums font-bold ${pnlColor(h.profit)}`}>
+                          {fmtProfit(h.profit)}
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -254,14 +254,41 @@ export async function getTokenLive(mint: string): Promise<any> {
 
 export async function getTopTraders(mint: string): Promise<any[]> {
   try {
-    const data: any = await getClient().getTokenTopTraders('sol', mint, { limit: 10, orderby: 'profit', direction: 'desc' });
+    const data: any = await getClient().getTokenTopTraders('sol', mint, { limit: 20, orderby: 'profit', direction: 'desc' });
     const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
     return arr.map((h: any) => ({
       address: h.address || '',
-      amount: Number(h.amount_cur || h.balance || 0),
-      uiAmount: Number(h.amount_cur || h.balance || 0),
-      label: Array.isArray(h.tags) ? h.tags.join(',') : (h.tags || ''),
+      name: h.name || h.twitter_name || '',
+      avatar: h.avatar || '',
+      twitter: h.twitter_username || '',
+      tags: Array.isArray(h.tags) ? h.tags : (h.tags ? [h.tags] : []),
+      makerTags: Array.isArray(h.maker_token_tags) ? h.maker_token_tags : [],
+      rank: h.wallet_tag_v2 || '',
+      nativeBalance: Number(h.native_balance) || 0,
+      lastActive: h.last_active_timestamp ? Number(h.last_active_timestamp) : null,
+      // Current holdings
+      balance: Number(h.amount_cur || h.balance || 0),
+      usdValue: Number(h.usd_value) || 0,
+      pct: Number(h.amount_percentage || 0),
+      // Buy side
+      buyVolume: Number(h.buy_volume_cur) || 0,
+      buyCount: Number(h.buy_tx_count_cur) || 0,
+      buyAmount: Number(h.buy_amount_cur) || 0,
+      avgCost: Number(h.avg_cost) || 0,
+      // Sell side
+      sellVolume: Number(h.sell_volume_cur) || 0,
+      sellCount: Number(h.sell_tx_count_cur) || 0,
+      sellAmount: Number(h.sell_amount_cur) || 0,
+      avgSold: Number(h.avg_sold) || 0,
+      // P&L
       profit: Number(h.profit) || 0,
+      realizedProfit: Number(h.realized_profit) || 0,
+      unrealizedProfit: Number(h.unrealized_profit) || 0,
+      profitChange: Number(h.profit_change) || 0,
+      // Status
+      startHolding: h.start_holding_at ? Number(h.start_holding_at) : null,
+      endHolding: h.end_holding_at ? Number(h.end_holding_at) : null,
+      sellRatio: Number(h.sell_amount_percentage) || 0,
     }));
   } catch { return []; }
 }
