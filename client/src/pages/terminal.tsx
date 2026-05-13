@@ -56,6 +56,7 @@ function fmtUsd(n?: number): string {
 }
 
 // Crypto-style subscript notation for tiny prices, e.g. 0.00004016 → $0.0₄4016
+const SUB_DIGITS = '₀₁₂₃₄₅₆₇₈₉';
 function fmtPriceUsd(n?: number): JSX.Element {
   if (n == null || !Number.isFinite(n) || n <= 0) return <>—</>;
   if (n >= 1) return <>${n.toFixed(2)}</>;
@@ -70,7 +71,8 @@ function fmtPriceUsd(n?: number): JSX.Element {
   if (zeros < 4) {
     return <>${'0.' + '0'.repeat(zeros) + sig}</>;
   }
-  return <>$0.0<sub className="text-[0.7em]">{zeros}</sub>{sig}</>;
+  const subZeros = zeros < 10 ? SUB_DIGITS[zeros] : String(zeros);
+  return <>$0.0{subZeros}{sig}</>;
 }
 const AVATAR_COLORS = ['bg-pink-600', 'bg-purple-600', 'bg-indigo-600', 'bg-blue-600', 'bg-emerald-600', 'bg-orange-600', 'bg-rose-600', 'bg-fuchsia-600'];
 function colorFor(s: string) {
