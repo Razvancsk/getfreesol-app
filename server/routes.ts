@@ -13285,6 +13285,94 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Jupiter batch prices + market data — up to 50 mints
+  app.get('/api/terminal/jup-batch-prices', async (req, res) => {
+    try {
+      const raw = String(req.query.mints || '');
+      const mints = raw.split(',').map(m => m.trim()).filter(Boolean).slice(0, 50);
+      if (!mints.length) return res.json({ prices: {}, market: {} });
+      const apiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = {};
+      if (apiKey) headers['x-api-key'] = apiKey;
+
+      // Fetch price/v3 (batch) + tokens/v2 (batch by mints) in parallel
+      const [priceRes, tokenRes] = await Promise.all([
+        fetch(`https://api.jup.ag/price/v3?ids=${encodeURIComponent(mints.join(','))}`, { headers }),
+        fetch(`https://api.jup.ag/tokens/v2/mints?mints=${encodeURIComponent(mints.join(','))}`, { headers }),
+      ]);
+
+      // Prices
+      const prices: Record<string, number> = {};
+      if (priceRes.ok) {
+        const priceData: any = await priceRes.json();
+        for (const [mint, entry] of Object.entries<any>(priceData?.data || {})) {
+          if (entry?.price) prices[mint] = parseFloat(entry.price);
+        }
+      }
+
+      // Market data
+      const market: Record<string, { marketCap?: number; liquidity?: number; volume24h?: number; txns?: number }> = {};
+      if (tokenRes.ok) {
+        const tokenData: any = await tokenRes.json();
+        const tokenList: any[] = Array.isArray(tokenData) ? tokenData : (tokenData?.tokens || tokenData?.data || []);
+        for (const t of tokenList) {
+          const addr = t.id || t.address || t.mint || '';
+          if (!addr) continue;
+          const stats24h: any = t?.stats?.['24h'] || t?.['24h'] || {};
+          const buyVol = Number(stats24h.buyVolume ?? stats24h.buy_volume ?? 0);
+          const sellVol = Number(stats24h.sellVolume ?? stats24h.sell_volume ?? 0);
+          const buys = Number(stats24h.buys ?? stats24h.buyCount ?? stats24h.numBuys ?? 0);
+          const sells = Number(stats24h.sells ?? stats24h.sellCount ?? stats24h.numSells ?? 0);
+          market[addr] = {
+            marketCap: t.mcap ?? t.fdv ?? undefined,
+            liquidity: t.liquidity ?? undefined,
+            volume24h: buyVol + sellVol || t.volume24h || undefined,
+            txns: buys + sells || undefined,
+          };
+        }
+      }
+
+      res.json({ prices, market });
+    } catch (e: any) {
+      res.status(500).json({ prices: {}, market: {} });
+    }
+  });
+
+  // Jupiter token market data — mcap, liquidity, volume, holders for one mint
+  app.get('/api/terminal/jup-token/:mint', async (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const apiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = {};
+      if (apiKey) headers['x-api-key'] = apiKey;
+      const [tokenRes, priceRes] = await Promise.all([
+        fetch(`https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`, { headers }),
+        fetch(`https://api.jup.ag/price/v3?ids=${encodeURIComponent(mint)}`, { headers }),
+      ]);
+      const tokenArr: any[] = tokenRes.ok ? await tokenRes.json() : [];
+      const priceData: any = priceRes.ok ? await priceRes.json() : {};
+      const tokens: any[] = Array.isArray(tokenArr) ? tokenArr : (tokenArr?.tokens || []);
+      const token: any = tokens.find((t: any) => t.id === mint || t.address === mint) || tokens[0] || null;
+      const priceEntry: any = priceData?.data?.[mint] || null;
+      const stats24h: any = token?.stats?.['24h'] || token?.['24h'] || {};
+      const buyVol = Number(stats24h.buyVolume ?? stats24h.buy_volume ?? 0);
+      const sellVol = Number(stats24h.sellVolume ?? stats24h.sell_volume ?? 0);
+      const buys = Number(stats24h.buys ?? stats24h.buyCount ?? stats24h.numBuys ?? 0);
+      const sells = Number(stats24h.sells ?? stats24h.sellCount ?? stats24h.numSells ?? 0);
+      res.json({
+        price: priceEntry?.price ? parseFloat(priceEntry.price) : (token?.usdPrice ? parseFloat(token.usdPrice) : null),
+        marketCap: token?.mcap ?? token?.fdv ?? null,
+        liquidity: token?.liquidity ?? null,
+        volume24h: buyVol + sellVol || token?.volume24h || null,
+        txns: buys + sells || null,
+        holders: token?.holderCount ?? null,
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message });
+    }
+  });
+
   // Jupiter live price — lightweight, safe to poll every 3s
   app.get('/api/terminal/jup-price/:mint', async (req, res) => {
     try {

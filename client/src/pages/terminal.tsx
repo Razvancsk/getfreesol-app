@@ -487,6 +487,8 @@ export function TerminalView() {
     return [];
   }, [liveData, tab, searchData, debouncedSearch, jupTrendingData]);
 
+  const isGmgnTab = tab === 'new' || tab === 'bonding' || tab === 'migrated';
+
   const status = liveData?.status;
 
   return (
@@ -582,6 +584,11 @@ export function TerminalView() {
             const pctUp = (pct ?? 0) >= 0;
             const bondPct = Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
             const isMigrated = tab === 'migrated' || (t.bondingPct ?? 0) >= 1;
+            const cardPrice = t.priceUsd;
+            const cardMcap = t.marketCapUsd;
+            const cardVolume = t.volumeUsd;
+            const cardLiquidity = t.liquidityUsd;
+            const cardTxns = totalTx || null;
             return (
               <div
                 key={t.mint}
@@ -605,7 +612,7 @@ export function TerminalView() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="font-bold text-white text-base tabular-nums">{fmtPriceUsd(t.priceUsd)}</div>
+                    <div className="font-bold text-white text-base tabular-nums">{fmtPriceUsd(cardPrice)}</div>
                     {pct != null && Number.isFinite(pct) ? (
                       <div className={`text-right text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
                         {pctUp ? '+' : ''}{(pct ?? 0).toFixed(2)}%
@@ -620,19 +627,19 @@ export function TerminalView() {
                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                   <div>
                     <div className="text-white">Market Cap</div>
-                    <div className="text-white font-medium tabular-nums">{fmtUsd(t.marketCapUsd)}</div>
+                    <div className="text-white font-medium tabular-nums">{fmtUsd(cardMcap)}</div>
                   </div>
                   <div>
                     <div className="text-white">Volume</div>
-                    <div className="text-white font-medium tabular-nums">{fmtUsd(t.volumeUsd)}</div>
+                    <div className="text-white font-medium tabular-nums">{fmtUsd(cardVolume)}</div>
                   </div>
                   <div>
                     <div className="text-white">Liquidity</div>
-                    <div className="text-white font-medium tabular-nums">{fmtUsd(t.liquidityUsd)}</div>
+                    <div className="text-white font-medium tabular-nums">{fmtUsd(cardLiquidity)}</div>
                   </div>
                   <div>
                     <div className="text-white">Txns</div>
-                    <div className="text-white font-medium tabular-nums">{fmtCount(totalTx)}</div>
+                    <div className="text-white font-medium tabular-nums">{cardTxns != null ? fmtCount(cardTxns) : '—'}</div>
                   </div>
                 </div>
                 {/* Badges */}

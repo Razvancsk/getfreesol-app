@@ -48,23 +48,34 @@ function getClient(): OpenApiClient {
   return client;
 }
 
+function n(v: any): number | undefined {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : undefined;
+}
+
 function mapToken(t: any): GmgnToken {
-  const mcap = Number(t.usd_market_cap ?? t.market_cap) || undefined;
-  const vol = Number(t.volume_1h ?? t.volume ?? t.volume_24h) || undefined;
+  // GMGN trenches uses string-encoded numbers for some fields
+  const mcap = n(t.usd_market_cap ?? t.market_cap ?? t.fdv);
+  const vol = n(t.volume_1h ?? t.volume_24h ?? t.volume ?? t.swaps_1h);
+  const liq = n(t.liquidity ?? t.pool_liquidity);
+  const price = n(t.price ?? t.usd_price ?? t.last_price);
+  const buys = n(t.buys_1h ?? t.buys_24h ?? t.buys) ?? 0;
+  const sells = n(t.sells_1h ?? t.sells_24h ?? t.sells) ?? 0;
+  const pctChange = n(t.price_change_percent ?? t.price_change_percent1h ?? t.price_change_percent24h);
   return {
-    mint: t.address || '',
+    mint: t.address || t.mint || '',
     name: t.name || '',
     symbol: t.symbol || '',
-    imageUri: t.logo || '',
-    priceUsd: Number(t.price) || undefined,
-    pctChange: t.price_change_percent != null ? Number(t.price_change_percent)
-             : (t.price_change_percent1h != null ? Number(t.price_change_percent1h) : undefined),
+    imageUri: t.logo || t.image || t.icon || '',
+    priceUsd: price,
+    pctChange,
     marketCapUsd: mcap,
-    liquidityUsd: Number(t.liquidity) || undefined,
+    liquidityUsd: liq,
     volumeUsd: vol,
-    buys: Number(t.buys_24h ?? t.buys) || 0,
-    sells: Number(t.sells_24h ?? t.sells) || 0,
-    createdAt: t.created_timestamp ? Number(t.created_timestamp) * 1000 : undefined,
+    buys: Number(buys) || 0,
+    sells: Number(sells) || 0,
+    createdAt: t.created_timestamp ? Number(t.created_timestamp) * 1000
+             : (t.open_timestamp ? Number(t.open_timestamp) * 1000 : undefined),
     bondingPct: t.progress != null ? Number(t.progress) : undefined,
     migrated: !!(t.complete_timestamp && t.complete_timestamp > 0) || !!(t.open_timestamp && t.open_timestamp > 0),
     launchpad: t.launchpad_platform || t.launchpad || t.exchange || 'pump.fun',
@@ -83,15 +94,23 @@ async function poll() {
   try {
     const c = getClient();
 
-    // Trenches — poll every cycle (every 3s) for near-live new tokens
+    // Trenches — poll every cycle for near-live new tokens
     try {
       const data: any = await c.getTrenches('sol', ['new_creation', 'near_completion', 'completed']);
+      // Log raw keys once to understand the API response shape
+      if (trendingTick === 0) {
+        const keys = Object.keys(data || {});
+        console.log('[gmgn] trenches response keys:', keys);
+        const sample = data?.[keys[0]]?.[0];
+        if (sample) console.log('[gmgn] sample token fields:', Object.keys(sample).join(', '));
+      }
       const newArr: any[] = data?.new_creation || [];
-      const bondArr: any[] = data?.pump || [];
+      const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
-      if (newArr.length) cache.new = newArr.map(mapToken).filter(t => t.mint);
-      if (bondArr.length) cache.bonding = bondArr.map(mapToken).filter(t => t.mint);
-      if (migArr.length) cache.migrated = migArr.map(mapToken).filter(t => t.mint);
+      if (newArr.length) { cache.new = newArr.map(mapToken).filter(t => t.mint); }
+      if (bondArr.length) { cache.bonding = bondArr.map(mapToken).filter(t => t.mint); }
+      if (migArr.length) { cache.migrated = migArr.map(mapToken).filter(t => t.mint); }
+      console.log(`[gmgn] trenches: new=${newArr.length} bonding=${bondArr.length} migrated=${migArr.length}`);
     } catch (e: any) {
       console.error('[gmgn] trenches fetch failed:', e.message);
     }
