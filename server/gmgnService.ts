@@ -77,11 +77,13 @@ function mapToken(t: any): GmgnToken {
   };
 }
 
+let trendingTick = 0;
+
 async function poll() {
   try {
     const c = getClient();
 
-    // Trenches
+    // Trenches — poll every cycle (every 3s) for near-live new tokens
     try {
       const data: any = await c.getTrenches('sol', ['new_creation', 'near_completion', 'completed']);
       const newArr: any[] = data?.new_creation || [];
@@ -90,29 +92,30 @@ async function poll() {
       if (newArr.length) cache.new = newArr.map(mapToken).filter(t => t.mint);
       if (bondArr.length) cache.bonding = bondArr.map(mapToken).filter(t => t.mint);
       if (migArr.length) cache.migrated = migArr.map(mapToken).filter(t => t.mint);
-      console.log(`[gmgn] trenches: new=${newArr.length} bonding=${bondArr.length} migrated=${migArr.length}`);
     } catch (e: any) {
       console.error('[gmgn] trenches fetch failed:', e.message);
     }
 
-    // Trending
-    try {
-      const data: any = await c.getTrendingSwaps('sol', '1h', { orderby: 'volume', direction: 'desc', limit: 50 });
-      const arr: any[] = data?.rank || (Array.isArray(data) ? data : []);
-      if (arr.length) cache.trending = arr.map(mapToken).filter(t => t.mint);
-      console.log(`[gmgn] trending: ${arr.length} tokens`);
-    } catch (e: any) {
-      console.error('[gmgn] trending fetch failed:', e.message);
-    }
-
-    // SOL price from Jupiter
-    try {
-      const r = await fetch('https://price.jup.ag/v6/price?ids=SOL', { signal: AbortSignal.timeout(5000) });
-      if (r.ok) {
-        const j: any = await r.json();
-        if (j?.data?.SOL?.price) solUsdPrice = Number(j.data.SOL.price);
+    // Trending + SOL price — only every 10th cycle (~30s) since it changes slowly
+    trendingTick++;
+    if (trendingTick % 10 === 1) {
+      try {
+        const data: any = await c.getTrendingSwaps('sol', '1h', { orderby: 'volume', direction: 'desc', limit: 50 });
+        const arr: any[] = data?.rank || (Array.isArray(data) ? data : []);
+        if (arr.length) cache.trending = arr.map(mapToken).filter(t => t.mint);
+        console.log(`[gmgn] trending: ${arr.length} tokens`);
+      } catch (e: any) {
+        console.error('[gmgn] trending fetch failed:', e.message);
       }
-    } catch {}
+
+      try {
+        const r = await fetch('https://price.jup.ag/v6/price?ids=SOL', { signal: AbortSignal.timeout(5000) });
+        if (r.ok) {
+          const j: any = await r.json();
+          if (j?.data?.SOL?.price) solUsdPrice = Number(j.data.SOL.price);
+        }
+      } catch {}
+    }
 
     connected = true;
     lastUpdate = Date.now();
