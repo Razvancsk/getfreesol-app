@@ -277,7 +277,7 @@ export async function getTokenLive(mint: string): Promise<any> {
 
 export async function getTopTraders(mint: string): Promise<any[]> {
   try {
-    const data: any = await getClient().getTokenTopTraders('sol', mint, { limit: 20, orderby: 'profit', direction: 'desc' });
+    const data: any = await getClient().getTokenTopTraders('sol', mint, { limit: 20, orderby: 'last_active_timestamp', direction: 'desc' });
     const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
     return arr.map((h: any) => ({
       address: h.address || '',

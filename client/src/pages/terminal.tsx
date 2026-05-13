@@ -1427,10 +1427,9 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                               {isRat && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30">RAT</span>}
                             </div>
                             <div className="flex items-center gap-1.5 mt-1">
-                              {stillHolding && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">HOLD</span>}
-                              {fullyExited && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/40 border border-white/10">SOLD</span>}
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${lastType === 'buy' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/20' : 'bg-red-500/15 text-red-300 border-red-500/20'}`}>
-                                {lastType === 'buy' ? 'BUY' : 'SELL'}{lastUsd > 0 ? ` ${fmtUsd(lastUsd)}` : ''}
+                              {/* One combined status tag: position (HOLD/SOLD) + last action type + amount */}
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${fullyExited ? 'bg-white/10 text-white/50 border-white/10' : lastType === 'buy' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/20' : 'bg-red-500/15 text-red-300 border-red-500/20'}`}>
+                                {fullyExited ? 'SOLD OUT' : stillHolding ? `HOLD · ${lastType === 'buy' ? 'BUY' : 'SELL'}${lastUsd > 0 ? ` ${fmtUsd(lastUsd)}` : ''}` : `${lastType === 'buy' ? 'BUY' : 'SELL'}${lastUsd > 0 ? ` ${fmtUsd(lastUsd)}` : ''}`}
                               </span>
                             </div>
                           </div>
