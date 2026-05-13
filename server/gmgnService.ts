@@ -209,6 +209,10 @@ export async function getTokenInfo(mint: string): Promise<any> {
     renouncedMint: sec?.renounced_mint,
     renouncedFreeze: sec?.renounced_freeze_account,
     top10HolderRate: sec?.top_10_holder_rate != null ? n(sec.top_10_holder_rate) : n(t.stat?.top_10_holder_rate),
+    devAddress: t.dev?.creator_address || '',
+    poolAddress: t.biggest_pool_address || t.pool?.pool_address || '',
+    poolLiquidity: Number(t.pool?.liquidity || t.liquidity) || undefined,
+    poolDex: t.pool?.exchange || '',
     stats24h: { priceChange: 0, numBuys: 0, numSells: 0, volume: 0 },
   };
 }
@@ -289,20 +293,30 @@ export async function getTopTraders(mint: string): Promise<any[]> {
       startHolding: h.start_holding_at ? Number(h.start_holding_at) : null,
       endHolding: h.end_holding_at ? Number(h.end_holding_at) : null,
       sellRatio: Number(h.sell_amount_percentage) || 0,
+      // Last trade: type from token_transfer, fallback inferred from sellRatio
+      lastTradeType: h.token_transfer?.type || (h.end_holding_at ? 'sell' : (h.sell_amount_percentage >= 0.99 ? 'sell' : 'buy')),
+      lastTradeUsd: Number(h.token_transfer?.cost_usd || h.token_transfer?.usd_value || 0),
     }));
   } catch { return []; }
 }
 
 export async function getTopHolders(mint: string): Promise<any[]> {
   try {
-    const data: any = await getClient().getTokenTopHolders('sol', mint, { limit: 10, orderby: 'amount_percentage', direction: 'desc' });
+    const data: any = await getClient().getTokenTopHolders('sol', mint, { limit: 20, orderby: 'amount_percentage', direction: 'desc' });
     const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
     return arr.map((h: any) => ({
       address: h.address || '',
+      name: h.name || '',
       amount: Number(h.amount_cur || h.balance || 0),
       uiAmount: Number(h.amount_cur || h.balance || 0),
+      usdValue: Number(h.usd_value) || 0,
       pct: Number(h.amount_percentage || 0),
+      tags: Array.isArray(h.tags) ? h.tags : (h.tags ? [h.tags] : []),
+      makerTags: Array.isArray(h.maker_token_tags) ? h.maker_token_tags : [],
       label: Array.isArray(h.tags) ? h.tags.join(',') : (h.tags || ''),
+      addrType: Number(h.addr_type) || 0,  // 0=wallet, 2=pool/exchange
+      exchange: h.exchange || '',
+      rank: h.wallet_tag_v2 || '',
       profit: Number(h.profit) || 0,
     }));
   } catch { return []; }

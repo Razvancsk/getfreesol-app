@@ -1065,8 +1065,18 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               {/* Token addresses */}
               <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
                 <InfoAddressRow label="Contract Address" value={mint} />
-                {info?.dev && <InfoAddressRow label="Developer Address" value={info.dev} />}
-                {launchpad && <InfoTextRow label="Launchpad" value={launchpad} isLast />}
+                {(() => {
+                  const devAddr = (info as any)?.devAddress || info?.dev || '';
+                  const poolAddr = (info as any)?.poolAddress || '';
+                  const poolDex = (info as any)?.poolDex || '';
+                  const poolLiq = (info as any)?.poolLiquidity;
+                  return (<>
+                    {devAddr && <InfoAddressRow label="Developer Wallet" value={devAddr} />}
+                    {poolAddr && <InfoAddressRow label={`Pool (${poolDex || 'DEX'})`} value={poolAddr} />}
+                    {poolLiq != null && <InfoTextRow label="Pool Liquidity" value={fmtUsd(poolLiq)} />}
+                    {launchpad && <InfoTextRow label="Launchpad" value={launchpad} isLast />}
+                  </>);
+                })()}
               </div>
             </div>
           );
@@ -1091,61 +1101,63 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             )}
             <div className="divide-y divide-white/5">
               {(() => {
-                const devAddr = info?.dev;
-                const poolAddr = (info as any)?.firstPool?.id;
-                const gradAddr = (info as any)?.graduatedPool;
-                const lpName = info?.firstPool?.launchpad || (info as any)?.launchpad;
-                const tagFor = (h: { address: string; owner?: string; label?: string }) => {
-                  const o = h.owner || h.address;
-                  if (devAddr && o === devAddr) {
-                    return { name: 'Dev', icon: Hammer, color: 'text-amber-400' };
+                const devAddr = (info as any)?.devAddress || info?.dev || '';
+                const poolAddr = (info as any)?.poolAddress || '';
+                const poolLiq = (info as any)?.poolLiquidity;
+                const tagFor = (h: any) => {
+                  const addr = h.address;
+                  const apiTags: string[] = h.tags || [];
+                  const label: string = h.label || '';
+                  // Pool: addr_type=2 or API tags or address match or classic labels
+                  if (h.addrType === 2 || apiTags.includes('pump_amm') || apiTags.includes('raydium') ||
+                    label === 'pump.fun-bonding-curve' || (label && label.startsWith('liquidity-pool:')) ||
+                    (poolAddr && addr === poolAddr)) {
+                    const dex = h.exchange || (info as any)?.poolDex || 'Pool';
+                    const liqStr = poolLiq != null && addr === poolAddr ? ` · ${fmtUsd(poolLiq)}` : '';
+                    return { name: `${dex}${liqStr}`, icon: Droplet, color: 'text-sky-400', bg: 'bg-sky-500/10' };
                   }
-                  if (
-                    h.label === 'pump.fun-bonding-curve' ||
-                    (h.label && h.label.startsWith('liquidity-pool:')) ||
-                    (poolAddr && poolAddr !== mint && (o === poolAddr || h.address === poolAddr)) ||
-                    (gradAddr && (o === gradAddr || h.address === gradAddr))
-                  ) {
-                    return { name: 'Liquidity pool', icon: Droplet, color: 'text-sky-400' };
+                  // Dev: API tag or address match
+                  if (apiTags.includes('dev') || (devAddr && addr === devAddr)) {
+                    return { name: 'Developer', icon: Hammer, color: 'text-amber-400', bg: 'bg-amber-500/10' };
                   }
                   return null;
                 };
-                const list = [...(holdersData?.holders || [])];
-                return list.slice(0, 20).map((h) => {
+                const list = holdersData?.holders || [];
+                return list.slice(0, 20).map((h: any) => {
                   const pct = h.pct != null ? h.pct * 100 : (totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0);
                   const tag = tagFor(h);
-                  const linkAddr = h.owner || h.address;
-                  const tags = h.label ? h.label.split(',').filter(Boolean) : [];
+                  const linkAddr = h.address;
+                  const apiTags: string[] = h.tags || [];
+                  const isSm = apiTags.includes('smart_degen');
+                  const isKol = apiTags.includes('renowned');
                   return (
                     <a
                       key={h.address}
-                      href={`https://solscan.io/account/${linkAddr}`}
+                      href={`https://gmgn.ai/sol/address/${linkAddr}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center justify-between py-3 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors"
+                      className={`flex items-center justify-between py-2.5 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors ${tag?.bg || ''}`}
                       data-testid={`holder-row-${linkAddr}`}
                     >
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         {tag ? (
-                          <>
-                            <span className="text-white">{tag.name}</span>
-                            <tag.icon className={`h-4 w-4 ${tag.color}`} />
-                          </>
+                          <div className="flex items-center gap-1.5">
+                            <tag.icon className={`h-3.5 w-3.5 ${tag.color} shrink-0`} />
+                            <span className={`text-xs font-semibold ${tag.color}`}>{tag.name}</span>
+                          </div>
                         ) : (
                           <span className="font-mono text-xs text-purple-300 truncate">
-                            {shortMint(linkAddr)}
+                            {h.name || shortMint(linkAddr)}
                           </span>
                         )}
-                        {tags.includes('smart_degen') && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SM</span>}
-                        {tags.includes('renowned') && <span className="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">KOL</span>}
+                        {isSm && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SM</span>}
+                        {isKol && <span className="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">KOL</span>}
                       </div>
                       <div className="flex items-center gap-3 text-right">
-                        {h.profit != null && h.profit !== 0 && (
-                          <div className={`text-xs tabular-nums ${h.profit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {h.profit > 0 ? '+' : ''}{fmtUsd(h.profit)}
-                          </div>
+                        {h.usdValue > 0 && (
+                          <div className="text-xs text-white/50 tabular-nums">{fmtUsd(h.usdValue)}</div>
                         )}
-                        <div className="text-white tabular-nums">{pct.toFixed(2)}%</div>
+                        <div className="text-white tabular-nums text-xs font-semibold">{pct.toFixed(2)}%</div>
                       </div>
                     </a>
                   );
@@ -1186,6 +1198,11 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                     const solBal = h.nativeBalance / 1e9;
                     const pnlColor = (v: number) => v > 0 ? 'text-emerald-400' : v < 0 ? 'text-red-400' : 'text-white/40';
                     const fmtProfit = (v: number) => v === 0 ? '$0' : `${v > 0 ? '+' : ''}${fmtUsd(v)}`;
+                    const lastType: 'buy' | 'sell' = h.lastTradeType === 'sell' ? 'sell' : 'buy';
+                    // Prefer token_transfer usd, else derive from avg * 1 unit
+                    const lastUsd = h.lastTradeUsd > 0 ? h.lastTradeUsd
+                      : lastType === 'sell' ? (h.sellCount > 0 ? h.sellVolume / h.sellCount : 0)
+                      : (h.buyCount > 0 ? h.buyVolume / h.buyCount : 0);
                     return (
                       <a
                         key={h.address}
@@ -1214,6 +1231,10 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                             <div className="flex items-center gap-1 mt-0.5">
                               {stillHolding && <span className="text-[8px] px-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">HOLD</span>}
                               {fullyExited && <span className="text-[8px] px-1 rounded bg-white/10 text-white/40 border border-white/10">SOLD</span>}
+                              {/* Last trade type badge */}
+                              <span className={`text-[8px] px-1 rounded border leading-none font-semibold ${lastType === 'buy' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/20' : 'bg-red-500/15 text-red-300 border-red-500/20'}`}>
+                                {lastType === 'buy' ? 'BUY' : 'SELL'} {lastUsd > 0 ? fmtUsd(lastUsd) : ''}
+                              </span>
                             </div>
                           </div>
                         </div>
