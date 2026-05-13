@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link, useLocation, useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { useReownWallet } from '@/hooks/useReownWallet';
 import logoImage from '@assets/image_1757882056840.png';
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { Button } from '@/components/ui/button';
@@ -277,8 +276,7 @@ function useDebounced<T>(value: T, ms: number): T {
 }
 
 function HoldingsDrawer({ trigger }: { trigger: React.ReactNode }) {
-  const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { publicKey, setVisible } = useReownWallet();
   const [, navigate] = useLocation();
   const [open, setOpen] = useState(false);
   const [portfolioTab, setPortfolioTab] = useState<'holdings' | 'activity'>('holdings');
@@ -862,8 +860,7 @@ function fmtNum(n?: number): string {
 export function TokenPage() {
   const [, params] = useRoute('/terminal/token/:mint');
   const [, navigate] = useLocation();
-  const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { publicKey, setVisible } = useReownWallet();
   const mint = params?.mint || '';
   const shortAddr = publicKey ? `${publicKey.toString().slice(0, 4)}…${publicKey.toString().slice(-4)}` : '';
 
@@ -1568,7 +1565,7 @@ function InfoTextRow({ label, value, isLast }: { label: string; value?: React.Re
 }
 
 function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey, signTransaction } = useReownWallet();
   const { toast } = useToast();
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [amount, setAmount] = useState('');
@@ -1808,7 +1805,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
 }
 
 function TradeDialog({ token, action, onClose }: { token: Token; action: 'buy' | 'sell'; onClose: () => void }) {
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey, signTransaction } = useReownWallet();
   const { toast } = useToast();
   const [amount, setAmount] = useState(action === 'buy' ? '0.01' : '100%');
   const [slippage, setSlippage] = useState('20');
