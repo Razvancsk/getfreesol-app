@@ -13432,22 +13432,23 @@ Claimer: ${walletAddress}`;
       const headers: Record<string, string> = {};
       if (apiKey) headers['x-api-key'] = apiKey;
 
-      // Derive feeAccount PDA: seeds = ["referral_ata", referralAccount, outputMint]
-      const REFERRAL_PROGRAM_ID = new PublicKey('REFER4ZgmyYx9c6He5XfaTMiGfdLwRnkV4RPp9t9iF3');
-      const REFERRAL_ACCOUNT = new PublicKey('5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB');
-      const [feeAccount] = PublicKey.findProgramAddressSync(
-        [Buffer.from('referral_ata'), REFERRAL_ACCOUNT.toBuffer(), new PublicKey(String(outputMint)).toBuffer()],
-        REFERRAL_PROGRAM_ID
-      );
+      const SOL_MINT = 'So11111111111111111111111111111111111111112';
+      // WSOL referral ATA — collects fees when output is SOL (sells)
+      const WSOL_FEE_ACCOUNT = '2iDyu7fVbXPKuGnbas3PfZDZtY2MJuxr1mYh8Qahx1NF';
 
       const params = new URLSearchParams({
         inputMint: String(inputMint),
         outputMint: String(outputMint),
         amount: String(amount),
         taker: String(taker),
-        platformFeeBps: '50',
-        feeAccount: feeAccount.toBase58(),
       });
+
+      // Only apply fee on sells (output = SOL) where we have a valid fee account
+      if (String(outputMint) === SOL_MINT) {
+        params.append('platformFeeBps', '50');
+        params.append('feeAccount', WSOL_FEE_ACCOUNT);
+      }
+
       const r = await fetch(`https://api.jup.ag/swap/v2/order?${params}`, { headers });
       const data = await r.json();
       if (!r.ok) return res.status(r.status).json(data);
