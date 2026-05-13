@@ -13421,7 +13421,7 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Jupiter Swap v2 — get unsigned order
+  // Jupiter Swap v2 — get unsigned order with referral fee
   app.get('/api/terminal/jupiter-order', async (req, res) => {
     try {
       const { inputMint, outputMint, amount, taker } = req.query;
@@ -13429,15 +13429,24 @@ Claimer: ${walletAddress}`;
         return res.status(400).json({ error: 'inputMint, outputMint, amount, taker required' });
       }
       const apiKey = process.env.JUPITER_API_KEY;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = {};
       if (apiKey) headers['x-api-key'] = apiKey;
+
+      // Derive feeAccount PDA: seeds = ["referral_ata", referralAccount, outputMint]
+      const REFERRAL_PROGRAM_ID = new PublicKey('REFER4ZgmyYx9c6He5XfaTMiGfdLwRnkV4RPp9t9iF3');
+      const REFERRAL_ACCOUNT = new PublicKey('5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB');
+      const [feeAccount] = PublicKey.findProgramAddressSync(
+        [Buffer.from('referral_ata'), REFERRAL_ACCOUNT.toBuffer(), new PublicKey(String(outputMint)).toBuffer()],
+        REFERRAL_PROGRAM_ID
+      );
+
       const params = new URLSearchParams({
         inputMint: String(inputMint),
         outputMint: String(outputMint),
         amount: String(amount),
         taker: String(taker),
-        referralAccount: '5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB',
-        referralFee: '50',
+        platformFeeBps: '50',
+        feeAccount: feeAccount.toBase58(),
       });
       const r = await fetch(`https://api.jup.ag/swap/v2/order?${params}`, { headers });
       const data = await r.json();
