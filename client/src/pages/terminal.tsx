@@ -1545,7 +1545,7 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
     let cancelled = false;
     (async () => {
       try {
-        const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${rawAmount}&slippageBps=300&platformFeeBps=50&feeAccount=2iDyu7fVbXPKuGnbas3PfZDZtY2MJuxr1mYh8Qahx1NF`;
+        const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${rawAmount}&slippageBps=300`;
         const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
         if (cancelled || !r.ok) { if (!cancelled) setJupQuote(null); return; }
         const data = await r.json();
