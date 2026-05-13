@@ -4,7 +4,7 @@ import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activ
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
 import { buildTradeTx as buildPumpTradeTx, validateTradeInput } from './pumpStream';
-import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity } from './gmgnService';
+import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, addSseClient } from './gmgnService';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -12839,6 +12839,25 @@ Claimer: ${walletAddress}`;
 
   // ── /api/terminal — Solana token screener (powered by GMGN) ──
   try { startGmgnService(); } catch (e: any) { console.error('[gmgn] start failed', e?.message); }
+
+  // SSE — push feed updates to connected clients in real-time
+  app.get('/api/terminal/stream', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+    const send = (data: string) => res.write(`data: ${data}\n\n`);
+    // Send current data immediately
+    send(JSON.stringify({
+      new: getGmgnFeed('new', 50),
+      bonding: getGmgnFeed('bonding', 50),
+      migrated: getGmgnFeed('migrated', 50),
+      trending: getGmgnTrending(50),
+      status: getGmgnStatus(),
+    }));
+    const remove = addSseClient(send);
+    req.on('close', remove);
+  });
 
   app.get('/api/terminal/feed', (req, res) => {
     const t = String(req.query.type || 'new');

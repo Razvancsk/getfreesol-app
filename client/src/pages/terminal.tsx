@@ -423,35 +423,29 @@ export function TerminalView() {
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
   const [, navigate] = useLocation();
 
-  const isSpecialTab = tab === 'signals' || tab === 'smartmoney';
-  const cacheKey = `terminal_feed_cache_${tab}`;
-  const { data, isFetching } = useQuery<{ tokens: Token[]; status: any }>({
-    queryKey: ['/api/terminal/feed', tab],
-    queryFn: async () => {
-      if (isSpecialTab) return { tokens: [], status: null };
-      const url = tab === 'trending'
-        ? '/api/terminal/trending?limit=50'
-        : `/api/terminal/feed?type=${tab}&limit=50`;
-      const r = await fetch(url);
-      if (!r.ok) throw new Error('feed failed');
-      const json = await r.json();
-      try {
-        if (json?.tokens?.length) {
-          localStorage.setItem(cacheKey, JSON.stringify(json));
-        }
-      } catch {}
-      return json;
-    },
-    refetchInterval: isSpecialTab ? false : 30000,
-    enabled: !isSpecialTab,
-    initialData: () => {
-      if (isSpecialTab) return undefined;
-      try {
-        const raw = localStorage.getItem(cacheKey);
-        return raw ? JSON.parse(raw) : undefined;
-      } catch { return undefined; }
-    },
+  // Live feed via SSE — server pushes updates every 10 seconds
+  const [liveData, setLiveData] = useState<{ new: Token[]; bonding: Token[]; migrated: Token[]; trending: Token[]; status: any } | null>(() => {
+    try {
+      const raw = localStorage.getItem('terminal_sse_cache');
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
   });
+
+  useEffect(() => {
+    const es = new EventSource('/api/terminal/stream');
+    es.onmessage = (e) => {
+      try {
+        const d = JSON.parse(e.data);
+        setLiveData(d);
+        try { localStorage.setItem('terminal_sse_cache', e.data); } catch {}
+      } catch {}
+    };
+    es.onerror = () => { /* SSE auto-reconnects */ };
+    return () => es.close();
+  }, []);
+
+  const isSpecialTab = tab === 'signals' || tab === 'smartmoney';
+  const isFetching = !liveData;
 
   const debouncedSearch = useDebounced(search.trim(), 300);
   const { data: searchData, isFetching: searchFetching } = useQuery<{ tokens: Token[] }>({
@@ -462,15 +456,20 @@ export function TerminalView() {
       return r.json();
     },
     enabled: debouncedSearch.length > 0,
-    staleTime: 30_000,
+    staleTime: 15_000,
   });
 
   const tokens = useMemo(() => {
     if (debouncedSearch.length > 0) return searchData?.tokens ?? [];
-    return data?.tokens ?? [];
-  }, [data, searchData, debouncedSearch]);
+    if (!liveData) return [];
+    if (tab === 'new') return liveData.new;
+    if (tab === 'bonding') return liveData.bonding;
+    if (tab === 'migrated') return liveData.migrated;
+    if (tab === 'trending') return liveData.trending;
+    return [];
+  }, [liveData, tab, searchData, debouncedSearch]);
 
-  const status = data?.status;
+  const status = liveData?.status;
 
   return (
     <div className="text-white">

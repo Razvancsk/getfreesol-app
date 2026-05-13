@@ -116,9 +116,32 @@ async function poll() {
 
     connected = true;
     lastUpdate = Date.now();
+    notifySse();
   } catch (e: any) {
     console.error('[gmgn] poll error:', e.message);
     connected = false;
+  }
+}
+
+// SSE subscribers for push updates
+const sseClients = new Set<(data: string) => void>();
+
+export function addSseClient(send: (data: string) => void) {
+  sseClients.add(send);
+  return () => sseClients.delete(send);
+}
+
+function notifySse() {
+  if (sseClients.size === 0) return;
+  const payload = JSON.stringify({
+    new: cache.new.slice(0, 50),
+    bonding: cache.bonding.slice(0, 50),
+    migrated: cache.migrated.slice(0, 50),
+    trending: cache.trending.slice(0, 50),
+    status: { connected, lastUpdate },
+  });
+  for (const send of sseClients) {
+    try { send(payload); } catch { sseClients.delete(send); }
   }
 }
 
@@ -129,7 +152,7 @@ export function startGmgnService() {
   }
   console.log('[gmgn] Starting GMGN service (cooperation API via OpenApiClient)...');
   poll();
-  pollInterval = setInterval(poll, 30000);
+  pollInterval = setInterval(poll, 10000);
 }
 
 export function getFeed(type: 'new' | 'bonding' | 'migrated', limit: number): GmgnToken[] {
