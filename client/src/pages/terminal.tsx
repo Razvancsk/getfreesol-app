@@ -1134,6 +1134,25 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               </div>
             </div>
 
+            {(() => {
+              const cachedT = (liveData?.live as Token) || readCachedToken(mint) || ({ mint } as Token);
+              const progress = (info as any)?.bondingProgress ?? cachedT.bondingPct ?? 0;
+              const pct = Math.min(100, Math.round(progress * 100));
+              if (pct <= 0 || pct >= 100) return null;
+              const barColor = pct >= 80 ? 'bg-orange-400' : pct >= 60 ? 'bg-yellow-400' : 'bg-purple-400';
+              return (
+                <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-4 py-3">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Bonding Curve</span>
+                    <span className="text-white text-xs font-bold tabular-nums">{pct}%</span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2">
+                    <div className={`h-2 rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="hidden lg:block">
               <SwapCard token={tokenForTrade} />
             </div>
@@ -1198,7 +1217,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             { label: 'Rug Risk', value: rugRatio != null ? `${Math.round(rugRatio * 100)}%` : '—', color: rugRatio == null ? 'text-white' : rugRatio > 0.3 ? 'text-red-400' : rugRatio > 0.1 ? 'text-yellow-400' : 'text-emerald-400' },
             { label: 'Rat Traders', value: ratTraderRate != null ? `${Math.round(ratTraderRate * 100)}%` : '—', color: ratTraderRate != null && ratTraderRate > 0.3 ? 'text-red-400' : ratTraderRate != null ? 'text-emerald-400' : 'text-white' },
             { label: 'Bundler Rate', value: bundlerRate != null ? `${Math.round(bundlerRate * 100)}%` : '—', color: bundlerRate != null && bundlerRate > 0.3 ? 'text-red-400' : bundlerRate != null ? 'text-emerald-400' : 'text-white' },
-            { label: 'Top 10 Hold', value: top10 != null ? `${Math.round(top10 * 100)}%` : bondingProgress != null ? `${Math.round(bondingProgress * 100)}% bond` : '—', color: top10 != null && top10 > 0.5 ? 'text-red-400' : top10 != null && top10 > 0.2 ? 'text-yellow-400' : 'text-emerald-400' },
+            { label: 'Top 10 Hold', value: top10 != null ? `${Math.round(top10 * 100)}%` : '—', color: top10 != null && top10 > 0.5 ? 'text-red-400' : top10 != null && top10 > 0.2 ? 'text-yellow-400' : 'text-emerald-400' },
           ];
           return (
             <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
