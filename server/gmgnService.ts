@@ -175,10 +175,15 @@ export function getSolUsd(): number {
 }
 
 export async function getTokenInfo(mint: string): Promise<any> {
-  const t: any = await getClient().getTokenInfo('sol', mint);
+  // Fetch info and security in parallel — rug_ratio, rat/bundler rates live in the security endpoint
+  const [t, sec] = await Promise.all([
+    getClient().getTokenInfo('sol', mint) as Promise<any>,
+    getClient().getTokenSecurity('sol', mint).catch(() => null) as Promise<any>,
+  ]);
   if (!t) throw new Error('not found');
   const mcap = t.price && t.circulating_supply
     ? Number(t.price) * Number(t.circulating_supply) : undefined;
+  const n = (v: any) => (v != null ? Number(v) : undefined);
   return {
     id: mint,
     mint,
@@ -194,12 +199,16 @@ export async function getTokenInfo(mint: string): Promise<any> {
     website: t.link?.website || '',
     telegram: t.link?.telegram || '',
     launchpad: t.launchpad_platform || '',
-    bondingProgress: Number(t.launchpad_progress) || undefined,
+    bondingProgress: t.launchpad_progress != null ? Number(t.launchpad_progress) : undefined,
     smartDegens: Number(t.wallet_tags_stat?.smart_wallets) || 0,
     renownedWallets: Number(t.wallet_tags_stat?.renowned_wallets) || 0,
-    rugRatio: Number(t.stat?.rug_ratio) || undefined,
-    ratTraderRate: Number(t.stat?.top_rat_trader_percentage) || undefined,
-    bundlerRate: Number(t.stat?.top_bundler_trader_percentage) || undefined,
+    // rug_ratio is top-level in security response, not in stat object of info response
+    rugRatio: sec?.rug_ratio != null ? n(sec.rug_ratio) : n(t.stat?.rug_ratio),
+    ratTraderRate: sec?.rat_trader_amount_rate != null ? n(sec.rat_trader_amount_rate) : n(t.stat?.top_rat_trader_percentage),
+    bundlerRate: sec?.bundler_trader_amount_rate != null ? n(sec.bundler_trader_amount_rate) : n(t.stat?.top_bundler_trader_percentage),
+    renouncedMint: sec?.renounced_mint,
+    renouncedFreeze: sec?.renounced_freeze_account,
+    top10HolderRate: sec?.top_10_holder_rate != null ? n(sec.top_10_holder_rate) : n(t.stat?.top_10_holder_rate),
     stats24h: { priceChange: 0, numBuys: 0, numSells: 0, volume: 0 },
   };
 }
@@ -209,10 +218,26 @@ export async function getTokenSecurity(mint: string): Promise<any> {
 }
 
 export async function getTokenLive(mint: string): Promise<any> {
-  const t: any = await getClient().getTokenInfo('sol', mint);
+  const now = Math.floor(Date.now() / 1000);
+  const from24h = now - 86400;
+  const [t, klines] = await Promise.all([
+    getClient().getTokenInfo('sol', mint) as Promise<any>,
+    getClient().getTokenKline('sol', mint, '1h', from24h, now).catch(() => null) as Promise<any>,
+  ]);
   if (!t) return null;
   const mcap = t.price && t.circulating_supply
     ? Number(t.price) * Number(t.circulating_supply) : undefined;
+  // Kline response: array of candles or { list: [...] }, each candle has { volume (USD), amount (tokens) }
+  const klineArr: any[] = Array.isArray(klines) ? klines : (klines?.list || []);
+  const volume24h = klineArr.length > 0
+    ? klineArr.reduce((s: number, c: any) => s + (Number(c.volume) || 0), 0) || undefined
+    : undefined;
+  const buys24h = klineArr.length > 0
+    ? klineArr.reduce((s: number, c: any) => s + (Number(c.buy_count) || Number(c.buys) || 0), 0)
+    : 0;
+  const sells24h = klineArr.length > 0
+    ? klineArr.reduce((s: number, c: any) => s + (Number(c.sell_count) || Number(c.sells) || 0), 0)
+    : 0;
   return {
     mint,
     name: t.name || '',
@@ -220,8 +245,9 @@ export async function getTokenLive(mint: string): Promise<any> {
     priceUsd: Number(t.price) || undefined,
     marketCapUsd: mcap,
     liquidityUsd: Number(t.liquidity) || undefined,
-    buys: 0,
-    sells: 0,
+    volumeUsd: volume24h,
+    buys: buys24h,
+    sells: sells24h,
     solUsd: solUsdPrice || undefined,
   };
 }

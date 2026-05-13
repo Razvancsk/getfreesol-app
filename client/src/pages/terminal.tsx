@@ -1045,14 +1045,16 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Smart Money & Security</span>
                 </div>
                 <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
-                  {[
-                    { label: 'Smart Wallets', value: smartDegens > 0 ? `${smartDegens} SM` : '—', color: smartDegens >= 3 ? 'text-emerald-400' : smartDegens > 0 ? 'text-yellow-400' : 'text-white' },
-                    { label: 'KOL Wallets', value: renownedWallets > 0 ? `${renownedWallets} KOL` : '—', color: renownedWallets > 0 ? 'text-blue-400' : 'text-white' },
+                  {(() => {
+                    const top10 = (info as any)?.top10HolderRate;
+                    return [
+                    { label: 'Smart Wallets', value: smartDegens > 0 ? `${smartDegens} SM` : '0 SM', color: smartDegens >= 3 ? 'text-emerald-400' : smartDegens > 0 ? 'text-yellow-400' : 'text-white/50' },
+                    { label: 'KOL Wallets', value: renownedWallets > 0 ? `${renownedWallets} KOL` : '0 KOL', color: renownedWallets > 0 ? 'text-blue-400' : 'text-white/50' },
                     { label: 'Rug Risk', value: rugRatio != null ? `${Math.round(rugRatio * 100)}%` : '—', color: rugRatio == null ? 'text-white' : rugRatio > 0.3 ? 'text-red-400' : rugRatio > 0.1 ? 'text-yellow-400' : 'text-emerald-400' },
-                    { label: 'Rat Traders', value: ratTraderRate != null ? `${Math.round(ratTraderRate * 100)}%` : '—', color: ratTraderRate != null && ratTraderRate > 0.3 ? 'text-red-400' : 'text-white' },
-                    { label: 'Bundler Rate', value: bundlerRate != null ? `${Math.round(bundlerRate * 100)}%` : '—', color: bundlerRate != null && bundlerRate > 0.3 ? 'text-red-400' : 'text-white' },
-                    { label: 'Bonding', value: bondingProgress != null ? `${Math.round(bondingProgress * 100)}%` : '—', color: 'text-white' },
-                  ].map((s) => (
+                    { label: 'Rat Traders', value: ratTraderRate != null ? `${Math.round(ratTraderRate * 100)}%` : '—', color: ratTraderRate != null && ratTraderRate > 0.3 ? 'text-red-400' : ratTraderRate != null ? 'text-emerald-400' : 'text-white' },
+                    { label: 'Bundler Rate', value: bundlerRate != null ? `${Math.round(bundlerRate * 100)}%` : '—', color: bundlerRate != null && bundlerRate > 0.3 ? 'text-red-400' : bundlerRate != null ? 'text-emerald-400' : 'text-white' },
+                    { label: 'Top 10 Hold', value: top10 != null ? `${Math.round(top10 * 100)}%` : bondingProgress != null ? `${Math.round(bondingProgress * 100)}% bond` : '—', color: top10 != null && top10 > 0.5 ? 'text-red-400' : top10 != null && top10 > 0.2 ? 'text-yellow-400' : 'text-emerald-400' },
+                  ]})().map((s) => (
                     <div key={s.label} className="px-3 py-3 text-center">
                       <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">{s.label}</div>
                       <div className={`text-base font-bold tabular-nums mt-1 ${s.color}`}>{s.value}</div>
