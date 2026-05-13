@@ -428,6 +428,7 @@ export function TerminalView() {
   const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded'>('toptrending');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
   const [, navigate] = useLocation();
+  const { publicKey: walletKey, setVisible: openWallet } = useReownWallet();
 
   // Live feed via SSE — server pushes updates every 10 seconds
   const [liveData, setLiveData] = useState<{ new: Token[]; bonding: Token[]; migrated: Token[]; trending: Token[]; status: any } | null>(() => {
@@ -495,15 +496,26 @@ export function TerminalView() {
     <div className="text-white">
       <div>
         <div className="flex items-center justify-end gap-2 mb-4">
-          <HoldingsDrawer trigger={
+          {walletKey ? (
+            <HoldingsDrawer trigger={
+              <button
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
+                data-testid="button-portfolio"
+              >
+                <WalletIcon className="h-3.5 w-3.5" />
+                <span className="font-semibold">{`${walletKey.toString().slice(0,4)}…${walletKey.toString().slice(-4)}`}</span>
+              </button>
+            } />
+          ) : (
             <button
+              onClick={() => openWallet(true)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
               data-testid="button-portfolio"
             >
               <WalletIcon className="h-3.5 w-3.5" />
-              <span className="font-semibold">Portfolio</span>
+              <span className="font-semibold">Connect Wallet</span>
             </button>
-          } />
+          )}
           <span className={`text-[10px] px-2 py-1 rounded-full border ${
             status?.connected ? 'border-green-500/40 text-green-300 bg-green-500/10'
                               : 'border-yellow-500/40 text-yellow-300 bg-yellow-500/10'
@@ -872,15 +884,26 @@ export function TokenPage() {
             <img src={logoImage} alt="Get your SOL back!" className="h-10 w-auto" />
           </button>
           <div className="flex items-center gap-2">
-            <HoldingsDrawer trigger={
+            {publicKey ? (
+              <HoldingsDrawer trigger={
+                <button
+                  className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
+                  data-testid="button-portfolio"
+                >
+                  <WalletIcon className="h-4 w-4" />
+                  <span className="font-semibold">{shortAddr}</span>
+                </button>
+              } />
+            ) : (
               <button
+                onClick={() => setVisible(true)}
                 className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
                 data-testid="button-portfolio"
               >
                 <WalletIcon className="h-4 w-4" />
-                <span className="font-semibold">{publicKey ? shortAddr : 'Connect Wallet'}</span>
+                <span className="font-semibold">Connect Wallet</span>
               </button>
-            } />
+            )}
           </div>
         </div>
         <TokenContent mint={mint} onBack={() => navigate('/?tab=terminal')} />

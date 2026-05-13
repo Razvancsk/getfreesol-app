@@ -1,4 +1,5 @@
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
+import { useReownWallet } from '@/hooks/useReownWallet';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ interface LeaderboardEntry {
 
 export default function ProfilePage() {
   const { publicKey } = useWalletAdapter();
+  const { setVisible } = useReownWallet();
   const { toast } = useToast();
 
   const { data: stats, isLoading } = useQuery<UserStats>({
@@ -65,13 +67,19 @@ export default function ProfilePage() {
           <CardContent className="pt-6 text-center">
             <Wallet className="h-16 w-16 text-purple-400 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-white mb-2">Connect Your Wallet</h2>
-            <p className="text-purple-300 mb-4">Please connect your wallet to view your profile</p>
-            <Link href="/">
-              <Button className="bg-purple-600 hover:bg-purple-700">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Go Back
+            <p className="text-purple-300 mb-4">Connect once and stay connected across all pages.</p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => setVisible(true)} className="bg-purple-600 hover:bg-purple-700">
+                <Wallet className="mr-2 h-4 w-4" />
+                Connect Wallet
               </Button>
-            </Link>
+              <Link href="/">
+                <Button variant="outline" className="border-purple-500/40 text-purple-300 hover:bg-purple-900/40">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Go Back
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
