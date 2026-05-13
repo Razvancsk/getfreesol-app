@@ -1122,21 +1122,11 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                 {(() => {
                   const live: any = liveData?.live || {};
                   const tx = (Number(live.buys)||0) + (Number(live.sells)||0);
-                  const priceUsd = live.priceUsd ?? (info as any)?.usdPrice;
-                  const fmtP = (v?: number) => {
-                    if (!v) return '—';
-                    if (v < 0.000001) return `$${v.toExponential(2)}`;
-                    if (v < 0.001) return `$${v.toFixed(7)}`;
-                    if (v < 1) return `$${v.toFixed(5)}`;
-                    return `$${v.toFixed(4)}`;
-                  };
                   return [
-                    { label: 'PRICE', value: fmtP(priceUsd) },
                     { label: 'MARKET CAP', value: fmtUsd(live.marketCapUsd) },
                     { label: 'LIQUIDITY', value: fmtUsd(live.liquidityUsd) },
                     { label: 'VOLUME 24H', value: fmtUsd(live.volumeUsd) },
-                    { label: 'BUYS', value: live.buys > 0 ? String(live.buys) : '—' },
-                    { label: 'SELLS', value: live.sells > 0 ? String(live.sells) : '—' },
+                    { label: 'TXNS', value: tx > 0 ? String(tx) : '—' },
                   ];
                 })().map((s) => (
                   <div key={s.label} className="px-3 py-2.5 md:px-4 md:py-3 text-center min-w-0">
