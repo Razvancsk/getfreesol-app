@@ -626,12 +626,10 @@ export function TerminalView() {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className="font-bold text-white text-base tabular-nums">{fmtPriceUsd(cardPrice)}</div>
-                    {pct != null && Number.isFinite(pct) ? (
+                    {pct != null && Number.isFinite(pct) && (
                       <div className={`text-right text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
                         {pctUp ? '+' : ''}{(pct ?? 0).toFixed(2)}%
                       </div>
-                    ) : (
-                      <div className="text-gray-400 text-sm">—</div>
                     )}
                   </div>
                 </div>
