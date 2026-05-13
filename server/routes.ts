@@ -4,7 +4,7 @@ import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activ
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
 import { buildTradeTx as buildPumpTradeTx, validateTradeInput } from './pumpStream';
-import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders } from './gmgnService';
+import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity } from './gmgnService';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -12947,6 +12947,68 @@ Claimer: ${walletAddress}`;
       res.json({ traders });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'traders failed' });
+    }
+  });
+
+  app.get('/api/terminal/signals', async (req, res) => {
+    try {
+      const signals = await getGmgnSignals();
+      res.json({ signals });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'signals failed' });
+    }
+  });
+
+  app.get('/api/terminal/smart-money', async (req, res) => {
+    try {
+      const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+      const wallets = await getGmgnSmartMoney(limit);
+      res.json({ wallets });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'smart money failed' });
+    }
+  });
+
+  app.get('/api/terminal/kol', async (req, res) => {
+    try {
+      const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+      const wallets = await getGmgnKol(limit);
+      res.json({ wallets });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'kol failed' });
+    }
+  });
+
+  app.get('/api/terminal/wallet/:address/holdings', async (req, res) => {
+    try {
+      const address = String(req.params.address || '').trim();
+      if (!address) return res.status(400).json({ error: 'address required' });
+      const holdings = await getGmgnWalletHoldings(address);
+      res.json({ holdings });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'wallet holdings failed' });
+    }
+  });
+
+  app.get('/api/terminal/wallet/:address/stats', async (req, res) => {
+    try {
+      const address = String(req.params.address || '').trim();
+      if (!address) return res.status(400).json({ error: 'address required' });
+      const stats = await getGmgnWalletStats(address);
+      res.json({ stats });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'wallet stats failed' });
+    }
+  });
+
+  app.get('/api/terminal/wallet/:address/activity', async (req, res) => {
+    try {
+      const address = String(req.params.address || '').trim();
+      if (!address) return res.status(400).json({ error: 'address required' });
+      const activity = await getGmgnWalletActivity(address);
+      res.json({ activity });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'wallet activity failed' });
     }
   });
 

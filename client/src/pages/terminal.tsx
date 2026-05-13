@@ -11,11 +11,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings, Wallet as WalletIcon } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings, Wallet as WalletIcon, Bell, Users, Activity, BarChart2, Star } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 
-type FeedType = 'new' | 'bonding' | 'migrated' | 'trending';
+type FeedType = 'new' | 'bonding' | 'migrated' | 'trending' | 'signals' | 'smartmoney';
 
 type Token = {
   mint: string;
@@ -148,10 +148,12 @@ function fmtCount(n?: number): string {
 }
 
 const TABS: { id: FeedType; label: string; icon: any; sub: string }[] = [
-  { id: 'new',       label: 'New',           icon: Sparkles,    sub: 'Just launched' },
-  { id: 'bonding',   label: 'Bonding',       icon: Flame,       sub: 'Almost graduated' },
-  { id: 'migrated',  label: 'Graduated',     icon: Rocket,      sub: 'On open market' },
-  { id: 'trending',  label: 'Trending',      icon: TrendingUp,  sub: 'Hot right now' },
+  { id: 'new',        label: 'New',        icon: Sparkles,   sub: 'Just launched' },
+  { id: 'bonding',    label: 'Bonding',    icon: Flame,      sub: 'Almost graduated' },
+  { id: 'migrated',   label: 'Graduated',  icon: Rocket,     sub: 'On open market' },
+  { id: 'trending',   label: 'Trending',   icon: TrendingUp, sub: 'Hot right now' },
+  { id: 'signals',    label: 'Signals',    icon: Bell,       sub: 'SM buys & spikes' },
+  { id: 'smartmoney', label: 'Smart $',    icon: Star,       sub: 'Top wallets' },
 ];
 
 function ago(ts?: number) {
@@ -278,57 +280,136 @@ function HoldingsDrawer({ trigger }: { trigger: React.ReactNode }) {
   const { setVisible } = useWalletModal();
   const [, navigate] = useLocation();
   const [open, setOpen] = useState(false);
+  const [portfolioTab, setPortfolioTab] = useState<'holdings' | 'activity'>('holdings');
   const addr = publicKey?.toBase58();
-  const { data, isFetching, refetch } = useQuery<{ tokens: any[] }>({
-    queryKey: ['/api/wallet/all-tokens', addr],
+
+  const { data: holdingsData, isFetching: holdingsFetching } = useQuery<{ holdings: any[] }>({
+    queryKey: ['/api/terminal/wallet/holdings', addr],
     queryFn: async () => {
-      const r = await fetch(`/api/wallet/all-tokens?address=${addr}`);
+      const r = await fetch(`/api/terminal/wallet/${addr}/holdings`);
       if (!r.ok) throw new Error('holdings failed');
       return r.json();
     },
-    enabled: open && !!addr,
-    refetchInterval: open ? 15_000 : false,
+    enabled: open && !!addr && portfolioTab === 'holdings',
+    refetchInterval: open ? 30_000 : false,
   });
-  const SOL_MINT = 'So11111111111111111111111111111111111111112';
-  const tokens = (data?.tokens || []).filter((t) => t?.address && t.address !== SOL_MINT && (t.balance || 0) > 0);
+  const { data: statsData } = useQuery<{ stats: any }>({
+    queryKey: ['/api/terminal/wallet/stats', addr],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/wallet/${addr}/stats`);
+      if (!r.ok) throw new Error('stats failed');
+      return r.json();
+    },
+    enabled: open && !!addr,
+    staleTime: 60_000,
+  });
+  const { data: activityData, isFetching: activityFetching } = useQuery<{ activity: any[] }>({
+    queryKey: ['/api/terminal/wallet/activity', addr],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/wallet/${addr}/activity`);
+      if (!r.ok) throw new Error('activity failed');
+      return r.json();
+    },
+    enabled: open && !!addr && portfolioTab === 'activity',
+    staleTime: 30_000,
+  });
+
+  const holdings = holdingsData?.holdings || [];
+  const activity = activityData?.activity || [];
+  const stats = statsData?.stats;
+
   return (
-    <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (v && addr) refetch(); }}>
+    <Sheet open={open} onOpenChange={(v) => setOpen(v)}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent side="right" className="bg-gradient-to-b from-slate-900 via-purple-950 to-slate-900 border-purple-500/30 text-white w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="text-white">My Holdings</SheetTitle>
+          <SheetTitle className="text-white">My Portfolio</SheetTitle>
         </SheetHeader>
         {!publicKey && (
           <div className="mt-6 text-center">
-            <p className="text-white/70 text-sm mb-3">Connect your wallet to see holdings.</p>
+            <p className="text-white/70 text-sm mb-3">Connect your wallet to see portfolio.</p>
             <Button onClick={() => setVisible(true)} className="bg-purple-600 hover:bg-purple-700">Connect Wallet</Button>
           </div>
         )}
         {publicKey && (
-          <div className="mt-4 space-y-2">
-            {isFetching && tokens.length === 0 && <div className="text-white/50 text-sm text-center py-6">Loading…</div>}
-            {!isFetching && tokens.length === 0 && <div className="text-white/50 text-sm text-center py-6">No tokens found.</div>}
-            {tokens.map((t) => (
-              <button
-                key={t.address}
-                onClick={() => { setOpen(false); navigate(`/terminal/token/${t.address}`); }}
-                className="w-full flex items-center justify-between gap-3 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20 hover:bg-purple-800/40 transition text-left"
-                data-testid={`holding-${t.address}`}
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {t.logoURI ? (
-                    <img src={t.logoURI} alt="" className="w-9 h-9 rounded-full bg-black/30 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-purple-700/50 flex items-center justify-center text-xs font-bold">{(t.symbol || '?').slice(0, 2)}</div>
-                  )}
-                  <div className="min-w-0">
-                    <div className="text-white font-semibold text-sm truncate">{t.symbol || shortMint(t.address)}</div>
-                    <div className="text-white/60 text-xs tabular-nums">{Number(t.balance).toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+          <div className="mt-4 space-y-3">
+            {stats && (
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {[
+                  { label: '1D PnL', value: stats.profit1d, color: stats.profit1d >= 0 ? 'text-emerald-400' : 'text-red-400' },
+                  { label: '7D PnL', value: stats.profit7d, color: stats.profit7d >= 0 ? 'text-emerald-400' : 'text-red-400' },
+                  { label: 'Win Rate', value: null, text: stats.winRate > 0 ? `${Math.round(stats.winRate * 100)}%` : '—', color: 'text-white' },
+                ].map((s) => (
+                  <div key={s.label} className="bg-purple-900/40 rounded-lg p-2 border border-purple-500/20">
+                    <div className="text-white/50 text-[10px] uppercase tracking-wide">{s.label}</div>
+                    <div className={`font-bold text-sm mt-0.5 ${s.color}`}>
+                      {s.text ?? (s.value != null ? `${s.value >= 0 ? '+' : ''}${fmtUsd(s.value)}` : '—')}
+                    </div>
                   </div>
-                </div>
-                <div className="text-purple-300 text-xs font-medium px-3 py-1.5 rounded-md bg-purple-600/30 border border-purple-400/30">Sell</div>
-              </button>
-            ))}
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => setPortfolioTab('holdings')} className={`flex-1 py-1.5 rounded-lg text-sm font-semibold transition ${portfolioTab === 'holdings' ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60'}`}>Holdings</button>
+              <button onClick={() => setPortfolioTab('activity')} className={`flex-1 py-1.5 rounded-lg text-sm font-semibold transition ${portfolioTab === 'activity' ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60'}`}>Activity</button>
+            </div>
+
+            {portfolioTab === 'holdings' && (
+              <div className="space-y-2">
+                {holdingsFetching && holdings.length === 0 && <div className="text-white/50 text-sm text-center py-6">Loading…</div>}
+                {!holdingsFetching && holdings.length === 0 && <div className="text-white/50 text-sm text-center py-6">No holdings found.</div>}
+                {holdings.map((t) => (
+                  <button
+                    key={t.mint}
+                    onClick={() => { setOpen(false); navigate(`/terminal/token/${t.mint}`); }}
+                    className="w-full flex items-center justify-between gap-3 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20 hover:bg-purple-800/40 transition text-left"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {t.imageUri ? (
+                        <img src={t.imageUri} alt="" className="w-9 h-9 rounded-full bg-black/30 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-purple-700/50 flex items-center justify-center text-xs font-bold">{(t.symbol || '?').slice(0, 2)}</div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-white font-semibold text-sm truncate">{t.symbol || shortMint(t.mint)}</div>
+                        <div className="text-white/60 text-xs">{fmtUsd(t.usdValue)}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {t.unrealizedProfit != null && t.unrealizedProfit !== 0 && (
+                        <div className={`text-xs font-semibold ${t.unrealizedProfit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {t.unrealizedProfit > 0 ? '+' : ''}{fmtUsd(t.unrealizedProfit)}
+                        </div>
+                      )}
+                      <div className="text-white/40 text-xs">{t.profit !== 0 ? `${t.profit > 0 ? '+' : ''}${fmtUsd(t.profit)}` : ''}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {portfolioTab === 'activity' && (
+              <div className="space-y-2">
+                {activityFetching && activity.length === 0 && <div className="text-white/50 text-sm text-center py-6">Loading…</div>}
+                {!activityFetching && activity.length === 0 && <div className="text-white/50 text-sm text-center py-6">No recent activity.</div>}
+                {activity.map((a, i) => (
+                  <div key={`${a.signature}-${i}`} className="flex items-center gap-3 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20">
+                    <div className={`text-xs font-bold px-2 py-1 rounded ${a.type === 'buy' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                      {a.type?.toUpperCase() || 'TX'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white text-sm font-semibold truncate">{a.symbol || shortMint(a.mint)}</div>
+                      <div className="text-white/50 text-xs">{ago(a.timestamp)} · {fmtUsd(a.usdValue)}</div>
+                    </div>
+                    {a.signature && (
+                      <a href={`https://solscan.io/tx/${a.signature}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-white/30 hover:text-white">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </SheetContent>
@@ -342,10 +423,12 @@ export function TerminalView() {
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
   const [, navigate] = useLocation();
 
+  const isSpecialTab = tab === 'signals' || tab === 'smartmoney';
   const cacheKey = `terminal_feed_cache_${tab}`;
   const { data, isFetching } = useQuery<{ tokens: Token[]; status: any }>({
     queryKey: ['/api/terminal/feed', tab],
     queryFn: async () => {
+      if (isSpecialTab) return { tokens: [], status: null };
       const url = tab === 'trending'
         ? '/api/terminal/trending?limit=50'
         : `/api/terminal/feed?type=${tab}&limit=50`;
@@ -359,8 +442,10 @@ export function TerminalView() {
       } catch {}
       return json;
     },
-    refetchInterval: 30000,
+    refetchInterval: isSpecialTab ? false : 30000,
+    enabled: !isSpecialTab,
     initialData: () => {
+      if (isSpecialTab) return undefined;
       try {
         const raw = localStorage.getItem(cacheKey);
         return raw ? JSON.parse(raw) : undefined;
@@ -408,7 +493,7 @@ export function TerminalView() {
           </span>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = tab === t.id;
@@ -443,7 +528,10 @@ export function TerminalView() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[70vh] overflow-y-auto no-scrollbar">
+        {tab === 'signals' && <SignalsView />}
+        {tab === 'smartmoney' && <SmartMoneyView />}
+
+        {!isSpecialTab && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[70vh] overflow-y-auto no-scrollbar">
           {tokens.length === 0 && (
             <div className="px-4 py-16 text-center text-white/50 text-sm bg-purple-900/20 border border-white/10 rounded-2xl">
               {isFetching ? 'Loading feed…' : 'No tokens yet — waiting for stream events.'}
@@ -532,7 +620,7 @@ export function TerminalView() {
               </div>
             );
           })}
-        </div>
+        </div>}
 
       </div>
 
@@ -543,6 +631,145 @@ export function TerminalView() {
           onClose={() => setTradeFor(null)}
         />
       )}
+    </div>
+  );
+}
+
+const SIGNAL_COLORS: Record<number, string> = {
+  6: 'bg-orange-500/20 border-orange-500/40 text-orange-300',
+  7: 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300',
+  8: 'bg-blue-500/20 border-blue-500/40 text-blue-300',
+  11: 'bg-pink-500/20 border-pink-500/40 text-pink-300',
+  12: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
+  13: 'bg-purple-500/20 border-purple-500/40 text-purple-300',
+};
+
+function SignalsView() {
+  const [, navigate] = useLocation();
+  const { data, isFetching } = useQuery<{ signals: any[] }>({
+    queryKey: ['/api/terminal/signals'],
+    queryFn: async () => {
+      const r = await fetch('/api/terminal/signals');
+      if (!r.ok) throw new Error('signals failed');
+      return r.json();
+    },
+    refetchInterval: 30000,
+  });
+  const signals = data?.signals || [];
+  return (
+    <div className="max-h-[70vh] overflow-y-auto no-scrollbar space-y-2">
+      {isFetching && signals.length === 0 && (
+        <div className="text-center text-white/50 text-sm py-12">Loading signals…</div>
+      )}
+      {!isFetching && signals.length === 0 && (
+        <div className="text-center text-white/50 text-sm py-12">No signals yet.</div>
+      )}
+      {signals.map((s, i) => {
+        const color = SIGNAL_COLORS[s.signalType] || 'bg-purple-500/20 border-purple-500/40 text-purple-300';
+        return (
+          <div
+            key={`${s.mint}-${s.triggerAt}-${i}`}
+            onClick={() => navigate(`/terminal/token/${s.mint}`)}
+            className="flex items-center gap-3 p-3 rounded-xl bg-purple-900/20 border border-purple-500/20 hover:border-purple-500/40 cursor-pointer transition-all"
+          >
+            {s.imageUri ? (
+              <img src={s.imageUri} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-purple-700/50 flex-shrink-0 flex items-center justify-center text-xs font-bold">
+                {(s.symbol || '?').slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-white text-sm">{s.symbol || s.name || s.mint.slice(0, 8)}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${color}`}>{s.label}</span>
+                {s.times > 1 && <span className="text-[10px] text-white/40">×{s.times}</span>}
+              </div>
+              <div className="text-xs text-white/50 mt-0.5 flex gap-3">
+                <span>MCap {fmtUsd(s.currentMcap)}</span>
+                {s.liquidity > 0 && <span>Liq {fmtUsd(s.liquidity)}</span>}
+                {s.holderCount > 0 && <span>{fmtCount(s.holderCount)} holders</span>}
+              </div>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <div className="text-white/40 text-xs">{ago(s.triggerAt)}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SmartMoneyView() {
+  const [view, setView] = useState<'sm' | 'kol'>('sm');
+  const { data: smData, isFetching: smFetching } = useQuery<{ wallets: any[] }>({
+    queryKey: ['/api/terminal/smart-money'],
+    queryFn: async () => {
+      const r = await fetch('/api/terminal/smart-money?limit=30');
+      if (!r.ok) throw new Error('failed');
+      return r.json();
+    },
+    staleTime: 120_000,
+  });
+  const { data: kolData, isFetching: kolFetching } = useQuery<{ wallets: any[] }>({
+    queryKey: ['/api/terminal/kol'],
+    queryFn: async () => {
+      const r = await fetch('/api/terminal/kol?limit=30');
+      if (!r.ok) throw new Error('failed');
+      return r.json();
+    },
+    staleTime: 120_000,
+  });
+  const wallets = view === 'sm' ? (smData?.wallets || []) : (kolData?.wallets || []);
+  const loading = view === 'sm' ? smFetching : kolFetching;
+  return (
+    <div>
+      <div className="flex gap-2 mb-3">
+        <button
+          onClick={() => setView('sm')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${view === 'sm' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
+        >Smart Money</button>
+        <button
+          onClick={() => setView('kol')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${view === 'kol' ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
+        >KOL Wallets</button>
+      </div>
+      <div className="max-h-[65vh] overflow-y-auto no-scrollbar space-y-2">
+        {loading && wallets.length === 0 && <div className="text-center text-white/50 text-sm py-12">Loading wallets…</div>}
+        {!loading && wallets.length === 0 && <div className="text-center text-white/50 text-sm py-12">No wallets found.</div>}
+        {wallets.map((w, i) => (
+          <div key={w.address || i} className="flex items-center gap-3 p-3 rounded-xl bg-purple-900/20 border border-purple-500/20 hover:border-purple-500/40 transition">
+            {w.avatar ? (
+              <img src={w.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-purple-700/50 flex-shrink-0 flex items-center justify-center text-sm font-bold">
+                {(w.name || w.address.slice(0, 2)).slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm truncate">{w.name || `${w.address.slice(0, 6)}…${w.address.slice(-4)}`}</span>
+                {view === 'sm' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">SM</span>}
+                {view === 'kol' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">KOL</span>}
+              </div>
+              <div className="text-xs text-white/50 mt-0.5 flex gap-3">
+                {w.profit7d !== 0 && <span className={w.profit7d > 0 ? 'text-emerald-400' : 'text-red-400'}>7d {w.profit7d > 0 ? '+' : ''}{fmtUsd(w.profit7d)}</span>}
+                {w.winRate > 0 && <span>{Math.round(w.winRate * 100)}% win</span>}
+                {w.followerCount > 0 && <span>{fmtCount(w.followerCount)} followers</span>}
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              {w.twitter && (
+                <a href={w.twitter} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-white/50 hover:text-white text-xs">X</a>
+              )}
+              <a href={`https://solscan.io/account/${w.address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-white/30 hover:text-white text-[10px] font-mono">
+                {w.address.slice(0, 4)}…
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -626,7 +853,7 @@ export function TokenPage() {
 
 export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => void }) {
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<'chart' | 'info' | 'holders'>('chart');
+  const [tab, setTab] = useState<'chart' | 'info' | 'holders' | 'traders'>('chart');
   const [tradeFor, setTradeFor] = useState<'buy' | 'sell' | null>(null);
 
   const { data: info, isLoading } = useQuery<JupMint>({
@@ -659,6 +886,16 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
       return r.json();
     },
     enabled: tab === 'holders' && !!mint,
+    staleTime: 60_000,
+  });
+  const { data: tradersData, isFetching: tradersLoading } = useQuery<{ traders: any[] }>({
+    queryKey: ['/api/terminal/traders', mint],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/traders/${mint}`);
+      if (!r.ok) throw new Error('traders failed');
+      return r.json();
+    },
+    enabled: tab === 'traders' && !!mint,
     staleTime: 60_000,
   });
 
@@ -771,8 +1008,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           </div>
         </div>
 
-        <div className="flex gap-2 mb-3">
-          {(['chart', 'info', 'holders'] as const).map((id) => (
+        <div className="flex gap-2 mb-3 flex-wrap">
+          {(['chart', 'info', 'holders', 'traders'] as const).map((id) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -917,6 +1154,41 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           </div>
         )}
       </div>
+
+        {tab === 'traders' && (
+          <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 p-4">
+            <h3 className="text-white font-semibold mb-3">Top Traders (by profit)</h3>
+            {tradersLoading && <div className="text-center text-white/50 text-sm py-6">Loading traders…</div>}
+            {!tradersLoading && (tradersData?.traders?.length ?? 0) === 0 && (
+              <div className="text-center text-white/50 text-sm py-6">No traders found.</div>
+            )}
+            <div className="divide-y divide-white/5">
+              {(tradersData?.traders || []).map((h: any) => {
+                const tags = h.label ? h.label.split(',').filter(Boolean) : [];
+                return (
+                  <a
+                    key={h.address}
+                    href={`https://solscan.io/account/${h.address}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between py-3 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="font-mono text-xs text-purple-300 truncate">
+                        {h.address.slice(0, 6)}…{h.address.slice(-4)}
+                      </span>
+                      {tags.includes('smart_degen') && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SM</span>}
+                      {tags.includes('renowned') && <span className="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">KOL</span>}
+                    </div>
+                    <div className={`text-xs tabular-nums font-semibold ${(h.profit || 0) > 0 ? 'text-emerald-400' : (h.profit || 0) < 0 ? 'text-red-400' : 'text-white/50'}`}>
+                      {(h.profit || 0) > 0 ? '+' : ''}{fmtUsd(h.profit || 0)}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
       {tradeFor && (
         <TradeDialog token={tokenForTrade} action={tradeFor} onClose={() => setTradeFor(null)} />

@@ -228,3 +228,136 @@ export async function getTopHolders(mint: string): Promise<any[]> {
     }));
   } catch { return []; }
 }
+
+const SIGNAL_LABEL: Record<number, string> = {
+  6: 'Price Spike', 7: 'New ATH', 8: 'Key Level', 11: 'CTO', 12: 'SM Buy', 13: 'Platform Call',
+};
+
+export async function getSignals(): Promise<any[]> {
+  try {
+    const data: any = await getClient().getTokenSignalV2('sol', [
+      { signal_type: [12, 13, 6, 7, 11] },
+    ]);
+    const arr: any[] = Array.isArray(data) ? data : (data?.list || []);
+    return arr.slice(0, 50).map((s: any) => ({
+      mint: s.token_address || '',
+      signalType: Number(s.signal_type),
+      label: SIGNAL_LABEL[Number(s.signal_type)] || `Signal ${s.signal_type}`,
+      triggerAt: s.trigger_at ? Number(s.trigger_at) * 1000 : Date.now(),
+      triggerMcap: Number(s.trigger_mc) || 0,
+      currentMcap: Number(s.market_cap) || 0,
+      ath: Number(s.ath) || 0,
+      times: Number(s.signal_times) || 1,
+      liquidity: Number(s.cur_data?.liquidity) || 0,
+      holderCount: Number(s.cur_data?.holder_count) || 0,
+      name: (s.data as any)?.name || '',
+      symbol: (s.data as any)?.symbol || '',
+      imageUri: (s.data as any)?.logo || '',
+    }));
+  } catch (e: any) {
+    console.error('[gmgn] signals fetch failed:', e.message);
+    return [];
+  }
+}
+
+export async function getSmartMoneyWallets(limit = 20): Promise<any[]> {
+  try {
+    const data: any = await getClient().getSmartMoney('sol', limit);
+    const arr: any[] = Array.isArray(data) ? data : (data?.list || data?.wallets || []);
+    return arr.map((w: any) => ({
+      address: w.address || w.wallet_address || '',
+      name: w.name || w.twitter_name || '',
+      twitter: w.twitter_username ? `https://x.com/${w.twitter_username}` : '',
+      avatar: w.avatar || '',
+      tags: Array.isArray(w.tags) ? w.tags : [],
+      profit7d: Number(w.realized_profit_7d) || 0,
+      profit30d: Number(w.realized_profit_30d) || 0,
+      winRate: Number(w.win_rate) || 0,
+      txCount: Number(w.buy_30d || w.tx_count) || 0,
+    }));
+  } catch (e: any) {
+    console.error('[gmgn] smart money fetch failed:', e.message);
+    return [];
+  }
+}
+
+export async function getKolWallets(limit = 20): Promise<any[]> {
+  try {
+    const data: any = await getClient().getKol('sol', limit);
+    const arr: any[] = Array.isArray(data) ? data : (data?.list || data?.wallets || []);
+    return arr.map((w: any) => ({
+      address: w.address || w.wallet_address || '',
+      name: w.name || w.twitter_name || '',
+      twitter: w.twitter_username ? `https://x.com/${w.twitter_username}` : '',
+      avatar: w.avatar || '',
+      tags: Array.isArray(w.tags) ? w.tags : [],
+      profit7d: Number(w.realized_profit_7d) || 0,
+      followerCount: Number(w.follower_count) || 0,
+    }));
+  } catch (e: any) {
+    console.error('[gmgn] kol fetch failed:', e.message);
+    return [];
+  }
+}
+
+export async function getWalletHoldings(address: string): Promise<any[]> {
+  try {
+    const data: any = await getClient().getWalletHoldings('sol', address, { limit: 50 });
+    const arr: any[] = data?.holdings || (Array.isArray(data) ? data : []);
+    return arr.map((h: any) => ({
+      mint: h.token?.address || h.address || '',
+      name: h.token?.name || '',
+      symbol: h.token?.symbol || '',
+      imageUri: h.token?.logo || '',
+      balance: Number(h.balance) || 0,
+      usdValue: Number(h.usd_value) || 0,
+      priceUsd: Number(h.token?.price) || 0,
+      profit: Number(h.realized_profit) || 0,
+      unrealizedProfit: Number(h.unrealized_profit) || 0,
+      avgCost: Number(h.avg_cost) || 0,
+    }));
+  } catch (e: any) {
+    console.error('[gmgn] wallet holdings fetch failed:', e.message);
+    return [];
+  }
+}
+
+export async function getWalletStats(address: string): Promise<any> {
+  try {
+    const data: any = await getClient().getWalletStats('sol', [address], '30d');
+    const s = Array.isArray(data) ? data[0] : (data?.stats || data);
+    if (!s) return null;
+    return {
+      address,
+      profit1d: Number(s.realized_profit_1d) || 0,
+      profit7d: Number(s.realized_profit_7d) || 0,
+      profit30d: Number(s.realized_profit_30d) || 0,
+      winRate: Number(s.win_rate) || 0,
+      totalBuys: Number(s.buy_30d) || 0,
+      totalSells: Number(s.sell_30d) || 0,
+    };
+  } catch (e: any) {
+    console.error('[gmgn] wallet stats fetch failed:', e.message);
+    return null;
+  }
+}
+
+export async function getWalletActivity(address: string): Promise<any[]> {
+  try {
+    const data: any = await getClient().getWalletActivity('sol', address, { limit: 20 });
+    const arr: any[] = data?.activities || (Array.isArray(data) ? data : []);
+    return arr.map((a: any) => ({
+      signature: a.tx_hash || '',
+      type: a.event_type || '',
+      mint: a.token?.address || '',
+      symbol: a.token?.symbol || '',
+      imageUri: a.token?.logo || '',
+      amount: Number(a.token_amount) || 0,
+      usdValue: Number(a.cost_usd) || 0,
+      timestamp: a.timestamp ? Number(a.timestamp) * 1000 : 0,
+    }));
+  } catch (e: any) {
+    console.error('[gmgn] wallet activity fetch failed:', e.message);
+    return [];
+  }
+}
