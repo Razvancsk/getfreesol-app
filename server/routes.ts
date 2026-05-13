@@ -13191,10 +13191,6 @@ Claimer: ${walletAddress}`;
       if (!v.ok) return res.status(400).json({ error: v.error });
       let resolvedPool: string | undefined = typeof pool === 'string' && pool ? pool : undefined;
       if (!resolvedPool) {
-        const liveT: any = getPumpTokenLive(String(mint));
-        if (liveT?.pool) resolvedPool = liveT.pool;
-      }
-      if (!resolvedPool) {
         try {
           const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${mint}`);
           if (r.ok) {

@@ -1518,11 +1518,20 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
   }, [publicKey, busy, token?.mint, balRefresh]);
 
   const [jupQuote, setJupQuote] = useState<{ outRaw: number; loading: boolean } | null>(null);
+  const [solUsdLocal, setSolUsdLocal] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/terminal/jup-price/So11111111111111111111111111111111111111112')
+      .then(r => r.json())
+      .then(d => { if (d?.price) setSolUsdLocal(Number(d.price)); })
+      .catch(() => {});
+  }, []);
 
   const live: any = token || {};
   const STANDARD_SUPPLY = 1_000_000_000;
-  const priceSol = (live.priceUsd && live.solUsd)
-    ? Number(live.priceUsd) / Number(live.solUsd)
+  const resolvedSolUsd = Number(live.solUsd) || solUsdLocal || null;
+  const priceSol = (live.priceUsd && resolvedSolUsd)
+    ? Number(live.priceUsd) / resolvedSolUsd
     : (live.priceSol ?? (live.marketCapSol ? live.marketCapSol / STANDARD_SUPPLY : undefined));
   const sym = (live.symbol || 'TOKEN').toString().slice(0, 8);
 
