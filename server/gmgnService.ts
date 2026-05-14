@@ -626,24 +626,25 @@ export async function getTokenRecentTrades(mint: string): Promise<any[]> {
       limit: 30, orderby: 'last_active_timestamp', direction: 'desc',
     });
     const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
-    if (arr.length > 0) console.log('[gmgn recent-trades] raw entry[0]:', JSON.stringify(arr[0]));
-    return arr.map((h: any) => {
-      const tt = h.token_transfer || {};
-      const rawType: string = tt.event_type || tt.type || '';
-      const type = rawType.includes('sell') ? 'sell' : 'buy';
-      const lastActiveTs = h.last_active_timestamp ? Number(h.last_active_timestamp) * 1000 : 0;
-      return {
-        walletAddress: h.address || '',
-        walletName: h.name || h.twitter_name || '',
-        tags: Array.isArray(h.tags) ? h.tags : (h.tags ? [h.tags] : []),
-        type,
-        usdValue: Number(tt.cost_usd ?? tt.usd_value ?? 0),
-        price: Number(tt.price ?? 0),
-        tokenAmount: Number(tt.token_amount ?? tt.amount ?? 0),
-        timestamp: lastActiveTs,
-        signature: tt.tx_hash || tt.signature || '',
-      };
-    });
+    return arr
+      .filter((h: any) => h.token_transfer && (Number(h.token_transfer.cost_usd ?? h.token_transfer.usd_value ?? 0) > 0 || Number(h.token_transfer.token_amount ?? h.token_transfer.amount ?? 0) > 0))
+      .map((h: any) => {
+        const tt = h.token_transfer;
+        const rawType: string = tt.event_type || tt.type || '';
+        const type = rawType.includes('sell') ? 'sell' : 'buy';
+        const lastActiveTs = h.last_active_timestamp ? Number(h.last_active_timestamp) * 1000 : 0;
+        return {
+          walletAddress: h.address || '',
+          walletName: h.name || h.twitter_name || '',
+          tags: Array.isArray(h.tags) ? h.tags : (h.tags ? [h.tags] : []),
+          type,
+          usdValue: Number(tt.cost_usd ?? tt.usd_value ?? 0),
+          price: Number(tt.price ?? 0),
+          tokenAmount: Number(tt.token_amount ?? tt.amount ?? 0),
+          timestamp: lastActiveTs,
+          signature: tt.tx_hash || tt.signature || '',
+        };
+      });
   } catch (e: any) {
     console.error('[gmgn] token recent trades failed:', e.message);
     return [];

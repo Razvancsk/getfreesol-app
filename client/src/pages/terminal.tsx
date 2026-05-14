@@ -1326,7 +1326,11 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           }
         }
         if (newEntries.length > 0) {
-          setLiveTrades(prev => [...newEntries, ...prev].slice(0, 80));
+          setLiveTrades(prev =>
+            [...newEntries, ...prev]
+              .sort((a, b) => b.timestamp - a.timestamp)
+              .slice(0, 80)
+          );
         }
       } catch { /* ignore */ } finally {
         if (!cancelled) setTradesLoading(false);

@@ -13120,7 +13120,6 @@ Claimer: ${walletAddress}`;
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
       const trades = await getGmgnTokenRecentTrades(mint);
-      if (trades.length > 0) console.log('[token-trades] sample:', JSON.stringify(trades[0]));
       res.json({ trades });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'token-trades failed' });
