@@ -626,16 +626,12 @@ export async function getTokenRecentTrades(mint: string): Promise<any[]> {
       limit: 30, orderby: 'last_active_timestamp', direction: 'desc',
     });
     const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
-    // Log all token_transfer fields so we can see exact field names for type + signature
-    arr.slice(0, 5).forEach((h: any, i: number) => {
-      console.log(`[gmgn trades] entry[${i}] tt=`, JSON.stringify(h.token_transfer), 'last_active_ts=', h.last_active_timestamp);
-    });
     return arr
       .filter((h: any) => h.token_transfer && (Number(h.token_transfer.cost_usd ?? h.token_transfer.usd_value ?? 0) > 0 || Number(h.token_transfer.token_amount ?? h.token_transfer.amount ?? 0) > 0))
       .map((h: any) => {
         const tt = h.token_transfer;
         const rawType: string = (tt.event_type || tt.type || tt.side || '').toString().toLowerCase();
-        const type = rawType.includes('sell') || rawType === 's' || rawType === '2' || rawType === 'out' ? 'sell' : 'buy';
+        const type = rawType.includes('sell') || rawType.includes('transfer_out') || rawType === 'out' || rawType === 's' || rawType === '2' ? 'sell' : 'buy';
         const lastActiveTs = h.last_active_timestamp ? Number(h.last_active_timestamp) * 1000 : 0;
         return {
           walletAddress: h.address || '',
