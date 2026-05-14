@@ -213,12 +213,30 @@ async function poll() {
       const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
 
+      // Log raw fields from first bonding token so we can see the actual field names
+      if (bondArr.length > 0) {
+        const sample = bondArr[0];
+        console.log('[gmgn] bonding sample keys:', Object.keys(sample).join(', '));
+        console.log('[gmgn] bonding sample progress fields:', {
+          launchpad_progress: sample.launchpad_progress,
+          progress: sample.progress,
+          pump_progress: sample.pump_progress,
+          bonding_curve_progress: sample.bonding_curve_progress,
+          completion: sample.completion,
+          percent: sample.percent,
+        });
+      }
+
       // Extract only what GMGN is used for: mint address + bondingPct + launchpad name
       const bondMints = bondArr
         .map((t: any) => ({
           mint: t.address || '',
           bondingPct: t.launchpad_progress != null ? Number(t.launchpad_progress)
-            : t.progress != null ? Number(t.progress) : undefined,
+            : t.progress != null ? Number(t.progress)
+            : t.pump_progress != null ? Number(t.pump_progress)
+            : t.bonding_curve_progress != null ? Number(t.bonding_curve_progress)
+            : t.completion != null ? Number(t.completion)
+            : undefined,
           launchpad: t.launchpad_platform || t.launchpad || 'pump.fun',
         }))
         .filter(b => b.mint);
