@@ -80,10 +80,37 @@ function colorFor(s: string) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
+// Module-level cache: mint → fetched image URL (or '' if not found), persists across re-renders
+const _imgCache = new Map<string, string>();
+
 function TokenAvatar({ token, bondPct, migrated, size = 92 }: { token: Token; bondPct: number; migrated: boolean; size?: number }) {
   const [failed, setFailed] = useState(false);
+  const [fetchedUri, setFetchedUri] = useState<string>(() => _imgCache.get(token.mint) ?? '');
+
+  // After 1s without an imageUri, fetch from token info endpoint (once per mint)
+  useEffect(() => {
+    if (token.imageUri || fetchedUri || _imgCache.has(token.mint)) return;
+    const timer = setTimeout(() => {
+      fetch(`/api/terminal/token/${token.mint}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          const uri: string = d?.icon || d?.imageUri || '';
+          _imgCache.set(token.mint, uri);
+          if (uri) setFetchedUri(uri);
+        })
+        .catch(() => { _imgCache.set(token.mint, ''); });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [token.mint, token.imageUri, fetchedUri]);
+
+  // When SSE feed later provides the imageUri, clear any fetch error so it shows
+  useEffect(() => {
+    if (token.imageUri && failed) setFailed(false);
+  }, [token.imageUri]);
+
   const color = colorFor(token.mint);
-  const showImg = token.imageUri && !failed;
+  const effectiveUri = token.imageUri || fetchedUri;
+  const showImg = !!effectiveUri && !failed;
   const SIZE = size;
   const STROKE = 4;
   const GAP = STROKE + 3;
@@ -122,7 +149,7 @@ function TokenAvatar({ token, bondPct, migrated, size = 92 }: { token: Token; bo
       >
         {showImg ? (
           <img
-            src={token.imageUri}
+            src={effectiveUri}
             alt={`${token.symbol} logo`}
             className="block w-full h-full rounded-xl object-cover"
             loading="eager"
