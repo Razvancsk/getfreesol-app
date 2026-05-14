@@ -126,10 +126,15 @@ function TokenAvatar({ token, bondPct, migrated, size = 92 }: { token: Token; bo
             src={token.imageUri}
             alt={`${token.symbol} logo`}
             className="block w-full h-full rounded-xl object-cover"
+            loading="eager"
+            fetchPriority="high"
             onError={() => setFailed(true)}
           />
         ) : (
-          <div className="w-full h-full rounded-xl bg-white/5" />
+          <div className={`w-full h-full rounded-xl ${color} flex items-center justify-center text-white font-bold`}
+            style={{ fontSize: Math.round(size * 0.28) }}>
+            {initials}
+          </div>
         )}
       </div>
       {pct > 0 && (

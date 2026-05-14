@@ -173,7 +173,7 @@ export function startGmgnService() {
   }
   console.log('[gmgn] Starting GMGN service (cooperation API via OpenApiClient)...');
   poll();
-  pollInterval = setInterval(poll, 10000);
+  pollInterval = setInterval(poll, 5000);
 }
 
 export function getFeed(type: 'new' | 'bonding' | 'migrated', limit: number): GmgnToken[] {
