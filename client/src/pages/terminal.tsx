@@ -701,6 +701,51 @@ const ALL_LAUNCHPADS: LP[] = [
   { id: 'revshare',  label: 'RevShare',   color: '#34D399', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#34D399"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2c.8 0 1.5.2 2.2.5L4.5 9.2A5 5 0 0 1 8 3zm0 10c-.8 0-1.5-.2-2.2-.5l5.7-5.7A5 5 0 0 1 8 13z"/></svg> },
 ];
 
+function findLaunchpad(tag: string): LP | undefined {
+  if (!tag) return undefined;
+  const lp = tag.toLowerCase();
+  if (lp === 'pump.fun' || lp.includes('pump_agent')) return ALL_LAUNCHPADS.find(x => x.id === 'pump');
+  if (lp === 'pump_amm') return ALL_LAUNCHPADS.find(x => x.id === 'pump_amm');
+  if (lp.includes('letsbonk')) return ALL_LAUNCHPADS.find(x => x.id === 'letsbonk');
+  if (lp.includes('believe')) return ALL_LAUNCHPADS.find(x => x.id === 'believe');
+  if (lp.includes('meteora') || lp === 'met-dbc' || lp.startsWith('met-')) return ALL_LAUNCHPADS.find(x => x.id === 'meteora');
+  if (lp.includes('mayhem')) return ALL_LAUNCHPADS.find(x => x.id === 'mayhem');
+  if (lp.includes('bonker')) return ALL_LAUNCHPADS.find(x => x.id === 'bonkers');
+  if (lp.includes('bag')) return ALL_LAUNCHPADS.find(x => x.id === 'bags');
+  if (lp.includes('memoo')) return ALL_LAUNCHPADS.find(x => x.id === 'memoo');
+  if (lp.includes('liquid')) return ALL_LAUNCHPADS.find(x => x.id === 'liquid');
+  if (lp.includes('bankr')) return ALL_LAUNCHPADS.find(x => x.id === 'bankr');
+  if (lp.includes('zora')) return ALL_LAUNCHPADS.find(x => x.id === 'zora');
+  if (lp.includes('surge')) return ALL_LAUNCHPADS.find(x => x.id === 'surge');
+  if (lp.includes('anon')) return ALL_LAUNCHPADS.find(x => x.id === 'anoncoin');
+  if (lp.includes('moonshot')) return ALL_LAUNCHPADS.find(x => x.id === 'moonshot');
+  if (lp.includes('moonit')) return ALL_LAUNCHPADS.find(x => x.id === 'moonit');
+  if (lp.includes('wen')) return ALL_LAUNCHPADS.find(x => x.id === 'wendotdev');
+  if (lp.includes('heaven')) return ALL_LAUNCHPADS.find(x => x.id === 'heaven');
+  if (lp.includes('sugar')) return ALL_LAUNCHPADS.find(x => x.id === 'sugar');
+  if (lp.includes('token_mill')) return ALL_LAUNCHPADS.find(x => x.id === 'token_mill');
+  if (lp === 'trendsfun' || lp === 'trends100') return ALL_LAUNCHPADS.find(x => x.id === 'trends');
+  if (lp === 'trends_fun' || lp === 'trends.fun') return ALL_LAUNCHPADS.find(x => x.id === 'trends_fun');
+  if (lp.includes('studio') || lp.includes('jup_studio') || lp.includes('jup-studio')) return ALL_LAUNCHPADS.find(x => x.id === 'studio');
+  if (lp.includes('boop')) return ALL_LAUNCHPADS.find(x => x.id === 'boop');
+  if (lp.includes('xstock')) return ALL_LAUNCHPADS.find(x => x.id === 'xstocks');
+  if (lp.includes('launchlab')) return ALL_LAUNCHPADS.find(x => x.id === 'launchlab');
+  if (lp.includes('ray')) return ALL_LAUNCHPADS.find(x => x.id === 'raydium');
+  if (lp.includes('orca')) return ALL_LAUNCHPADS.find(x => x.id === 'orca');
+  if (lp.includes('america')) return ALL_LAUNCHPADS.find(x => x.id === 'america.fun');
+  if (lp.includes('metadao') || lp.includes('meta-dao')) return ALL_LAUNCHPADS.find(x => x.id === 'metadao');
+  if (lp.includes('easya')) return ALL_LAUNCHPADS.find(x => x.id === 'easya-kickstart');
+  if (lp.includes('printr')) return ALL_LAUNCHPADS.find(x => x.id === 'printr');
+  if (lp.includes('cyrene')) return ALL_LAUNCHPADS.find(x => x.id === 'cyreneai');
+  if (lp.includes('daos')) return ALL_LAUNCHPADS.find(x => x.id === 'daos.fun');
+  if (lp.includes('science')) return ALL_LAUNCHPADS.find(x => x.id === 'pump.science');
+  if (lp.includes('soar')) return ALL_LAUNCHPADS.find(x => x.id === 'soar');
+  if (lp.includes('coined') || lp.includes('nova')) return ALL_LAUNCHPADS.find(x => x.id === 'coined.wtf');
+  if (lp.includes('orynth')) return ALL_LAUNCHPADS.find(x => x.id === 'orynth');
+  if (lp.includes('revshare')) return ALL_LAUNCHPADS.find(x => x.id === 'revshare');
+  return undefined;
+}
+
 export function TerminalView() {
   const [tab, setTab] = useState<FeedType>('new');
   const [search, setSearch] = useState('');
@@ -1118,25 +1163,39 @@ export function TerminalView() {
                   </div>
                 </div>
                 {/* Badges */}
-                {((t.smartDegens ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3) && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {(t.smartDegens ?? 0) > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">
-                        {t.smartDegens} SM
-                      </span>
-                    )}
-                    {(t.renownedCount ?? 0) > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">
-                        {t.renownedCount} KOL
-                      </span>
-                    )}
-                    {(t.rugRatio ?? 0) > 0.3 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 font-semibold">
-                        RUG {Math.round((t.rugRatio ?? 0) * 100)}%
-                      </span>
-                    )}
-                  </div>
-                )}
+                {(() => {
+                  const lpInfo = t.launchpad ? findLaunchpad(t.launchpad) : undefined;
+                  const hasBadge = lpInfo || (t.smartDegens ?? 0) > 0 || (t.renownedCount ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3;
+                  if (!hasBadge) return null;
+                  return (
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      {lpInfo && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold"
+                          style={{ color: lpInfo.color, backgroundColor: `${lpInfo.color}18`, border: `1px solid ${lpInfo.color}50` }}
+                        >
+                          {lpInfo.icon}
+                          {lpInfo.label}
+                        </span>
+                      )}
+                      {(t.smartDegens ?? 0) > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">
+                          {t.smartDegens} SM
+                        </span>
+                      )}
+                      {(t.renownedCount ?? 0) > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">
+                          {t.renownedCount} KOL
+                        </span>
+                      )}
+                      {(t.rugRatio ?? 0) > 0.3 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 font-semibold">
+                          RUG {Math.round((t.rugRatio ?? 0) * 100)}%
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
               </div>
             );
