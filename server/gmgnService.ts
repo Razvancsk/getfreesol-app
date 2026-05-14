@@ -96,50 +96,41 @@ function mapToken(t: any): GmgnToken {
   };
 }
 
-// Fetch missing token images from pump.fun, update cache, re-push SSE
-function enrichImagesAsync(lists: ('new' | 'bonding' | 'migrated')[]) {
-  const missing: GmgnToken[] = [];
-  for (const key of lists) {
-    for (const t of cache[key]) {
-      if (!t.imageUri && !imageCache.has(t.mint)) missing.push(t);
-    }
-  }
-  if (!missing.length) return;
-
-  Promise.allSettled(missing.map(async (t) => {
-    try {
-      const r = await fetch(`https://frontend-api.pump.fun/coins/${t.mint}`, {
-        signal: AbortSignal.timeout(4000),
-        headers: { 'Accept': 'application/json' },
-      });
-      if (!r.ok) return;
-      const d: any = await r.json();
-      const img: string = d.image_uri || d.image || '';
-      if (img) imageCache.set(t.mint, img);
-    } catch {}
-  })).then(() => {
-    // Apply fetched images and notify SSE if anything changed
-    let changed = false;
-    for (const key of lists) {
-      cache[key] = cache[key].map(t => {
-        if (!t.imageUri && imageCache.has(t.mint)) {
-          changed = true;
-          return { ...t, imageUri: imageCache.get(t.mint)! };
-        }
-        return t;
-      });
-    }
-    if (changed) notifySse();
+// Apply already-known images from cache, and store any new images we see
+function applyImageCache(tokens: GmgnToken[]): GmgnToken[] {
+  return tokens.map(t => {
+    if (t.imageUri) { imageCache.set(t.mint, t.imageUri); return t; }
+    if (imageCache.has(t.mint)) return { ...t, imageUri: imageCache.get(t.mint)! };
+    return t;
   });
 }
 
-// Apply already-cached images to freshly mapped tokens
-function applyImageCache(tokens: GmgnToken[]): GmgnToken[] {
-  return tokens.map(t => {
-    if (!t.imageUri && imageCache.has(t.mint)) return { ...t, imageUri: imageCache.get(t.mint)! };
-    if (t.imageUri) imageCache.set(t.mint, t.imageUri);
-    return t;
-  });
+// Fetch missing images from pump.fun, waiting up to timeoutMs before returning
+async function waitForImages(tokens: GmgnToken[], timeoutMs: number): Promise<GmgnToken[]> {
+  const missing = tokens.filter(t => !t.imageUri);
+  if (!missing.length) return tokens;
+
+  await Promise.race([
+    Promise.allSettled(missing.map(async (t) => {
+      try {
+        const r = await fetch(`https://frontend-api.pump.fun/coins/${t.mint}`, {
+          signal: AbortSignal.timeout(timeoutMs - 100),
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!r.ok) return;
+        const d: any = await r.json();
+        const img: string = d.image_uri || d.image || '';
+        if (img) imageCache.set(t.mint, img);
+      } catch {}
+    })),
+    new Promise<void>(resolve => setTimeout(resolve, timeoutMs)),
+  ]);
+
+  return tokens.map(t =>
+    !t.imageUri && imageCache.has(t.mint)
+      ? { ...t, imageUri: imageCache.get(t.mint)! }
+      : t
+  );
 }
 
 let trendingTick = 0;
@@ -154,12 +145,18 @@ async function poll() {
       const newArr: any[] = data?.new_creation || [];
       const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
-      if (newArr.length) { cache.new = applyImageCache(newArr.map(mapToken).filter(t => t.mint)); }
-      if (bondArr.length) { cache.bonding = applyImageCache(bondArr.map(mapToken).filter(t => t.mint)); }
-      if (migArr.length) { cache.migrated = applyImageCache(migArr.map(mapToken).filter(t => t.mint)); }
+
+      // Map + apply cache, then wait for any still-missing images before SSE push
+      const [newTokens, bondTokens, migTokens] = await Promise.all([
+        newArr.length ? waitForImages(applyImageCache(newArr.map(mapToken).filter(t => t.mint)), 1500) : Promise.resolve(cache.new),
+        bondArr.length ? waitForImages(applyImageCache(bondArr.map(mapToken).filter(t => t.mint)), 1200) : Promise.resolve(cache.bonding),
+        migArr.length ? waitForImages(applyImageCache(migArr.map(mapToken).filter(t => t.mint)), 800) : Promise.resolve(cache.migrated),
+      ]);
+
+      if (newArr.length) cache.new = newTokens;
+      if (bondArr.length) cache.bonding = bondTokens;
+      if (migArr.length) cache.migrated = migTokens;
       console.log(`[gmgn] trenches: new=${newArr.length} bonding=${bondArr.length} migrated=${migArr.length}`);
-      // Kick off background image fetch for tokens still missing logos
-      enrichImagesAsync(['new', 'bonding', 'migrated']);
     } catch (e: any) {
       console.error('[gmgn] trenches fetch failed:', e.message);
     }
