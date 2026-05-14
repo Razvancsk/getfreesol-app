@@ -435,6 +435,7 @@ export function TerminalView() {
   const [search, setSearch] = useState('');
   const [trendingInterval, setTrendingInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
   const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded'>('toptrending');
+  const [launchpadFilter, setLaunchpadFilter] = useState<'all' | 'pump' | 'letsbonk' | 'meteora' | 'moonshot'>('all');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
   const [, navigate] = useLocation();
   const { publicKey: walletKey, setVisible: openWallet, disconnect: disconnectWallet, connected: isWalletConnected, select: selectWallet } = useReownWallet();
@@ -491,14 +492,26 @@ export function TerminalView() {
   });
 
   const tokens = useMemo(() => {
-    if (debouncedSearch.length > 0) return searchData?.tokens ?? [];
-    if (tab === 'trending') return jupTrendingData?.tokens ?? [];
-    if (!liveData) return [];
-    if (tab === 'new') return liveData.new;
-    if (tab === 'bonding') return liveData.bonding;
-    if (tab === 'migrated') return liveData.migrated;
-    return [];
-  }, [liveData, tab, searchData, debouncedSearch, jupTrendingData]);
+    let list: Token[] = [];
+    if (debouncedSearch.length > 0) list = searchData?.tokens ?? [];
+    else if (tab === 'trending') list = jupTrendingData?.tokens ?? [];
+    else if (!liveData) list = [];
+    else if (tab === 'new') list = liveData.new;
+    else if (tab === 'bonding') list = liveData.bonding;
+    else if (tab === 'migrated') list = liveData.migrated;
+
+    if (launchpadFilter !== 'all' && (tab === 'new' || tab === 'bonding' || tab === 'migrated') && debouncedSearch.length === 0) {
+      list = list.filter(t => {
+        const lp = (t.launchpad || '').toLowerCase();
+        if (launchpadFilter === 'pump') return lp.includes('pump');
+        if (launchpadFilter === 'letsbonk') return lp.includes('bonk') || lp.includes('letsbonk');
+        if (launchpadFilter === 'meteora') return lp.includes('meteora');
+        if (launchpadFilter === 'moonshot') return lp.includes('moonshot');
+        return true;
+      });
+    }
+    return list;
+  }, [liveData, tab, searchData, debouncedSearch, jupTrendingData, launchpadFilter]);
 
   const isGmgnTab = tab === 'new' || tab === 'bonding' || tab === 'migrated';
 
@@ -595,6 +608,30 @@ export function TerminalView() {
             data-testid="input-search"
           />
         </div>
+
+        {isGmgnTab && debouncedSearch.length === 0 && (
+          <div className="flex gap-2 flex-wrap mb-3">
+            {([
+              { id: 'all',      label: 'All' },
+              { id: 'pump',     label: 'Pump.fun' },
+              { id: 'letsbonk', label: 'LetsBonk' },
+              { id: 'meteora',  label: 'Meteora' },
+              { id: 'moonshot', label: 'Moonshot' },
+            ] as const).map(lp => (
+              <button
+                key={lp.id}
+                onClick={() => setLaunchpadFilter(lp.id)}
+                className={`text-xs px-3 py-1 rounded-full border transition font-semibold ${
+                  launchpadFilter === lp.id
+                    ? 'bg-purple-600 border-purple-500 text-white'
+                    : 'border-white/20 text-white/50 hover:text-white/80 hover:border-white/40'
+                }`}
+              >
+                {lp.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {tab === 'signals' && <SignalsView />}
 
