@@ -771,12 +771,26 @@ export function TerminalView() {
   });
 
   useEffect(() => {
+    const mergeFeed = (fresh: Token[], existing: Token[]): Token[] => {
+      if (!fresh?.length) return existing || [];
+      const freshSet = new Set(fresh.map(t => t.mint));
+      const kept = (existing || []).filter(t => !freshSet.has(t.mint));
+      return [...fresh, ...kept].slice(0, 200);
+    };
     const es = new EventSource('/api/terminal/stream');
     es.onmessage = (e) => {
       try {
         const d = JSON.parse(e.data);
-        setLiveData(d);
-        try { localStorage.setItem('terminal_sse_cache', e.data); } catch {}
+        setLiveData(prev => {
+          const merged = {
+            ...d,
+            new:      mergeFeed(d.new      || [], prev?.new      || []),
+            bonding:  mergeFeed(d.bonding  || [], prev?.bonding  || []),
+            migrated: mergeFeed(d.migrated || [], prev?.migrated || []),
+          };
+          try { localStorage.setItem('terminal_sse_cache', JSON.stringify(merged)); } catch {}
+          return merged;
+        });
       } catch {}
     };
     es.onerror = () => { /* SSE auto-reconnects */ };
@@ -885,6 +899,10 @@ export function TerminalView() {
     // Client-side fallback for fields not supported server-side (mcap, bcurve, age, bot, bundler)
     if (hasActiveFilters(metricFilters) && isGmgnTab && serverFilterParams === null) {
       list = applyMetricFilters(list, metricFilters);
+    }
+    // Cap at 25 for the live GMGN tabs to keep a clean sliding window
+    if (isGmgnTab && debouncedSearch.length === 0 && serverFilterParams === null) {
+      list = list.slice(0, 25);
     }
     return list;
   }, [liveData, tab, searchData, debouncedSearch, jupTrendingData, launchpadFilter, metricFilters, filteredData, serverFilterParams, isGmgnTab]);
