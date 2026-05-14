@@ -1262,24 +1262,6 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               </div>
             </div>
 
-            {(() => {
-              const cachedT = (liveData?.live as Token) || readCachedToken(mint) || ({ mint } as Token);
-              const progress = (info as any)?.bondingProgress ?? cachedT.bondingPct ?? 0;
-              const pct = Math.min(100, Math.round(progress * 100));
-              if (pct <= 0 || pct >= 100) return null;
-              const barColor = pct >= 80 ? 'bg-orange-400' : pct >= 60 ? 'bg-yellow-400' : 'bg-purple-400';
-              return (
-                <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl px-4 py-3">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Bonding Curve</span>
-                    <span className="text-white text-xs font-bold tabular-nums">{pct}%</span>
-                  </div>
-                  <div className="w-full bg-white/10 rounded-full h-2">
-                    <div className={`h-2 rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })()}
 
             <div className="hidden lg:block">
               <SwapCard token={tokenForTrade} />
