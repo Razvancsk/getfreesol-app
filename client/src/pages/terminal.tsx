@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings, Wallet as WalletIcon, Bell, Users, Activity, BarChart2 } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings, Wallet as WalletIcon, Bell, Users, Activity, BarChart2, SlidersHorizontal, X as XIcon } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 
@@ -373,7 +373,7 @@ function HoldingsDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (
                   return (
                     <button
                       key={t.mint}
-                      onClick={() => { if (!isSol) { setOpen(false); navigate(`/terminal/token/${t.mint}`); } }}
+                      onClick={() => { if (!isSol) { onOpenChange(false); navigate(`/terminal/token/${t.mint}`); } }}
                       className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20 transition text-left ${isSol ? 'cursor-default' : 'hover:bg-purple-800/40 cursor-pointer'}`}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -430,12 +430,165 @@ function HoldingsDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (
   );
 }
 
+type MetricFilters = {
+  mcapMin: string; mcapMax: string;
+  liqMin: string; liqMax: string;
+  volMin: string; volMax: string;
+  bcurveMin: string; bcurveMax: string;
+  ageMin: string; ageMax: string;
+  buysMin: string; buysMax: string;
+  sellsMin: string; sellsMax: string;
+  txnsMin: string; txnsMax: string;
+  smartMin: string; smartMax: string;
+  kolsMin: string; kolsMax: string;
+  rugMin: string; rugMax: string;
+  botMin: string; botMax: string;
+  bundlerMin: string; bundlerMax: string;
+};
+
+const EMPTY_FILTERS: MetricFilters = {
+  mcapMin: '', mcapMax: '', liqMin: '', liqMax: '', volMin: '', volMax: '',
+  bcurveMin: '', bcurveMax: '', ageMin: '', ageMax: '',
+  buysMin: '', buysMax: '', sellsMin: '', sellsMax: '', txnsMin: '', txnsMax: '',
+  smartMin: '', smartMax: '', kolsMin: '', kolsMax: '',
+  rugMin: '', rugMax: '', botMin: '', botMax: '', bundlerMin: '', bundlerMax: '',
+};
+
+function hasActiveFilters(f: MetricFilters) {
+  return Object.values(f).some(v => v !== '');
+}
+
+function applyMetricFilters(list: Token[], f: MetricFilters): Token[] {
+  const now = Date.now();
+  return list.filter(t => {
+    const n = (s: string) => s === '' ? undefined : Number(s);
+    if (n(f.mcapMin) != null && (t.marketCapUsd ?? 0) < (n(f.mcapMin)! * 1000)) return false;
+    if (n(f.mcapMax) != null && (t.marketCapUsd ?? 0) > (n(f.mcapMax)! * 1000)) return false;
+    if (n(f.liqMin) != null && (t.liquidityUsd ?? 0) < (n(f.liqMin)! * 1000)) return false;
+    if (n(f.liqMax) != null && (t.liquidityUsd ?? 0) > (n(f.liqMax)! * 1000)) return false;
+    if (n(f.volMin) != null && (t.volumeUsd ?? 0) < (n(f.volMin)! * 1000)) return false;
+    if (n(f.volMax) != null && (t.volumeUsd ?? 0) > (n(f.volMax)! * 1000)) return false;
+    if (n(f.bcurveMin) != null && (t.bondingPct ?? 0) < n(f.bcurveMin)!) return false;
+    if (n(f.bcurveMax) != null && (t.bondingPct ?? 0) > n(f.bcurveMax)!) return false;
+    if (t.createdAt) {
+      const ageMin = (now - t.createdAt) / 60000;
+      if (n(f.ageMin) != null && ageMin < n(f.ageMin)!) return false;
+      if (n(f.ageMax) != null && ageMin > n(f.ageMax)!) return false;
+    }
+    if (n(f.buysMin) != null && (t.buys ?? 0) < n(f.buysMin)!) return false;
+    if (n(f.buysMax) != null && (t.buys ?? 0) > n(f.buysMax)!) return false;
+    if (n(f.sellsMin) != null && (t.sells ?? 0) < n(f.sellsMin)!) return false;
+    if (n(f.sellsMax) != null && (t.sells ?? 0) > n(f.sellsMax)!) return false;
+    if (n(f.txnsMin) != null && (t.txns ?? 0) < n(f.txnsMin)!) return false;
+    if (n(f.txnsMax) != null && (t.txns ?? 0) > n(f.txnsMax)!) return false;
+    if (n(f.smartMin) != null && (t.smartDegens ?? 0) < n(f.smartMin)!) return false;
+    if (n(f.smartMax) != null && (t.smartDegens ?? 0) > n(f.smartMax)!) return false;
+    if (n(f.kolsMin) != null && (t.renownedCount ?? 0) < n(f.kolsMin)!) return false;
+    if (n(f.kolsMax) != null && (t.renownedCount ?? 0) > n(f.kolsMax)!) return false;
+    if (n(f.rugMin) != null && ((t.rugRatio ?? 0) * 100) < n(f.rugMin)!) return false;
+    if (n(f.rugMax) != null && ((t.rugRatio ?? 0) * 100) > n(f.rugMax)!) return false;
+    if (n(f.botMin) != null && ((t.ratTraderRate ?? 0) * 100) < n(f.botMin)!) return false;
+    if (n(f.botMax) != null && ((t.ratTraderRate ?? 0) * 100) > n(f.botMax)!) return false;
+    if (n(f.bundlerMin) != null && ((t.bundlerRate ?? 0) * 100) < n(f.bundlerMin)!) return false;
+    if (n(f.bundlerMax) != null && ((t.bundlerRate ?? 0) * 100) > n(f.bundlerMax)!) return false;
+    return true;
+  });
+}
+
+function MetricFilterDrawer({ open, onOpenChange, applied, onApply }: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  applied: MetricFilters; onApply: (f: MetricFilters) => void;
+}) {
+  const [draft, setDraft] = useState<MetricFilters>(applied);
+  useEffect(() => { if (open) setDraft(applied); }, [open]);
+  const set = (k: keyof MetricFilters) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setDraft(d => ({ ...d, [k]: e.target.value }));
+
+  const Row = ({ label, unit, minKey, maxKey }: { label: string; unit?: string; minKey: keyof MetricFilters; maxKey: keyof MetricFilters }) => (
+    <div className="flex items-center gap-2 py-2 border-b border-white/5">
+      <span className="text-white/60 text-[12px] w-[110px] shrink-0">{label}</span>
+      <div className="flex gap-1.5 flex-1">
+        <div className="relative flex-1">
+          <input type="number" placeholder="Min" value={draft[minKey]} onChange={set(minKey)}
+            className="w-full bg-[#2a2a2a] border border-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:border-purple-500/60 placeholder:text-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 text-[10px]">{unit}</span>}
+        </div>
+        <div className="relative flex-1">
+          <input type="number" placeholder="Max" value={draft[maxKey]} onChange={set(maxKey)}
+            className="w-full bg-[#2a2a2a] border border-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:border-purple-500/60 placeholder:text-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 text-[10px]">{unit}</span>}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-[320px] sm:w-[360px] bg-[#141414] border-l border-white/10 p-0 overflow-y-auto">
+        <div className="sticky top-0 bg-[#141414] z-10 flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-purple-400" />
+            <span className="text-white font-semibold text-sm">Metrics Filter</span>
+          </div>
+          <button onClick={() => onOpenChange(false)} className="text-white/40 hover:text-white/80 transition">
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-4 py-2">
+          <p className="text-white/30 text-[11px] mb-3">Filter by token metrics. Values in <span className="text-white/50">K</span> = thousands USD.</p>
+
+          <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-3">Market</div>
+          <Row label="MKT Cap" unit="K" minKey="mcapMin" maxKey="mcapMax" />
+          <Row label="Liquidity" unit="K" minKey="liqMin" maxKey="liqMax" />
+          <Row label="Volume" unit="K" minKey="volMin" maxKey="volMax" />
+          <Row label="B. Curve" unit="%" minKey="bcurveMin" maxKey="bcurveMax" />
+          <Row label="Age" unit="min" minKey="ageMin" maxKey="ageMax" />
+
+          <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-4">Trading</div>
+          <Row label="Buys" minKey="buysMin" maxKey="buysMax" />
+          <Row label="Sells" minKey="sellsMin" maxKey="sellsMax" />
+          <Row label="TXs" minKey="txnsMin" maxKey="txnsMax" />
+
+          <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-4">Holders</div>
+          <Row label="Smart Money" minKey="smartMin" maxKey="smartMax" />
+          <Row label="KOLs" minKey="kolsMin" maxKey="kolsMax" />
+
+          <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-4">Risk</div>
+          <Row label="Rug %" unit="%" minKey="rugMin" maxKey="rugMax" />
+          <Row label="Bot Trader %" unit="%" minKey="botMin" maxKey="botMax" />
+          <Row label="Bundlers %" unit="%" minKey="bundlerMin" maxKey="bundlerMax" />
+        </div>
+
+        <div className="sticky bottom-0 bg-[#141414] px-4 py-3 border-t border-white/10 flex gap-2 mt-2">
+          <button
+            onClick={() => { setDraft(EMPTY_FILTERS); onApply(EMPTY_FILTERS); }}
+            className="flex-1 py-2 rounded-lg border border-white/15 text-white/50 text-sm hover:text-white/80 hover:border-white/30 transition"
+          >
+            Reset
+          </button>
+          <button
+            onClick={() => { onApply(draft); onOpenChange(false); }}
+            className="flex-1 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold transition"
+          >
+            Apply
+          </button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 export function TerminalView() {
   const [tab, setTab] = useState<FeedType>('new');
   const [search, setSearch] = useState('');
   const [trendingInterval, setTrendingInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
   const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded'>('toptrending');
   const [launchpadFilter, setLaunchpadFilter] = useState<'all' | 'pump' | 'letsbonk' | 'meteora' | 'moonshot' | 'bags'>('all');
+  const [metricFilters, setMetricFilters] = useState<MetricFilters>(EMPTY_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
   const [, navigate] = useLocation();
   const { publicKey: walletKey, setVisible: openWallet, disconnect: disconnectWallet, connected: isWalletConnected, select: selectWallet } = useReownWallet();
@@ -511,8 +664,12 @@ export function TerminalView() {
         return true;
       });
     }
+    const isGmgnTabCheck = tab === 'new' || tab === 'bonding' || tab === 'migrated';
+    if (hasActiveFilters(metricFilters) && isGmgnTabCheck) {
+      list = applyMetricFilters(list, metricFilters);
+    }
     return list;
-  }, [liveData, tab, searchData, debouncedSearch, jupTrendingData, launchpadFilter]);
+  }, [liveData, tab, searchData, debouncedSearch, jupTrendingData, launchpadFilter, metricFilters]);
 
   const isGmgnTab = tab === 'new' || tab === 'bonding' || tab === 'migrated';
 
@@ -521,6 +678,7 @@ export function TerminalView() {
   return (
     <div className="text-white">
       <HoldingsDrawer open={holdingsOpen} onOpenChange={setHoldingsOpen} />
+      <MetricFilterDrawer open={filterOpen} onOpenChange={setFilterOpen} applied={metricFilters} onApply={setMetricFilters} />
       <div>
         <div className="flex items-center justify-end gap-2 mb-4">
           {isWalletConnected && walletKey ? (
@@ -599,15 +757,33 @@ export function TerminalView() {
           })}
         </div>
 
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter symbol, name or mint…"
-            className="pl-9 bg-black/30 border-white/10 text-white placeholder:text-white/30"
-            data-testid="input-search"
-          />
+        <div className="flex gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter symbol, name or mint…"
+              className="pl-9 bg-black/30 border-white/10 text-white placeholder:text-white/30"
+              data-testid="input-search"
+            />
+          </div>
+          {isGmgnTab && (
+            <button
+              onClick={() => setFilterOpen(true)}
+              className={`flex items-center gap-1.5 px-3 rounded-lg border text-sm transition shrink-0 ${
+                hasActiveFilters(metricFilters)
+                  ? 'bg-purple-600/30 border-purple-400/60 text-purple-300'
+                  : 'bg-black/30 border-white/10 text-white/50 hover:text-white/80 hover:border-white/20'
+              }`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">Filters</span>
+              {hasActiveFilters(metricFilters) && (
+                <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+              )}
+            </button>
+          )}
         </div>
 
         {isGmgnTab && debouncedSearch.length === 0 && (
@@ -890,11 +1066,13 @@ export function TokenPage() {
   const [, params] = useRoute('/terminal/token/:mint');
   const [, navigate] = useLocation();
   const { publicKey, setVisible } = useReownWallet();
+  const [holdingsOpen, setHoldingsOpen] = useState(false);
   const mint = params?.mint || '';
   const shortAddr = publicKey ? `${publicKey.toString().slice(0, 4)}…${publicKey.toString().slice(-4)}` : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-x-hidden">
+      <HoldingsDrawer open={holdingsOpen} onOpenChange={setHoldingsOpen} />
       <div className="container mx-auto max-w-4xl lg:max-w-7xl px-4 pt-3 pb-6 flex-1">
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-2" data-testid="link-home">
@@ -902,15 +1080,14 @@ export function TokenPage() {
           </button>
           <div className="flex items-center gap-2">
             {publicKey ? (
-              <HoldingsDrawer trigger={
-                <button
-                  className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
-                  data-testid="button-portfolio"
-                >
-                  <WalletIcon className="h-4 w-4" />
-                  <span className="font-semibold">{shortAddr}</span>
-                </button>
-              } />
+              <button
+                onClick={() => setHoldingsOpen(true)}
+                className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
+                data-testid="button-portfolio"
+              >
+                <WalletIcon className="h-4 w-4" />
+                <span className="font-semibold">{shortAddr}</span>
+              </button>
             ) : (
               <button
                 onClick={() => setVisible(true)}
