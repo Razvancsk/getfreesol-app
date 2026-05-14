@@ -586,7 +586,7 @@ export function TerminalView() {
   const [search, setSearch] = useState('');
   const [trendingInterval, setTrendingInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
   const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded'>('toptrending');
-  const [launchpadFilter, setLaunchpadFilter] = useState<'all' | 'pump' | 'letsbonk' | 'meteora' | 'moonshot' | 'bags'>('all');
+  const [launchpadFilter, setLaunchpadFilter] = useState<Set<string>>(new Set());
   const [metricFilters, setMetricFilters] = useState<MetricFilters>(EMPTY_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
@@ -653,15 +653,15 @@ export function TerminalView() {
     else if (tab === 'bonding') list = liveData.bonding;
     else if (tab === 'migrated') list = liveData.migrated;
 
-    if (launchpadFilter !== 'all' && (tab === 'new' || tab === 'bonding' || tab === 'migrated') && debouncedSearch.length === 0) {
+    if (launchpadFilter.size > 0 && (tab === 'new' || tab === 'bonding' || tab === 'migrated') && debouncedSearch.length === 0) {
       list = list.filter(t => {
         const lp = (t.launchpad || '').toLowerCase();
-        if (launchpadFilter === 'pump') return lp.includes('pump');
-        if (launchpadFilter === 'letsbonk') return lp.includes('bonk') || lp.includes('letsbonk');
-        if (launchpadFilter === 'meteora') return lp.includes('meteora');
-        if (launchpadFilter === 'moonshot') return lp.includes('moonshot');
-        if (launchpadFilter === 'bags') return lp.includes('bag');
-        return true;
+        if (launchpadFilter.has('pump') && lp.includes('pump')) return true;
+        if (launchpadFilter.has('letsbonk') && (lp.includes('bonk') || lp.includes('letsbonk'))) return true;
+        if (launchpadFilter.has('meteora') && lp.includes('meteora')) return true;
+        if (launchpadFilter.has('moonshot') && lp.includes('moonshot')) return true;
+        if (launchpadFilter.has('bags') && lp.includes('bag')) return true;
+        return false;
       });
     }
     const isGmgnTabCheck = tab === 'new' || tab === 'bonding' || tab === 'migrated';
@@ -790,9 +790,9 @@ export function TerminalView() {
           <div className="mb-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-white/50 text-[11px] font-semibold uppercase tracking-wider">Launchpads</span>
-              {launchpadFilter !== 'all' && (
-                <button onClick={() => setLaunchpadFilter('all')} className="text-[11px] px-2 py-0.5 rounded border border-white/20 text-white/50 hover:text-white/70 transition">
-                  Show All
+              {launchpadFilter.size > 0 && (
+                <button onClick={() => setLaunchpadFilter(new Set())} className="text-[11px] px-2 py-0.5 rounded border border-white/20 text-white/50 hover:text-white/70 transition">
+                  Clear
                 </button>
               )}
             </div>
@@ -804,11 +804,15 @@ export function TerminalView() {
                 { id: 'moonshot', label: 'Moonshot',  color: '#FF88FE' },
                 { id: 'bags',     label: 'Bags',      color: '#00D62B' },
               ] as const).map(lp => {
-                const active = launchpadFilter === 'all' || launchpadFilter === lp.id;
+                const active = launchpadFilter.size === 0 || launchpadFilter.has(lp.id);
                 return (
                   <button
                     key={lp.id}
-                    onClick={() => setLaunchpadFilter(launchpadFilter === lp.id ? 'all' : lp.id)}
+                    onClick={() => setLaunchpadFilter(prev => {
+                      const next = new Set(prev);
+                      if (next.has(lp.id)) next.delete(lp.id); else next.add(lp.id);
+                      return next;
+                    })}
                     className="inline-flex items-center gap-1 px-1.5 h-[22px] rounded-2xl text-[11px] cursor-pointer select-none transition-all w-fit"
                     style={active ? {
                       border: `1px solid ${lp.color}99`,
