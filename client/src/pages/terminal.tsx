@@ -82,14 +82,15 @@ function colorFor(s: string) {
 }
 function TokenAvatar({ token, bondPct, migrated, size = 92 }: { token: Token; bondPct: number; migrated: boolean; size?: number }) {
   const [failed, setFailed] = useState(false);
-  const initials = (token.symbol || token.name || '?').slice(0, 2).toUpperCase();
   const color = colorFor(token.mint);
   const showImg = token.imageUri && !failed;
   const SIZE = size;
-  const IMG = size - 8;
-  const STROKE = 3;
-  const RX = Math.round(size * 0.16);
+  const STROKE = 4;
+  const GAP = STROKE + 3;
+  const IMG = SIZE - GAP * 2;
+  const RX = Math.round(SIZE * 0.18);
   const pct = migrated ? 100 : Math.max(0, Math.min(100, bondPct));
+  const arcPct = pct < 1 && pct > 0 ? 1 : pct; // show at least 1% arc so tiny progress is visible
   const ringColor = migrated
     ? '#34d399'
     : pct >= 80 ? '#fb923c'
@@ -102,24 +103,22 @@ function TokenAvatar({ token, bondPct, migrated, size = 92 }: { token: Token; bo
           x={STROKE / 2} y={STROKE / 2}
           width={SIZE - STROKE} height={SIZE - STROKE}
           rx={RX} ry={RX}
-          stroke="rgba(255,255,255,0.1)" strokeWidth={STROKE} fill="none"
+          stroke="rgba(255,255,255,0.18)" strokeWidth={STROKE} fill="none"
         />
-        {pct > 0 && (
-          <rect
-            x={STROKE / 2} y={STROKE / 2}
-            width={SIZE - STROKE} height={SIZE - STROKE}
-            rx={RX} ry={RX}
-            stroke={ringColor} strokeWidth={STROKE} fill="none"
-            strokeLinecap="round"
-            pathLength={100}
-            strokeDasharray={`${pct} 100`}
-            style={{ transition: 'stroke-dasharray 600ms ease' }}
-          />
-        )}
+        <rect
+          x={STROKE / 2} y={STROKE / 2}
+          width={SIZE - STROKE} height={SIZE - STROKE}
+          rx={RX} ry={RX}
+          stroke={ringColor} strokeWidth={STROKE} fill="none"
+          strokeLinecap="round"
+          pathLength={100}
+          strokeDasharray={`${arcPct} 100`}
+          style={{ transition: 'stroke-dasharray 600ms ease' }}
+        />
       </svg>
       <div
         className="absolute"
-        style={{ width: IMG, height: IMG, left: (SIZE - IMG) / 2, top: (SIZE - IMG) / 2 }}
+        style={{ width: IMG, height: IMG, left: GAP, top: GAP }}
       >
         {showImg ? (
           <img
@@ -131,16 +130,17 @@ function TokenAvatar({ token, bondPct, migrated, size = 92 }: { token: Token; bo
             onError={() => setFailed(true)}
           />
         ) : (
-          <div className="w-full h-full rounded-xl bg-purple-900/40 animate-pulse" />
+          <div className={`w-full h-full rounded-xl ${color} flex items-center justify-center text-white font-bold`} style={{ fontSize: SIZE * 0.22 }}>
+            {(token.symbol || token.name || '?').slice(0, 2).toUpperCase()}
+          </div>
         )}
       </div>
-      {pct > 0 && (
-        <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-black/70 border border-white/10 text-[9px] font-bold tabular-nums leading-none"
-          style={{ color: ringColor }}
-        >
-          {migrated ? '✓' : `${Math.round(pct)}%`}
-        </div>
-      )}
+      <div
+        className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-black/70 border border-white/10 text-[9px] font-bold tabular-nums leading-none"
+        style={{ color: ringColor }}
+      >
+        {migrated ? '✓' : `${Math.round(pct)}%`}
+      </div>
     </div>
   );
 }
