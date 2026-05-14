@@ -1,10 +1,7 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { Trophy, TrendingUp, ArrowLeft } from 'lucide-react';
+import { Trophy, ArrowLeft } from 'lucide-react';
 import logoImage from '@assets/image_1757882056840.png';
-
-type Period = 'all' | '30d' | '7d' | '24h';
 
 type LeaderboardEntry = {
   rank: number;
@@ -31,26 +28,11 @@ function rankColor(rank: number) {
   return 'rgba(255,255,255,0.4)';
 }
 
-function rankIcon(rank: number) {
-  if (rank <= 3) return '🏆';
-  if (rank <= 10) return '🥈';
-  return null;
-}
-
-const PERIODS: { id: Period; label: string }[] = [
-  { id: 'all', label: 'All Time' },
-  { id: '30d', label: '30 Days' },
-  { id: '7d', label: '7 Days' },
-  { id: '24h', label: '24h' },
-];
-
 export default function TradingLeaderboard() {
-  const [period, setPeriod] = useState<Period>('all');
-
   const { data, isFetching } = useQuery<{ success: boolean; leaderboard: LeaderboardEntry[] }>({
-    queryKey: ['/api/statistics/trading-leaderboard', period],
+    queryKey: ['/api/statistics/trading-leaderboard'],
     queryFn: async () => {
-      const r = await fetch(`/api/statistics/trading-leaderboard?period=${period}&limit=50`);
+      const r = await fetch('/api/statistics/trading-leaderboard?period=all&limit=50');
       if (!r.ok) throw new Error('failed');
       return r.json();
     },
@@ -64,7 +46,6 @@ export default function TradingLeaderboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
       <div className="container mx-auto max-w-2xl px-4 pt-6 pb-12">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <Link href="/terminal">
             <a className="text-white/50 hover:text-white transition">
@@ -77,11 +58,10 @@ export default function TradingLeaderboard() {
               <Trophy className="h-5 w-5 text-yellow-400" />
               Trading Leaderboard
             </h1>
-            <p className="text-white/40 text-xs">Top traders by swap volume on our platform</p>
+            <p className="text-white/40 text-xs">Top traders by all-time swap volume on our platform</p>
           </div>
         </div>
 
-        {/* Stats bar */}
         <div className="grid grid-cols-2 gap-3 mb-5">
           <div className="bg-purple-900/30 border border-purple-500/20 rounded-xl p-3 text-center">
             <div className="text-white/50 text-[11px] uppercase tracking-wider mb-1">Total Volume</div>
@@ -93,54 +73,29 @@ export default function TradingLeaderboard() {
           </div>
         </div>
 
-        {/* Period selector */}
-        <div className="flex gap-2 mb-5">
-          {PERIODS.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setPeriod(p.id)}
-              className={`flex-1 py-1.5 rounded-lg text-sm font-semibold border transition ${
-                period === p.id
-                  ? 'bg-purple-600 border-purple-400 text-white'
-                  : 'bg-purple-900/20 border-white/10 text-white/50 hover:text-white/80'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Leaderboard */}
         <div className="space-y-2">
           {isFetching && leaderboard.length === 0 && (
             <div className="text-center py-16 text-white/40">Loading…</div>
           )}
           {!isFetching && leaderboard.length === 0 && (
-            <div className="text-center py-16 text-white/40">
-              No trades recorded yet for this period.
-            </div>
+            <div className="text-center py-16 text-white/40">No trades recorded yet.</div>
           )}
           {leaderboard.map((entry) => (
             <div
               key={entry.walletAddress}
               className="flex items-center gap-3 bg-purple-900/20 border border-purple-500/15 rounded-xl px-4 py-3 hover:border-purple-500/30 transition"
             >
-              {/* Rank */}
               <div className="w-8 text-center shrink-0">
                 <span className="font-black text-sm" style={{ color: rankColor(entry.rank) }}>
                   #{entry.rank}
                 </span>
               </div>
-
-              {/* Avatar */}
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                 style={{ background: `hsl(${(parseInt(entry.walletAddress.slice(0, 4), 16) % 360)}, 60%, 35%)` }}
               >
                 {entry.walletAddress.slice(0, 2).toUpperCase()}
               </div>
-
-              {/* Address + trades */}
               <div className="flex-1 min-w-0">
                 <div className="font-mono text-sm text-white font-semibold">
                   {shortAddr(entry.walletAddress)}
@@ -149,8 +104,6 @@ export default function TradingLeaderboard() {
                   {entry.tradeCount.toLocaleString()} trade{entry.tradeCount !== 1 ? 's' : ''}
                 </div>
               </div>
-
-              {/* Volume */}
               <div className="text-right shrink-0">
                 <div className="font-bold text-sm text-emerald-400">{fmtUsd(entry.totalVolumeUsd)}</div>
                 <div className="text-white/30 text-[10px]">volume</div>
