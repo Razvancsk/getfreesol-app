@@ -938,7 +938,7 @@ export function TerminalView() {
           const FEATURED_IDS = ['pump', 'letsbonk', 'believe', 'meteora'];
           const featured = ALL_LAUNCHPADS.filter(lp => FEATURED_IDS.includes(lp.id));
           const lpBtn = (lp: LP) => {
-            const active = launchpadFilter.size === 0 || launchpadFilter.has(lp.id);
+            const active = launchpadFilter.has(lp.id);
             return (
               <button key={lp.id}
                 onClick={() => setLaunchpadFilter(prev => { const n = new Set(prev); n.has(lp.id) ? n.delete(lp.id) : n.add(lp.id); return n; })}
