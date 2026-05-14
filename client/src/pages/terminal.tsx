@@ -913,7 +913,7 @@ function PriceChart({ mint }: { mint: string }) {
 
 export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => void }) {
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<'chart' | 'info' | 'security' | 'holders' | 'traders'>('chart');
+  const [tab, setTab] = useState<'info' | 'security' | 'holders' | 'traders'>('info');
   const [tradeFor, setTradeFor] = useState<'buy' | 'sell' | null>(null);
 
   const { data: info, isLoading } = useQuery<JupMint>({
@@ -1017,29 +1017,21 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           <div className="text-center text-white/50 py-16">Loading token…</div>
         )}
 
-        <div className="lg:flex lg:gap-4">
-          {/* LEFT: chart + tabs + tab content */}
-          <div className="flex-1 min-w-0 space-y-3">
-            <div className="hidden lg:block">
-              <PriceChart mint={mint} />
-            </div>
+        <div className="flex flex-col lg:flex-row lg:gap-4">
+          {/* LEFT: chart + tabs + tab content — order-2 on mobile (shows below token card) */}
+          <div className="order-2 lg:order-1 flex-1 min-w-0 space-y-3">
+            <PriceChart mint={mint} />
 
             <div className="flex gap-2 flex-wrap">
-              {(['chart', 'info', 'security', 'holders', 'traders'] as const).map((id) => (
+              {(['info', 'security', 'holders', 'traders'] as const).map((id) => (
                 <button
                   key={id}
                   onClick={() => setTab(id)}
-                  className={`px-4 py-2 rounded-lg text-sm capitalize ${id === 'chart' ? 'lg:hidden' : ''} ${tab === id ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
+                  className={`px-4 py-2 rounded-lg text-sm capitalize ${tab === id ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
                   data-testid={`detail-tab-${id}`}
                 >{id}</button>
               ))}
             </div>
-
-            {tab === 'chart' && (
-              <div className="lg:hidden">
-                <PriceChart mint={mint} />
-              </div>
-            )}
 
             {tab === 'info' && (() => {
               const launchpad = info?.firstPool?.launchpad || (info as any)?.launchpad;
@@ -1195,8 +1187,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             )}
           </div>
 
-          {/* RIGHT: token info + swap card (sidebar) */}
-          <div className="lg:w-[300px] lg:shrink-0 space-y-3">
+          {/* RIGHT: token info + swap card — order-1 on mobile (shows above chart) */}
+          <div className="order-1 lg:order-2 lg:w-[300px] lg:shrink-0 space-y-3">
             <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-4 py-4">
               <div className="flex items-center gap-3">
                 {(() => {
