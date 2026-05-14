@@ -429,7 +429,8 @@ export function TerminalView() {
   const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded'>('toptrending');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
   const [, navigate] = useLocation();
-  const { publicKey: walletKey, setVisible: openWallet } = useReownWallet();
+  const { publicKey: walletKey, setVisible: openWallet, disconnect: disconnectWallet, connected: isWalletConnected, select: selectWallet } = useReownWallet();
+  const [walletMenuOpen, setWalletMenuOpen] = useState(false);
 
   // Live feed via SSE — server pushes updates every 10 seconds
   const [liveData, setLiveData] = useState<{ new: Token[]; bonding: Token[]; migrated: Token[]; trending: Token[]; status: any } | null>(() => {
@@ -497,25 +498,46 @@ export function TerminalView() {
     <div className="text-white">
       <div>
         <div className="flex items-center justify-end gap-2 mb-4">
-          {walletKey ? (
-            <HoldingsDrawer trigger={
+          {isWalletConnected && walletKey ? (
+            <div className="relative">
               <button
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
-                data-testid="button-portfolio"
+                onClick={() => setWalletMenuOpen(o => !o)}
+                className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 outline-none"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+                data-testid="button-wallet-connected"
               >
-                <WalletIcon className="h-3.5 w-3.5" />
-                <span className="font-semibold">{`${walletKey.toString().slice(0,4)}…${walletKey.toString().slice(-4)}`}</span>
+                {walletKey.toString().slice(0, 6)}...{walletKey.toString().slice(-6)}
               </button>
-            } />
+              {walletMenuOpen && (
+                <div className="fixed inset-0 z-40" onClick={() => setWalletMenuOpen(false)} />
+              )}
+              {walletMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg overflow-hidden min-w-full">
+                  <HoldingsDrawer trigger={
+                    <div className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm text-center truncate" onClick={() => setWalletMenuOpen(false)}>
+                      Portfolio
+                    </div>
+                  } />
+                  <div
+                    onClick={() => { disconnectWallet(); setWalletMenuOpen(false); }}
+                    className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm text-center truncate"
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                    data-testid="button-disconnect"
+                  >
+                    Disconnect
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
-            <button
-              onClick={() => openWallet(true)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-purple-600/30 border border-purple-400/40 text-white hover:bg-purple-600/50 transition"
-              data-testid="button-portfolio"
+            <Button
+              onClick={() => { selectWallet(null); openWallet(true); }}
+              className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30 h-auto"
+              title="Connect your wallet"
+              data-testid="button-connect-wallet"
             >
-              <WalletIcon className="h-3.5 w-3.5" />
-              <span className="font-semibold">Connect Wallet</span>
-            </button>
+              Connect Wallet
+            </Button>
           )}
           <span className={`text-[10px] px-2 py-1 rounded-full border ${
             status?.connected ? 'border-green-500/40 text-green-300 bg-green-500/10'
