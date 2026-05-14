@@ -441,6 +441,7 @@ type MetricFilters = {
   txnsMin: string; txnsMax: string;
   smartMin: string; smartMax: string;
   kolsMin: string; kolsMax: string;
+  holderMin: string; holderMax: string;
   rugMin: string; rugMax: string;
   botMin: string; botMax: string;
   bundlerMin: string; bundlerMax: string;
@@ -451,6 +452,7 @@ const EMPTY_FILTERS: MetricFilters = {
   bcurveMin: '', bcurveMax: '', ageMin: '', ageMax: '',
   buysMin: '', buysMax: '', sellsMin: '', sellsMax: '', txnsMin: '', txnsMax: '',
   smartMin: '', smartMax: '', kolsMin: '', kolsMax: '',
+  holderMin: '', holderMax: '',
   rugMin: '', rugMax: '', botMin: '', botMax: '', bundlerMin: '', bundlerMax: '',
 };
 
@@ -493,6 +495,33 @@ function applyMetricFilters(list: Token[], f: MetricFilters): Token[] {
     if (n(f.bundlerMax) != null && ((t.bundlerRate ?? 0) * 100) > n(f.bundlerMax)!) return false;
     return true;
   });
+}
+
+function buildServerFilterParams(f: MetricFilters, type: string): string | null {
+  const p = new URLSearchParams({ type });
+  const add = (key: string, val: string, multiplier = 1) => {
+    if (val !== '') p.set(key, String(Number(val) * multiplier));
+  };
+  add('minLiquidity', f.liqMin, 1000);
+  add('maxLiquidity', f.liqMax, 1000);
+  add('minVolume', f.volMin, 1000);
+  add('maxVolume', f.volMax, 1000);
+  add('minBuys', f.buysMin);
+  add('maxBuys', f.buysMax);
+  add('minSells', f.sellsMin);
+  add('maxSells', f.sellsMax);
+  add('minTxns', f.txnsMin);
+  add('maxTxns', f.txnsMax);
+  add('minSmartMoney', f.smartMin);
+  add('maxSmartMoney', f.smartMax);
+  add('minKols', f.kolsMin);
+  add('maxKols', f.kolsMax);
+  add('minHolders', f.holderMin);
+  add('maxHolders', f.holderMax);
+  add('minRugRatio', f.rugMin);
+  add('maxRugRatio', f.rugMax);
+  if ([...p.entries()].some(([k]) => k !== 'type')) return p.toString();
+  return null;
 }
 
 function MetricFilterDrawer({ open, onOpenChange, applied, onApply }: {
@@ -555,6 +584,7 @@ function MetricFilterDrawer({ open, onOpenChange, applied, onApply }: {
           <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-4">Holders</div>
           <Row label="Smart Money" minKey="smartMin" maxKey="smartMax" />
           <Row label="KOLs" minKey="kolsMin" maxKey="kolsMax" />
+          <Row label="Holders" minKey="holderMin" maxKey="holderMax" />
 
           <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-4">Risk</div>
           <Row label="Rug %" unit="%" minKey="rugMin" maxKey="rugMax" />
@@ -632,6 +662,23 @@ export function TerminalView() {
     staleTime: 15_000,
   });
 
+  const isGmgnTab = tab === 'new' || tab === 'bonding' || tab === 'migrated';
+  const serverFilterParams = isGmgnTab && hasActiveFilters(metricFilters) && debouncedSearch.length === 0
+    ? buildServerFilterParams(metricFilters, tab)
+    : null;
+
+  const { data: filteredData, isFetching: filteredFetching } = useQuery<{ tokens: Token[] }>({
+    queryKey: ['/api/terminal/filtered', serverFilterParams],
+    queryFn: async () => {
+      const r = await fetch(`/api/terminal/filtered?${serverFilterParams}`);
+      if (!r.ok) throw new Error('filter failed');
+      return r.json();
+    },
+    enabled: serverFilterParams !== null,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+
   const { data: jupTrendingData, isFetching: jupTrendingFetching } = useQuery<{ tokens: Token[] }>({
     queryKey: ['/api/terminal/jup-trending', trendingInterval, trendingCategory],
     queryFn: async () => {
@@ -647,13 +694,14 @@ export function TerminalView() {
   const tokens = useMemo(() => {
     let list: Token[] = [];
     if (debouncedSearch.length > 0) list = searchData?.tokens ?? [];
+    else if (serverFilterParams !== null) list = filteredData?.tokens ?? [];
     else if (tab === 'trending') list = jupTrendingData?.tokens ?? [];
     else if (!liveData) list = [];
     else if (tab === 'new') list = liveData.new;
     else if (tab === 'bonding') list = liveData.bonding;
     else if (tab === 'migrated') list = liveData.migrated;
 
-    if (launchpadFilter.size > 0 && (tab === 'new' || tab === 'bonding' || tab === 'migrated') && debouncedSearch.length === 0) {
+    if (launchpadFilter.size > 0 && isGmgnTab && debouncedSearch.length === 0) {
       list = list.filter(t => {
         const lp = (t.launchpad || '').toLowerCase();
         if (launchpadFilter.has('pump') && lp.includes('pump')) return true;
@@ -664,14 +712,12 @@ export function TerminalView() {
         return false;
       });
     }
-    const isGmgnTabCheck = tab === 'new' || tab === 'bonding' || tab === 'migrated';
-    if (hasActiveFilters(metricFilters) && isGmgnTabCheck) {
+    // Client-side fallback for fields not supported server-side (mcap, bcurve, age, bot, bundler)
+    if (hasActiveFilters(metricFilters) && isGmgnTab && serverFilterParams === null) {
       list = applyMetricFilters(list, metricFilters);
     }
     return list;
-  }, [liveData, tab, searchData, debouncedSearch, jupTrendingData, launchpadFilter, metricFilters]);
-
-  const isGmgnTab = tab === 'new' || tab === 'bonding' || tab === 'migrated';
+  }, [liveData, tab, searchData, debouncedSearch, jupTrendingData, launchpadFilter, metricFilters, filteredData, serverFilterParams, isGmgnTab]);
 
   const status = liveData?.status;
 

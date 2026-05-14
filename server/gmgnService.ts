@@ -227,6 +227,49 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit: number): Gm
   return cache[type].slice(0, limit);
 }
 
+export interface TrenchFilters {
+  minLiquidity?: number; maxLiquidity?: number;
+  minVolume?: number; maxVolume?: number;
+  minBuys?: number; maxBuys?: number;
+  minSells?: number; maxSells?: number;
+  minTxns?: number; maxTxns?: number;
+  minSmartMoney?: number; maxSmartMoney?: number;
+  minKols?: number; maxKols?: number;
+  minHolders?: number; maxHolders?: number;
+  minRugRatio?: number; maxRugRatio?: number;
+}
+
+export async function fetchFilteredTrenches(
+  type: 'new' | 'bonding' | 'migrated',
+  filters: TrenchFilters,
+  limit = 80
+): Promise<GmgnToken[]> {
+  const c = getClient();
+  const gmgnType = type === 'new' ? 'new_creation' : type === 'bonding' ? 'near_completion' : 'completed';
+  const params: Record<string, number> = {};
+  if (filters.minLiquidity != null) params.min_liquidity = filters.minLiquidity;
+  if (filters.maxLiquidity != null) params.max_liquidity = filters.maxLiquidity;
+  if (filters.minVolume != null) params.min_volume_24h = filters.minVolume;
+  if (filters.maxVolume != null) params.max_volume_24h = filters.maxVolume;
+  if (filters.minBuys != null) params.min_buys_24h = filters.minBuys;
+  if (filters.maxBuys != null) params.max_buys_24h = filters.maxBuys;
+  if (filters.minSells != null) params.min_sells_24h = filters.minSells;
+  if (filters.maxSells != null) params.max_sells_24h = filters.maxSells;
+  if (filters.minTxns != null) params.min_swaps_24h = filters.minTxns;
+  if (filters.maxTxns != null) params.max_swaps_24h = filters.maxTxns;
+  if (filters.minSmartMoney != null) params.min_smart_degen_count = filters.minSmartMoney;
+  if (filters.maxSmartMoney != null) params.max_smart_degen_count = filters.maxSmartMoney;
+  if (filters.minKols != null) params.min_renowned_count = filters.minKols;
+  if (filters.maxKols != null) params.max_renowned_count = filters.maxKols;
+  if (filters.minHolders != null) params.min_holder_count = filters.minHolders;
+  if (filters.maxHolders != null) params.max_holder_count = filters.maxHolders;
+  if (filters.minRugRatio != null) params.min_rug_ratio = filters.minRugRatio / 100;
+  if (filters.maxRugRatio != null) params.max_rug_ratio = filters.maxRugRatio / 100;
+  const data: any = await c.getTrenches('sol', [gmgnType], [], limit, params);
+  const raw: any[] = data?.[gmgnType] || [];
+  return applyImageCache(raw.map(mapToken).filter(t => t.mint));
+}
+
 export function getTrending(limit: number): GmgnToken[] {
   return cache.trending.slice(0, limit);
 }
