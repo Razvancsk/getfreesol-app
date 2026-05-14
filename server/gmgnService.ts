@@ -626,6 +626,7 @@ export async function getTokenRecentTrades(mint: string): Promise<any[]> {
       limit: 30, orderby: 'last_active_timestamp', direction: 'desc',
     });
     const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
+    if (arr.length > 0) console.log('[gmgn recent-trades] raw entry[0]:', JSON.stringify(arr[0]));
     return arr.map((h: any) => {
       const tt = h.token_transfer || {};
       const rawType: string = tt.event_type || tt.type || '';
