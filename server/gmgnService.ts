@@ -194,56 +194,58 @@ async function poll() {
     console.error('[jup] recent failed:', e?.message);
   }
 
-  // Bonding + Migrated: GMGN provides mint list + bondingPct, Jupiter provides all metadata
+  // Bonding + Migrated: GMGN gives mint list + bondingPct, Jupiter provides all display data
   if (gmgnBackoff > 0) {
     gmgnBackoff -= 5000;
   } else {
     try {
       const c = getClient();
       const data: any = await c.getTrenches('sol', ['near_completion', 'completed']);
-      const bondArr: any[] = data?.near_completion || [];
+      const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
 
-      // Extract mint + bondingPct from GMGN
-      const bondInfo = bondArr
+      // Extract only what GMGN is used for: mint address + bondingPct + launchpad name
+      const bondMints = bondArr
         .map((t: any) => ({
           mint: t.address || '',
           bondingPct: t.launchpad_progress != null ? Number(t.launchpad_progress)
             : t.progress != null ? Number(t.progress) : undefined,
-          gmgnLaunchpad: t.launchpad_platform || t.launchpad || 'pump.fun',
+          launchpad: t.launchpad_platform || t.launchpad || 'pump.fun',
         }))
         .filter(b => b.mint);
 
-      const migInfo = migArr
-        .map((t: any) => ({ mint: t.address || '', gmgnLaunchpad: t.launchpad_platform || t.launchpad || 'pump.fun' }))
+      const migMints = migArr
+        .map((t: any) => ({ mint: t.address || '', launchpad: t.launchpad_platform || t.launchpad || 'pump.fun' }))
         .filter(m => m.mint);
 
-      // Batch-enrich with Jupiter metadata
+      // Jupiter batch — .catch so a network error never kills the bonding cache
       const [bondJup, migJup] = await Promise.all([
-        jupiterBatch(bondInfo.map(b => b.mint), jupHeaders),
-        jupiterBatch(migInfo.map(m => m.mint), jupHeaders),
+        jupiterBatch(bondMints.map(b => b.mint), jupHeaders).catch(() => ({} as Record<string, any>)),
+        jupiterBatch(migMints.map(m => m.mint), jupHeaders).catch(() => ({} as Record<string, any>)),
       ]);
 
-      if (bondInfo.length) {
-        const bonding = bondInfo.map(b => {
+      if (bondMints.length) {
+        cache.bonding = dedupeByMint(bondMints.map(b => {
           const jt = bondJup[b.mint];
-          const base = jt ? mapJupiterToken(jt) : ({ mint: b.mint, launchpad: b.gmgnLaunchpad } as GmgnToken);
-          return { ...base, bondingPct: b.bondingPct, migrated: false, launchpad: base.launchpad || b.gmgnLaunchpad };
-        });
-        cache.bonding = dedupeByMint(bonding.filter(t => t.mint));
+          const base: GmgnToken = jt
+            ? mapJupiterToken(jt)
+            : { mint: b.mint, launchpad: b.launchpad } as GmgnToken;
+          return { ...base, bondingPct: b.bondingPct, migrated: false, launchpad: base.launchpad || b.launchpad };
+        }));
         anySuccess = true;
-        console.log(`[gmgn+jup] bonding: ${cache.bonding.length}`);
+        console.log(`[gmgn+jup] bonding: ${cache.bonding.length} (jup: ${Object.keys(bondJup).length})`);
       }
 
-      if (migInfo.length) {
-        const migrated = migInfo.map(m => {
+      if (migMints.length) {
+        cache.migrated = dedupeByMint(migMints.map(m => {
           const jt = migJup[m.mint];
-          const base = jt ? mapJupiterToken(jt) : ({ mint: m.mint, launchpad: m.gmgnLaunchpad } as GmgnToken);
-          return { ...base, migrated: true, launchpad: base.launchpad || m.gmgnLaunchpad };
-        });
-        cache.migrated = dedupeByMint(migrated.filter(t => t.mint));
+          const base: GmgnToken = jt
+            ? mapJupiterToken(jt)
+            : { mint: m.mint, launchpad: m.launchpad } as GmgnToken;
+          return { ...base, migrated: true, launchpad: base.launchpad || m.launchpad };
+        }));
         anySuccess = true;
-        console.log(`[gmgn+jup] migrated: ${cache.migrated.length}`);
+        console.log(`[gmgn+jup] migrated: ${cache.migrated.length} (jup: ${Object.keys(migJup).length})`);
       }
     } catch (e: any) {
       const msg = e?.apiError || e?.message || '';
