@@ -189,9 +189,15 @@ async function poll() {
     });
     if (r.ok) {
       const tokens: any[] = await r.json();
-      const mapped = dedupeByMint(tokens.map(t => mapJupiterToken(t)).filter(t => t.mint));
-      if (mapped.length) { cache.new = mapped; anySuccess = true; }
-      console.log(`[jup] recent: ${mapped.length}`);
+      const mapped = tokens.map(t => mapJupiterToken(t)).filter(t => t.mint);
+      if (mapped.length) {
+        // Accumulate: new tokens at front, keep previously seen ones, trim to 200
+        const newMints = new Set(mapped.map(t => t.mint));
+        const kept = cache.new.filter(t => !newMints.has(t.mint));
+        cache.new = dedupeByMint([...mapped, ...kept]).slice(0, 200);
+        anySuccess = true;
+      }
+      console.log(`[jup] recent: ${mapped.length} new, ${cache.new.length} total`);
     }
   } catch (e: any) {
     console.error('[jup] recent failed:', e?.message);
@@ -228,27 +234,33 @@ async function poll() {
       ]);
 
       if (bondMints.length) {
-        cache.bonding = dedupeByMint(bondMints.map(b => {
+        const freshBonding = dedupeByMint(bondMints.map(b => {
           const jt = bondJup[b.mint];
           const base: GmgnToken = jt
             ? mapJupiterToken(jt)
             : { mint: b.mint, launchpad: b.launchpad } as GmgnToken;
           return { ...base, bondingPct: b.bondingPct, migrated: false, launchpad: base.launchpad || b.launchpad };
         }));
+        const freshMints = new Set(freshBonding.map(t => t.mint));
+        const kept = cache.bonding.filter(t => !freshMints.has(t.mint));
+        cache.bonding = dedupeByMint([...freshBonding, ...kept]).slice(0, 200);
         anySuccess = true;
-        console.log(`[gmgn+jup] bonding: ${cache.bonding.length} (jup: ${Object.keys(bondJup).length})`);
+        console.log(`[gmgn+jup] bonding: ${freshBonding.length} new, ${cache.bonding.length} total`);
       }
 
       if (migMints.length) {
-        cache.migrated = dedupeByMint(migMints.map(m => {
+        const freshMigrated = dedupeByMint(migMints.map(m => {
           const jt = migJup[m.mint];
           const base: GmgnToken = jt
             ? mapJupiterToken(jt)
             : { mint: m.mint, launchpad: m.launchpad } as GmgnToken;
           return { ...base, migrated: true, launchpad: base.launchpad || m.launchpad };
         }));
+        const freshMints2 = new Set(freshMigrated.map(t => t.mint));
+        const kept2 = cache.migrated.filter(t => !freshMints2.has(t.mint));
+        cache.migrated = dedupeByMint([...freshMigrated, ...kept2]).slice(0, 200);
         anySuccess = true;
-        console.log(`[gmgn+jup] migrated: ${cache.migrated.length} (jup: ${Object.keys(migJup).length})`);
+        console.log(`[gmgn+jup] migrated: ${freshMigrated.length} new, ${cache.migrated.length} total`);
       }
     } catch (e: any) {
       const msg = e?.apiError || e?.message || '';
