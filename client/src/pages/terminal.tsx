@@ -629,7 +629,7 @@ export function TerminalView() {
   const [search, setSearch] = useState('');
   const [trendingInterval, setTrendingInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
   const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded'>('toptrending');
-  const [launchpadFilter, setLaunchpadFilter] = useState<Set<string>>(new Set());
+  const [launchpadFilter, setLaunchpadFilter] = useState<Set<string>>(new Set()); // empty = show all
   const [metricFilters, setMetricFilters] = useState<MetricFilters>(EMPTY_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
@@ -717,11 +717,20 @@ export function TerminalView() {
     if (launchpadFilter.size > 0 && isGmgnTab && debouncedSearch.length === 0) {
       list = list.filter(t => {
         const lp = (t.launchpad || '').toLowerCase();
-        if (launchpadFilter.has('pump') && lp.includes('pump')) return true;
-        if (launchpadFilter.has('letsbonk') && (lp.includes('bonk') || lp.includes('letsbonk'))) return true;
+        if (launchpadFilter.has('pump') && (lp.includes('pump') || lp === 'pump.fun')) return true;
+        if (launchpadFilter.has('letsbonk') && lp.includes('letsbonk')) return true;
         if (launchpadFilter.has('meteora') && lp.includes('meteora')) return true;
         if (launchpadFilter.has('moonshot') && lp.includes('moonshot')) return true;
         if (launchpadFilter.has('bags') && lp.includes('bag')) return true;
+        if (launchpadFilter.has('raydium') && lp.includes('ray')) return true;
+        if (launchpadFilter.has('believe') && lp.includes('believe')) return true;
+        if (launchpadFilter.has('boop') && lp.includes('boop')) return true;
+        if (launchpadFilter.has('bankr') && lp.includes('bankr')) return true;
+        if (launchpadFilter.has('bonkers') && lp.includes('bonker')) return true;
+        if (launchpadFilter.has('memoo') && lp.includes('memoo')) return true;
+        if (launchpadFilter.has('zora') && lp.includes('zora')) return true;
+        if (launchpadFilter.has('surge') && lp.includes('surge')) return true;
+        if (launchpadFilter.has('token_mill') && lp.includes('token_mill')) return true;
         return false;
       });
     }
@@ -862,6 +871,15 @@ export function TerminalView() {
                 { id: 'meteora',  label: 'Meteora',   color: '#07E993' },
                 { id: 'moonshot', label: 'Moonshot',  color: '#FF88FE' },
                 { id: 'bags',     label: 'Bags',      color: '#00D62B' },
+                { id: 'raydium',  label: 'Raydium',   color: '#9945FF' },
+                { id: 'believe',  label: 'Believe',   color: '#3B82F6' },
+                { id: 'boop',     label: 'Boop',      color: '#F59E0B' },
+                { id: 'bankr',    label: 'Bankr',     color: '#EC4899' },
+                { id: 'bonkers',  label: 'Bonkers',   color: '#F97316' },
+                { id: 'memoo',    label: 'Memoo',     color: '#A78BFA' },
+                { id: 'zora',     label: 'Zora',      color: '#60A5FA' },
+                { id: 'surge',    label: 'Surge',     color: '#34D399' },
+                { id: 'token_mill', label: 'TokenMill', color: '#FB7185' },
               ] as const).map(lp => {
                 const active = launchpadFilter.size === 0 || launchpadFilter.has(lp.id);
                 return (
