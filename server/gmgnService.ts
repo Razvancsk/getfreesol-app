@@ -33,6 +33,8 @@ interface FeedCache {
 }
 
 const cache: FeedCache = { new: [], bonding: [], migrated: [], trending: [] };
+// Persistent image cache so we don't re-fetch for tokens we already know
+const imageCache = new Map<string, string>();
 let solUsdPrice = 0;
 let connected = false;
 let lastUpdate = 0;
@@ -94,6 +96,52 @@ function mapToken(t: any): GmgnToken {
   };
 }
 
+// Fetch missing token images from pump.fun, update cache, re-push SSE
+function enrichImagesAsync(lists: ('new' | 'bonding' | 'migrated')[]) {
+  const missing: GmgnToken[] = [];
+  for (const key of lists) {
+    for (const t of cache[key]) {
+      if (!t.imageUri && !imageCache.has(t.mint)) missing.push(t);
+    }
+  }
+  if (!missing.length) return;
+
+  Promise.allSettled(missing.map(async (t) => {
+    try {
+      const r = await fetch(`https://frontend-api.pump.fun/coins/${t.mint}`, {
+        signal: AbortSignal.timeout(4000),
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!r.ok) return;
+      const d: any = await r.json();
+      const img: string = d.image_uri || d.image || '';
+      if (img) imageCache.set(t.mint, img);
+    } catch {}
+  })).then(() => {
+    // Apply fetched images and notify SSE if anything changed
+    let changed = false;
+    for (const key of lists) {
+      cache[key] = cache[key].map(t => {
+        if (!t.imageUri && imageCache.has(t.mint)) {
+          changed = true;
+          return { ...t, imageUri: imageCache.get(t.mint)! };
+        }
+        return t;
+      });
+    }
+    if (changed) notifySse();
+  });
+}
+
+// Apply already-cached images to freshly mapped tokens
+function applyImageCache(tokens: GmgnToken[]): GmgnToken[] {
+  return tokens.map(t => {
+    if (!t.imageUri && imageCache.has(t.mint)) return { ...t, imageUri: imageCache.get(t.mint)! };
+    if (t.imageUri) imageCache.set(t.mint, t.imageUri);
+    return t;
+  });
+}
+
 let trendingTick = 0;
 
 async function poll() {
@@ -106,10 +154,12 @@ async function poll() {
       const newArr: any[] = data?.new_creation || [];
       const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
-      if (newArr.length) { cache.new = newArr.map(mapToken).filter(t => t.mint); }
-      if (bondArr.length) { cache.bonding = bondArr.map(mapToken).filter(t => t.mint); }
-      if (migArr.length) { cache.migrated = migArr.map(mapToken).filter(t => t.mint); }
+      if (newArr.length) { cache.new = applyImageCache(newArr.map(mapToken).filter(t => t.mint)); }
+      if (bondArr.length) { cache.bonding = applyImageCache(bondArr.map(mapToken).filter(t => t.mint)); }
+      if (migArr.length) { cache.migrated = applyImageCache(migArr.map(mapToken).filter(t => t.mint)); }
       console.log(`[gmgn] trenches: new=${newArr.length} bonding=${bondArr.length} migrated=${migArr.length}`);
+      // Kick off background image fetch for tokens still missing logos
+      enrichImagesAsync(['new', 'bonding', 'migrated']);
     } catch (e: any) {
       console.error('[gmgn] trenches fetch failed:', e.message);
     }
@@ -392,7 +442,7 @@ export async function getSignals(): Promise<any[]> {
   }
 }
 
-function mapWalletFromTx(tx: any, type: 'sm' | 'kol'): any {
+function mapWalletFromTx(tx: any, _type: 'sm' | 'kol'): any {
   // API returns transactions; wallet address is in `maker`, profile in `maker_info`
   const address = tx.maker || tx.address || tx.wallet_address || '';
   const info = tx.maker_info || {};
