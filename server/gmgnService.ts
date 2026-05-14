@@ -108,8 +108,22 @@ function applyImageCache(tokens: GmgnToken[]): GmgnToken[] {
 
 
 let trendingTick = 0;
+let rateLimitBackoff = 0; // ms to skip next poll if rate limited
+
+function dedupeByMint(tokens: GmgnToken[]): GmgnToken[] {
+  const seen = new Set<string>();
+  return tokens.filter(t => { if (seen.has(t.mint)) return false; seen.add(t.mint); return true; });
+}
 
 async function poll() {
+  // Skip poll during backoff (rate limit recovery)
+  if (rateLimitBackoff > 0) {
+    rateLimitBackoff -= 5000;
+    return;
+  }
+  // Skip poll if no SSE clients are watching — saves API quota
+  if (sseClients.size === 0 && cache.new.length > 0) return;
+
   try {
     const c = getClient();
 
@@ -120,28 +134,29 @@ async function poll() {
       const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
 
-      const newTokens = newArr.length ? applyImageCache(newArr.map(mapToken).filter(t => t.mint)) : cache.new;
-      const bondTokens = bondArr.length ? applyImageCache(bondArr.map(mapToken).filter(t => t.mint)) : cache.bonding;
-      const migTokens = migArr.length ? applyImageCache(migArr.map(mapToken).filter(t => t.mint)) : cache.migrated;
-
-      if (newArr.length) cache.new = newTokens;
-      if (bondArr.length) cache.bonding = bondTokens;
-      if (migArr.length) cache.migrated = migTokens;
-      console.log(`[gmgn] trenches: new=${newArr.length} bonding=${bondArr.length} migrated=${migArr.length}`);
+      if (newArr.length) cache.new = dedupeByMint(applyImageCache(newArr.map(mapToken).filter(t => t.mint)));
+      if (bondArr.length) cache.bonding = dedupeByMint(applyImageCache(bondArr.map(mapToken).filter(t => t.mint)));
+      if (migArr.length) cache.migrated = dedupeByMint(applyImageCache(migArr.map(mapToken).filter(t => t.mint)));
+      console.log(`[gmgn] trenches: new=${cache.new.length} bonding=${cache.bonding.length} migrated=${cache.migrated.length}`);
     } catch (e: any) {
-      console.error('[gmgn] trenches fetch failed:', e.message);
+      const msg = (e?.apiError || e?.message || '');
+      if (msg.includes('RATE_LIMIT')) {
+        rateLimitBackoff = 30000; // wait 30s before retrying
+        console.warn('[gmgn] trenches rate limited — backing off 30s');
+      } else {
+        console.error('[gmgn] trenches fetch failed:', msg);
+      }
     }
 
-    // Trending + SOL price — only every 10th cycle (~50s) since it changes slowly
+    // Trending + SOL price — only every 10th cycle (~50s)
     trendingTick++;
     if (trendingTick % 10 === 1) {
       try {
         const data: any = await c.getTrendingSwaps('sol', '1h', { orderby: 'volume', direction: 'desc', limit: 50 });
         const arr: any[] = data?.rank || (Array.isArray(data) ? data : []);
-        if (arr.length) cache.trending = arr.map(mapToken).filter(t => t.mint);
-        console.log(`[gmgn] trending: ${arr.length} tokens`);
+        if (arr.length) cache.trending = dedupeByMint(arr.map(mapToken).filter(t => t.mint));
       } catch (e: any) {
-        console.error('[gmgn] trending fetch failed:', e.message);
+        console.error('[gmgn] trending fetch failed:', e?.message);
       }
 
       // SOL price from GMGN
