@@ -509,14 +509,14 @@ function MetricFilterDrawer({ open, onOpenChange, applied, onApply }: {
       <span className="text-white/60 text-[12px] w-[110px] shrink-0">{label}</span>
       <div className="flex gap-1.5 flex-1">
         <div className="relative flex-1">
-          <input type="number" placeholder="Min" value={draft[minKey]} onChange={set(minKey)}
-            className="w-full bg-[#2a2a2a] border border-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:border-purple-500/60 placeholder:text-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          <input type="text" inputMode="decimal" placeholder="Min" value={draft[minKey]} onChange={set(minKey)}
+            className="w-full bg-[#2a2a2a] border border-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:border-purple-500/60 placeholder:text-white/20"
           />
           {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 text-[10px]">{unit}</span>}
         </div>
         <div className="relative flex-1">
-          <input type="number" placeholder="Max" value={draft[maxKey]} onChange={set(maxKey)}
-            className="w-full bg-[#2a2a2a] border border-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:border-purple-500/60 placeholder:text-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          <input type="text" inputMode="decimal" placeholder="Max" value={draft[maxKey]} onChange={set(maxKey)}
+            className="w-full bg-[#2a2a2a] border border-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:border-purple-500/60 placeholder:text-white/20"
           />
           {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 text-[10px]">{unit}</span>}
         </div>
