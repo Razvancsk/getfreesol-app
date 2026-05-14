@@ -284,37 +284,44 @@ export function getSolUsd(): number {
 }
 
 export async function getTokenInfo(mint: string): Promise<any> {
-  // Fetch info and security in parallel — rug_ratio, rat/bundler rates live in the security endpoint
   const [t, sec] = await Promise.all([
     getClient().getTokenInfo('sol', mint) as Promise<any>,
     getClient().getTokenSecurity('sol', mint).catch(() => null) as Promise<any>,
   ]);
   if (!t) throw new Error('not found');
-  const mcap = t.price && t.circulating_supply
-    ? Number(t.price) * Number(t.circulating_supply) : undefined;
   const n = (v: any) => (v != null ? Number(v) : undefined);
+  // t.price is an object { price, price_24h, buys_24h, ... } not a scalar
+  const priceObj = (t.price && typeof t.price === 'object') ? t.price : {};
+  const priceNum = Number(priceObj.price) || undefined;
+  const circulatingSupply = Number(t.circulating_supply) || 0;
+  const mcap = priceNum && circulatingSupply ? priceNum * circulatingSupply : undefined;
+  const price24h = Number(priceObj.price_24h) || 0;
+  const priceChange24h = (price24h > 0 && priceNum) ? ((priceNum - price24h) / price24h) * 100 : 0;
+  const twitterRaw = t.link?.twitter_username || '';
+  const twitter = twitterRaw
+    ? (twitterRaw.startsWith('http') ? twitterRaw : `https://x.com/${twitterRaw}`)
+    : (t.link?.twitter || '');
   return {
     id: mint,
     mint,
     name: t.name || '',
     symbol: t.symbol || '',
     icon: t.logo || '',
-    usdPrice: Number(t.price) || undefined,
+    usdPrice: priceNum,
     mcap,
-    fdv: Number(t.fdv) || mcap || undefined,
+    fdv: mcap || undefined,
     liquidity: Number(t.liquidity) || undefined,
     holderCount: Number(t.holder_count) || undefined,
-    twitter: t.link?.twitter_username ? `https://x.com/${t.link.twitter_username}` : (t.link?.twitter || ''),
+    twitter,
     website: t.link?.website || '',
     telegram: t.link?.telegram || '',
     launchpad: t.launchpad_platform || '',
     bondingProgress: t.launchpad_progress != null ? Number(t.launchpad_progress) : undefined,
     smartDegens: Number(t.wallet_tags_stat?.smart_wallets) || 0,
     renownedWallets: Number(t.wallet_tags_stat?.renowned_wallets) || 0,
-    // rug_ratio is top-level in security response, not in stat object of info response
-    rugRatio: sec?.rug_ratio != null ? n(sec.rug_ratio) : n(t.stat?.rug_ratio),
-    ratTraderRate: sec?.rat_trader_amount_rate != null ? n(sec.rat_trader_amount_rate) : n(t.stat?.top_rat_trader_percentage),
-    bundlerRate: sec?.bundler_trader_amount_rate != null ? n(sec.bundler_trader_amount_rate) : n(t.stat?.top_bundler_trader_percentage),
+    rugRatio: undefined,
+    ratTraderRate: n(t.stat?.top_rat_trader_percentage),
+    bundlerRate: n(t.stat?.top_bundler_trader_percentage),
     renouncedMint: sec?.renounced_mint,
     renouncedFreeze: sec?.renounced_freeze_account,
     top10HolderRate: sec?.top_10_holder_rate != null ? n(sec.top_10_holder_rate) : n(t.stat?.top_10_holder_rate),
@@ -322,7 +329,18 @@ export async function getTokenInfo(mint: string): Promise<any> {
     poolAddress: t.biggest_pool_address || t.pool?.pool_address || '',
     poolLiquidity: Number(t.pool?.liquidity || t.liquidity) || undefined,
     poolDex: t.pool?.exchange || '',
-    stats24h: { priceChange: 0, numBuys: 0, numSells: 0, volume: 0 },
+    audit: {
+      mintAuthorityDisabled: sec?.renounced_mint ?? false,
+      freezeAuthorityDisabled: sec?.renounced_freeze_account ?? false,
+      topHoldersPercentage: sec?.top_10_holder_rate != null ? Number(sec.top_10_holder_rate) * 100 : null,
+      devBalancePercentage: Number(t.stat?.creator_hold_rate || t.stat?.dev_team_hold_rate || 0) * 100,
+    },
+    stats24h: {
+      priceChange: priceChange24h,
+      numBuys: Number(priceObj.buys_24h) || 0,
+      numSells: Number(priceObj.sells_24h) || 0,
+      volume: Number(priceObj.volume_24h) || 0,
+    },
   };
 }
 
@@ -357,8 +375,10 @@ export async function getTokenLive(mint: string): Promise<any> {
     getClient().getTokenKline('sol', mint, '1h', from24h, now).catch(() => null) as Promise<any>,
   ]);
   if (!t) return null;
-  const mcap = t.price && t.circulating_supply
-    ? Number(t.price) * Number(t.circulating_supply) : undefined;
+  const priceObj = (t.price && typeof t.price === 'object') ? t.price : {};
+  const priceNum = Number(priceObj.price) || undefined;
+  const circulatingSupply = Number(t.circulating_supply) || 0;
+  const mcap = priceNum && circulatingSupply ? priceNum * circulatingSupply : undefined;
   // Kline response: array of candles or { list: [...] }, each candle has { volume (USD), amount (tokens) }
   const klineArr: any[] = Array.isArray(klines) ? klines : (klines?.list || []);
   const volume24h = klineArr.length > 0
@@ -374,7 +394,7 @@ export async function getTokenLive(mint: string): Promise<any> {
     mint,
     name: t.name || '',
     symbol: t.symbol || '',
-    priceUsd: Number(t.price) || undefined,
+    priceUsd: priceNum,
     marketCapUsd: mcap,
     liquidityUsd: Number(t.liquidity) || undefined,
     volumeUsd: volume24h,
