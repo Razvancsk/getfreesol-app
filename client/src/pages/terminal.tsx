@@ -10,11 +10,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings, Wallet as WalletIcon, Bell, Users, Activity, BarChart2, Star } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings, Wallet as WalletIcon, Bell, Users, Activity, BarChart2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 
-type FeedType = 'new' | 'bonding' | 'migrated' | 'trending' | 'signals' | 'smartmoney';
+type FeedType = 'new' | 'bonding' | 'migrated' | 'trending' | 'signals';
 
 type Token = {
   mint: string;
@@ -155,7 +155,6 @@ const TABS: { id: FeedType; label: string; icon: any; sub: string }[] = [
   { id: 'migrated',   label: 'Graduated',  icon: Rocket,     sub: 'On open market' },
   { id: 'trending',   label: 'Trending',   icon: TrendingUp, sub: 'Hot right now' },
   { id: 'signals',    label: 'Signals',    icon: Bell,       sub: 'SM buys & spikes' },
-  { id: 'smartmoney', label: 'Smart $',    icon: Star,       sub: 'Top wallets' },
 ];
 
 function ago(ts?: number) {
@@ -453,7 +452,7 @@ export function TerminalView() {
     return () => es.close();
   }, []);
 
-  const isSpecialTab = tab === 'signals' || tab === 'smartmoney';
+  const isSpecialTab = tab === 'signals';
   const isFetching = !liveData;
 
   const debouncedSearch = useDebounced(search.trim(), 300);
@@ -583,7 +582,6 @@ export function TerminalView() {
         </div>
 
         {tab === 'signals' && <SignalsView />}
-        {tab === 'smartmoney' && <SmartMoneyView />}
 
         {tab === 'trending' && (
           <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -776,79 +774,6 @@ function SignalsView() {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function SmartMoneyView() {
-  const [view, setView] = useState<'sm' | 'kol'>('sm');
-  const { data: smData, isFetching: smFetching } = useQuery<{ wallets: any[] }>({
-    queryKey: ['/api/terminal/smart-money'],
-    queryFn: async () => {
-      const r = await fetch('/api/terminal/smart-money?limit=30');
-      if (!r.ok) throw new Error('failed');
-      return r.json();
-    },
-    staleTime: 120_000,
-  });
-  const { data: kolData, isFetching: kolFetching } = useQuery<{ wallets: any[] }>({
-    queryKey: ['/api/terminal/kol'],
-    queryFn: async () => {
-      const r = await fetch('/api/terminal/kol?limit=30');
-      if (!r.ok) throw new Error('failed');
-      return r.json();
-    },
-    staleTime: 120_000,
-  });
-  const wallets = view === 'sm' ? (smData?.wallets || []) : (kolData?.wallets || []);
-  const loading = view === 'sm' ? smFetching : kolFetching;
-  return (
-    <div>
-      <div className="flex gap-2 mb-3">
-        <button
-          onClick={() => setView('sm')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${view === 'sm' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
-        >Smart Money</button>
-        <button
-          onClick={() => setView('kol')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${view === 'kol' ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
-        >KOL Wallets</button>
-      </div>
-      <div className="max-h-[65vh] overflow-y-auto no-scrollbar space-y-2">
-        {loading && wallets.length === 0 && <div className="text-center text-white/50 text-sm py-12">Loading wallets…</div>}
-        {!loading && wallets.length === 0 && <div className="text-center text-white/50 text-sm py-12">No wallets found.</div>}
-        {wallets.map((w, i) => (
-          <div key={w.address || i} className="flex items-center gap-3 p-3 rounded-xl bg-purple-900/20 border border-purple-500/20 hover:border-purple-500/40 transition">
-            {w.avatar ? (
-              <img src={w.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-purple-700/50 flex-shrink-0 flex items-center justify-center text-sm font-bold">
-                {(w.name || w.address.slice(0, 2)).slice(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-white text-sm truncate">{w.name || `${w.address.slice(0, 6)}…${w.address.slice(-4)}`}</span>
-                {view === 'sm' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">SM</span>}
-                {view === 'kol' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">KOL</span>}
-              </div>
-              <div className="text-xs text-white/50 mt-0.5 flex gap-3">
-                {w.profit7d !== 0 && <span className={w.profit7d > 0 ? 'text-emerald-400' : 'text-red-400'}>7d {w.profit7d > 0 ? '+' : ''}{fmtUsd(w.profit7d)}</span>}
-                {w.winRate > 0 && <span>{Math.round(w.winRate * 100)}% win</span>}
-                {w.followerCount > 0 && <span>{fmtCount(w.followerCount)} followers</span>}
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              {w.twitter && (
-                <a href={w.twitter} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-white/50 hover:text-white text-xs">X</a>
-              )}
-              <a href={`https://solscan.io/account/${w.address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-white/30 hover:text-white text-[10px] font-mono">
-                {w.address.slice(0, 4)}…
-              </a>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
