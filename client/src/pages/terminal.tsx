@@ -1524,8 +1524,9 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                     symbol: t.symbol || info?.symbol,
                     imageUri: t.imageUri || info?.icon,
                   };
-                  const bondPct = Math.min(100, parseFloat(((t.bondingPct ?? 0) * 100).toFixed(1)));
-                  const isMigrated = !!t.migrated || (t.bondingPct ?? 0) >= 1 || !!(info as any)?.graduatedPool;
+                  const rawBondPct = t.bondingPct ?? ((info as any)?.bondingProgress ?? 0);
+                  const bondPct = Math.min(100, parseFloat((rawBondPct * 100).toFixed(1)));
+                  const isMigrated = !!t.migrated || rawBondPct >= 1 || !!(info as any)?.graduatedPool;
                   return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isMigrated} size={80} />;
                 })()}
                 <div className="min-w-0 flex-1">
@@ -1849,9 +1850,24 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       const signed = await signTransaction(tx);
       const signedTx = Buffer.from(signed.serialize()).toString('base64');
 
+      const decimals = (token as any).decimals ?? 6;
+      const humanInput = side === 'buy' ? numAmt : (amt.endsWith('%') ? (tokenBalance || 0) * (numAmt / 100) : numAmt);
+      const outRaw = (cached?.outRaw || (jupQuote && !jupQuote.loading ? jupQuote.outRaw : 0));
+      const humanOutput = outRaw > 0 ? (side === 'buy' ? outRaw / Math.pow(10, decimals) : outRaw / 1e9) : 0;
+
       const execRes = await fetch('/api/terminal/jupiter-execute', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signedTransaction: signedTx, requestId: order.requestId }),
+        body: JSON.stringify({
+          signedTransaction: signedTx,
+          requestId: order.requestId,
+          walletAddress: publicKey.toBase58(),
+          inputMint,
+          outputMint,
+          inputAmount: humanInput.toString(),
+          outputAmount: humanOutput.toString(),
+          inputSymbol: side === 'buy' ? 'SOL' : sym,
+          outputSymbol: side === 'buy' ? sym : 'SOL',
+        }),
       });
       const result = await execRes.json();
 
@@ -2004,9 +2020,25 @@ function TradeDialog({ token, action, onClose }: { token: Token; action: 'buy' |
       const signed = await signTransaction(tx);
       const signedTx = Buffer.from(signed.serialize()).toString('base64');
 
+      const decimals = (token as any).decimals ?? 6;
+      const humanInput = numAmt;
+      const outRaw = Number(order.outAmount || 0);
+      const humanOutput = outRaw > 0 ? (action === 'buy' ? outRaw / Math.pow(10, decimals) : outRaw / 1e9) : 0;
+      const sym = (token.symbol || 'TOKEN').toString().slice(0, 8);
+
       const execRes = await fetch('/api/terminal/jupiter-execute', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signedTransaction: signedTx, requestId: order.requestId }),
+        body: JSON.stringify({
+          signedTransaction: signedTx,
+          requestId: order.requestId,
+          walletAddress: publicKey.toBase58(),
+          inputMint,
+          outputMint,
+          inputAmount: humanInput.toString(),
+          outputAmount: humanOutput.toString(),
+          inputSymbol: action === 'buy' ? 'SOL' : sym,
+          outputSymbol: action === 'buy' ? sym : 'SOL',
+        }),
       });
       const result = await execRes.json();
       if (result.status !== 'Success') throw new Error(result.error || `Status: ${result.status}`);

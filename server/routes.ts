@@ -7366,10 +7366,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         '8SDc57qmSJypVz3qwHK4ijgJAjsKduyHbFr6Yow1hBRc',
       ].filter(Boolean) as string[];
 
-      const exclusionClause = EXCLUDED_WALLETS.map(w => `${swapRecords.walletAddress.name} != '${w}'`).join(' AND ');
+      const positiveUsd = sql`${swapRecords.usdValue}::numeric > 0`;
+      const notExcluded = notInArray(swapRecords.walletAddress, EXCLUDED_WALLETS);
       const baseWhere = since
-        ? sql`${swapRecords.swappedAt} >= ${since} AND ${swapRecords.usdValue}::numeric > 0 AND ${swapRecords.walletAddress} != ALL(${EXCLUDED_WALLETS})`
-        : sql`${swapRecords.usdValue}::numeric > 0 AND ${swapRecords.walletAddress} != ALL(${EXCLUDED_WALLETS})`;
+        ? and(gte(swapRecords.swappedAt, since), positiveUsd, notExcluded)
+        : and(positiveUsd, notExcluded);
 
       const results = await db
         .select({
@@ -13597,7 +13598,7 @@ Claimer: ${walletAddress}`;
   // Jupiter Swap v2 — submit signed transaction (Jupiter handles landing, no RPC needed)
   app.post('/api/terminal/jupiter-execute', async (req, res) => {
     try {
-      const { signedTransaction, requestId } = req.body || {};
+      const { signedTransaction, requestId, walletAddress, inputMint, outputMint, inputAmount, outputAmount, inputSymbol, outputSymbol } = req.body || {};
       if (!signedTransaction || !requestId) {
         return res.status(400).json({ error: 'signedTransaction and requestId required' });
       }
@@ -13609,6 +13610,73 @@ Claimer: ${walletAddress}`;
         body: JSON.stringify({ signedTransaction, requestId }),
       });
       const data = await r.json();
+
+      // Record swap and award points if metadata provided and swap succeeded
+      if (data.status === 'Success' && walletAddress && inputMint && outputMint && data.signature) {
+        try {
+          const STABLECOINS = [
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+          ];
+          const parsedInputAmount = parseFloat(inputAmount) || 0;
+          const parsedOutputAmount = parseFloat(outputAmount) || 0;
+          let swapUsdValue = 0;
+
+          if (STABLECOINS.includes(inputMint)) {
+            swapUsdValue = parsedInputAmount;
+          } else if (STABLECOINS.includes(outputMint)) {
+            swapUsdValue = parsedOutputAmount;
+          } else {
+            try {
+              const priceRes = await fetch(`https://api.jup.ag/price/v3?ids=${inputMint}`, {
+                headers: { 'x-api-key': process.env.JUPITER_API_KEY || '', 'Accept': 'application/json' },
+              });
+              if (priceRes.ok) {
+                const priceData = await priceRes.json();
+                const tokenPrice = priceData?.[inputMint]?.usdPrice || 0;
+                swapUsdValue = parsedInputAmount * tokenPrice;
+              }
+            } catch { /* ignore price fetch error */ }
+          }
+
+          let pointsAwarded = 0;
+          if (swapUsdValue >= 1) {
+            if (swapUsdValue <= 1000) pointsAwarded = Math.floor(swapUsdValue);
+            else if (swapUsdValue <= 10000) pointsAwarded = Math.floor(1000 + (swapUsdValue - 1000) * 1.5);
+            else pointsAwarded = Math.floor(1000 + 13500 + (swapUsdValue - 10000) * 2);
+          }
+
+          if (pointsAwarded > 0) {
+            await db.insert(userPoints).values({ walletAddress, points: pointsAwarded, accountsClosed: 0 })
+              .onConflictDoUpdate({
+                target: userPoints.walletAddress,
+                set: { points: sql`${userPoints.points} + ${pointsAwarded}`, lastUpdated: new Date() },
+              });
+          }
+
+          await storage.createSwapRecord({
+            walletAddress,
+            txSignature: data.signature,
+            inputMint,
+            outputMint,
+            inputAmount: inputAmount?.toString() || '0',
+            outputAmount: outputAmount?.toString() || '0',
+            inputSymbol: inputSymbol || null,
+            outputSymbol: outputSymbol || null,
+            usdValue: swapUsdValue.toFixed(2),
+            pointsAwarded,
+            platformFee: '0',
+            referralCode: null,
+          });
+
+          data.pointsAwarded = pointsAwarded;
+          data.usdValue = swapUsdValue.toFixed(2);
+          console.log(`🎯 Terminal swap recorded: ${walletAddress} $${swapUsdValue.toFixed(2)}, ${pointsAwarded} pts`);
+        } catch (recErr) {
+          console.error('Failed to record terminal swap:', recErr);
+        }
+      }
+
       res.status(r.ok ? 200 : r.status).json(data);
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'jupiter-execute failed' });

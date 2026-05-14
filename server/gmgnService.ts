@@ -381,6 +381,10 @@ export async function getTokenLive(mint: string): Promise<any> {
     buys: buys24h,
     sells: sells24h,
     solUsd: solUsdPrice || undefined,
+    bondingPct: t.launchpad_progress != null ? Number(t.launchpad_progress)
+              : t.progress != null ? Number(t.progress) : undefined,
+    migrated: !!(t.complete_timestamp && t.complete_timestamp > 0) || !!(t.open_timestamp && t.open_timestamp > 0),
+    imageUri: t.logo || t.image || t.icon || undefined,
   };
 }
 
