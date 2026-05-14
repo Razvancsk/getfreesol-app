@@ -56,6 +56,33 @@ function n(v: any): number | undefined {
   return Number.isFinite(x) ? x : undefined;
 }
 
+// Map Jupiter /tokens/v2/recent token to GmgnToken
+function mapJupiterToken(t: any): GmgnToken {
+  const s1h = t.stats?.['1h'] || {};
+  const s24h = t.stats?.['24h'] || {};
+  const createdAt = t.firstPool?.createdAt ? new Date(t.firstPool.createdAt).getTime() : undefined;
+  return {
+    mint: t.id || t.address || '',
+    name: t.name || '',
+    symbol: t.symbol || '',
+    imageUri: t.icon || '',
+    priceUsd: t.usdPrice ? Number(t.usdPrice) : undefined,
+    pctChange: s1h.priceChange ?? s24h.priceChange ?? undefined,
+    marketCapUsd: t.mcap ?? t.fdv ?? undefined,
+    liquidityUsd: t.liquidity ?? undefined,
+    volumeUsd: s24h.volume ?? s1h.volume ?? undefined,
+    buys: Number(s1h.buys ?? s24h.buys ?? 0),
+    sells: Number(s1h.sells ?? s24h.sells ?? 0),
+    txns: (Number(s1h.buys ?? 0) + Number(s1h.sells ?? 0)) || undefined,
+    createdAt,
+    bondingPct: undefined,
+    migrated: false,
+    launchpad: t.firstPool?.launchpad || 'pump.fun',
+    smartDegens: 0,
+    renownedCount: 0,
+  };
+}
+
 function mapToken(t: any): GmgnToken {
   // GMGN trenches uses string-encoded numbers for some fields
   const mcap = n(t.usd_market_cap ?? t.market_cap ?? t.fdv);
@@ -127,22 +154,37 @@ async function poll() {
   try {
     const c = getClient();
 
-    // Trenches — poll every cycle for near-live new tokens
+    // New tokens — Jupiter /tokens/v2/recent (reliable, rich metadata, good images)
     try {
-      const data: any = await c.getTrenches('sol', ['new_creation', 'near_completion', 'completed']);
-      const newArr: any[] = data?.new_creation || [];
+      const jupKey = process.env.JUPITER_API_KEY || '';
+      const r = await fetch('https://api.jup.ag/tokens/v2/recent', {
+        headers: { 'Accept': 'application/json', ...(jupKey ? { 'x-api-key': jupKey } : {}) },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (r.ok) {
+        const tokens: any[] = await r.json();
+        const mapped = dedupeByMint(tokens.map(mapJupiterToken).filter(t => t.mint));
+        if (mapped.length) cache.new = mapped;
+        console.log(`[jup] recent tokens: ${mapped.length}`);
+      }
+    } catch (e: any) {
+      console.error('[jup] recent tokens failed:', e?.message);
+    }
+
+    // Bonding + Migrated — GMGN only (specialises in bonding curve progress)
+    try {
+      const data: any = await c.getTrenches('sol', ['near_completion', 'completed']);
       const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
 
-      if (newArr.length) cache.new = dedupeByMint(applyImageCache(newArr.map(mapToken).filter(t => t.mint)));
       if (bondArr.length) cache.bonding = dedupeByMint(applyImageCache(bondArr.map(mapToken).filter(t => t.mint)));
       if (migArr.length) cache.migrated = dedupeByMint(applyImageCache(migArr.map(mapToken).filter(t => t.mint)));
-      console.log(`[gmgn] trenches: new=${cache.new.length} bonding=${cache.bonding.length} migrated=${cache.migrated.length}`);
+      console.log(`[gmgn] bonding=${cache.bonding.length} migrated=${cache.migrated.length}`);
     } catch (e: any) {
       const msg = (e?.apiError || e?.message || '');
       if (msg.includes('RATE_LIMIT')) {
-        rateLimitBackoff = 30000; // wait 30s before retrying
-        console.warn('[gmgn] trenches rate limited — backing off 30s');
+        rateLimitBackoff = 30000;
+        console.warn('[gmgn] rate limited — backing off 30s');
       } else {
         console.error('[gmgn] trenches fetch failed:', msg);
       }
