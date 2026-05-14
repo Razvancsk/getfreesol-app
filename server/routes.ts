@@ -5,7 +5,7 @@ import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
 import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, addSseClient, getTokenPoolInfo as getGmgnTokenPool, getWalletTokenBalance as getGmgnTokenBalance, getCreatedTokens as getGmgnCreatedTokens, getUserInfo as getGmgnUserInfo, getFollowWalletActivity as getGmgnFollowWallet, fetchFilteredTrenches } from './gmgnService';
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement, swapRecords } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { eq, sql, and, gte, notInArray, inArray, isNotNull } from 'drizzle-orm';
 import { transactionLedger, userPoints, feedback, insertFeedbackSchema } from '@shared/schema';
@@ -7325,6 +7325,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get XP leaderboard error:", error);
       res.status(500).json({ error: "Failed to get XP leaderboard" });
+    }
+  });
+
+  app.get("/api/statistics/trading-leaderboard", async (req, res) => {
+    try {
+      const { limit = '50', period = 'all' } = req.query;
+      const limitNum = Math.min(parseInt(limit as string, 10) || 50, 200);
+      let since: Date | null = null;
+      if (period === '7d') since = new Date(Date.now() - 7 * 86400000);
+      else if (period === '30d') since = new Date(Date.now() - 30 * 86400000);
+      else if (period === '24h') since = new Date(Date.now() - 86400000);
+
+      const results = await db
+        .select({
+          walletAddress: swapRecords.walletAddress,
+          totalVolume: sql<string>`SUM(${swapRecords.usdValue}::numeric)`,
+          tradeCount: sql<number>`COUNT(*)`,
+          lastTrade: sql<string>`MAX(${swapRecords.swappedAt})`,
+        })
+        .from(swapRecords)
+        .where(since ? sql`${swapRecords.swappedAt} >= ${since} AND ${swapRecords.usdValue}::numeric > 0` : sql`${swapRecords.usdValue}::numeric > 0`)
+        .groupBy(swapRecords.walletAddress)
+        .orderBy(sql`SUM(${swapRecords.usdValue}::numeric) DESC`)
+        .limit(limitNum);
+
+      const leaderboard = results.map((r, i) => ({
+        rank: i + 1,
+        walletAddress: r.walletAddress,
+        totalVolumeUsd: parseFloat(r.totalVolume || '0'),
+        tradeCount: Number(r.tradeCount),
+        lastTrade: r.lastTrade,
+      }));
+
+      res.setHeader('Cache-Control', 'no-store');
+      res.json({ success: true, leaderboard, period });
+    } catch (error) {
+      console.error("Trading leaderboard error:", error);
+      res.status(500).json({ error: "Failed to get trading leaderboard" });
     }
   });
 

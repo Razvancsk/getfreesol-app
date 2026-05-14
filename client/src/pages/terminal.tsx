@@ -268,7 +268,14 @@ export default function TerminalPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight">Terminal</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight">Terminal</h1>
+              <Link href="/leaderboard">
+                <a className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 text-[11px] font-semibold hover:bg-yellow-500/25 transition">
+                  🏆 Leaderboard
+                </a>
+              </Link>
+            </div>
             <p className="text-white/60 text-xs">Live Solana launchpad screener · Pump.fun · LetsBonk · Meteora · Bags · Moonshot</p>
           </div>
         </div>
