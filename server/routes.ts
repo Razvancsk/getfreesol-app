@@ -13051,8 +13051,79 @@ Claimer: ${walletAddress}`;
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
-      const info = await getGmgnTokenInfo(mint);
-      res.json(info);
+
+      const jupKey = process.env.JUPITER_API_KEY;
+      const jupHeaders: Record<string, string> = { 'Accept': 'application/json' };
+      if (jupKey) jupHeaders['x-api-key'] = jupKey;
+
+      // Jupiter + GMGN in parallel; GMGN failure is non-fatal
+      const [jupRes, gmgnInfo] = await Promise.all([
+        fetch(`https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`, {
+          headers: jupHeaders,
+          signal: AbortSignal.timeout(8000),
+        }),
+        getGmgnTokenInfo(mint).catch(() => null),
+      ]);
+
+      const jupArr: any[] = jupRes.ok ? (await jupRes.json()) : [];
+      const tokens: any[] = Array.isArray(jupArr) ? jupArr : (jupArr?.tokens || []);
+      const jt: any = tokens.find((t: any) => (t.id || t.address) === mint) || tokens[0] || null;
+      const g: any = gmgnInfo || {};
+
+      const stats1h: any = jt?.stats?.['1h'] || {};
+      const stats24h: any = jt?.stats?.['24h'] || {};
+      const jupAudit: any = jt?.audit || {};
+
+      const priceNum = jt?.usdPrice ? parseFloat(jt.usdPrice) : (g.usdPrice || undefined);
+      const circulatingSupply = g.circSupply || g.totalSupply || 0;
+      const mcap = jt?.mcap ?? (priceNum && circulatingSupply ? priceNum * circulatingSupply : undefined) ?? g.mcap ?? undefined;
+
+      res.json({
+        id: mint,
+        mint,
+        name: jt?.name || g.name || '',
+        symbol: jt?.symbol || g.symbol || '',
+        icon: jt?.icon || g.icon || '',
+        decimals: jt?.decimals ?? g.decimals ?? undefined,
+        totalSupply: circulatingSupply,
+        circSupply: circulatingSupply,
+        usdPrice: priceNum,
+        mcap,
+        fdv: jt?.fdv ?? mcap ?? undefined,
+        liquidity: jt?.liquidity ?? g.liquidity ?? undefined,
+        holderCount: jt?.holderCount ?? g.holderCount ?? undefined,
+        organicScore: jt?.organicScore ?? null,
+        organicScoreLabel: jt?.organicScoreLabel ?? null,
+        isVerified: jt?.isVerified ?? false,
+        launchpad: jt?.firstPool?.launchpad || g.launchpad || '',
+        bondingProgress: g.bondingProgress,
+        firstPool: jt?.firstPool || null,
+        twitter: g.twitter || '',
+        website: g.website || '',
+        telegram: g.telegram || '',
+        devAddress: g.devAddress || '',
+        poolAddress: g.poolAddress || '',
+        poolDex: g.poolDex || '',
+        poolLiquidity: g.poolLiquidity,
+        smartDegens: g.smartDegens ?? 0,
+        renownedWallets: g.renownedWallets ?? 0,
+        rugRatio: g.rugRatio,
+        ratTraderRate: g.ratTraderRate,
+        bundlerRate: g.bundlerRate,
+        audit: {
+          mintAuthorityDisabled: jupAudit.mintAuthorityDisabled ?? g.audit?.mintAuthorityDisabled ?? false,
+          freezeAuthorityDisabled: jupAudit.freezeAuthorityDisabled ?? g.audit?.freezeAuthorityDisabled ?? false,
+          topHoldersPercentage: jupAudit.topHoldersPercentage ?? g.audit?.topHoldersPercentage ?? null,
+          devBalancePercentage: g.audit?.devBalancePercentage ?? null,
+          isSus: jupAudit.isSus ?? false,
+        },
+        stats24h: {
+          priceChange: stats24h.priceChange ?? stats1h.priceChange ?? g.stats24h?.priceChange ?? 0,
+          numBuys: stats24h.buys ?? g.stats24h?.numBuys ?? 0,
+          numSells: stats24h.sells ?? g.stats24h?.numSells ?? 0,
+          volume: stats24h.volume ?? g.stats24h?.volume ?? 0,
+        },
+      });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'token info failed' });
     }

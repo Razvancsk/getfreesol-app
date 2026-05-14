@@ -1420,16 +1420,16 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
   const liveT: any = liveData?.live || {};
   // Live price (3s) takes priority over full market data (30s) and GMGN fallback
   const jupPrice = jupLivePrice?.price ?? jupMarket?.price ?? null;
-  const priceUsd = jupPrice ?? liveT.priceUsd ?? (info as any)?.usdPrice;
-  // Merge name/symbol/icon from all available sources — GMGN info, Jupiter market, live feed
+  const priceUsd = jupPrice ?? (info as any)?.usdPrice ?? liveT.priceUsd;
+  // info now includes Jupiter data (primary) merged with GMGN (social/bonding)
   const tokenName = info?.name || (jupMarket as any)?.name || liveT.name || '';
   const tokenSymbol = info?.symbol || (jupMarket as any)?.symbol || liveT.symbol || '';
   const tokenIcon = info?.icon || (jupMarket as any)?.icon || liveT.imageUri || '';
-  // Merge market stats from all sources
-  const marketCap = (jupMarket as any)?.marketCap ?? (info as any)?.mcap ?? liveT.marketCapUsd ?? (priceUsd && totalSupply ? priceUsd * totalSupply : null);
-  const liquidity = (jupMarket as any)?.liquidity ?? (info as any)?.liquidity ?? liveT.liquidityUsd;
-  const volume24h = (jupMarket as any)?.volume24h ?? s24.volume ?? liveT.volumeUsd;
-  const holderCount = (jupMarket as any)?.holders ?? (info as any)?.holderCount;
+  // info is primary for market stats (Jupiter data); jupMarket and liveT are fallbacks
+  const marketCap = (info as any)?.mcap ?? (jupMarket as any)?.marketCap ?? liveT.marketCapUsd ?? (priceUsd && totalSupply ? priceUsd * totalSupply : null);
+  const liquidity = (info as any)?.liquidity ?? (jupMarket as any)?.liquidity ?? liveT.liquidityUsd;
+  const volume24h = s24.volume ?? (jupMarket as any)?.volume24h ?? liveT.volumeUsd;
+  const holderCount = (info as any)?.holderCount ?? (jupMarket as any)?.holders;
   const tokenForTrade: Token = {
     mint,
     name: tokenName,
