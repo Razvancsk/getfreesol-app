@@ -1017,12 +1017,186 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           <div className="text-center text-white/50 py-16">Loading token…</div>
         )}
 
-        <div className="lg:flex lg:gap-4 mb-4">
-          <div className="hidden lg:block flex-1 min-w-0">
-            <PriceChart mint={mint} />
+        <div className="lg:flex lg:gap-4">
+          {/* LEFT: chart + tabs + tab content */}
+          <div className="flex-1 min-w-0 space-y-3">
+            <div className="hidden lg:block">
+              <PriceChart mint={mint} />
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
+              {(['chart', 'info', 'security', 'holders', 'traders'] as const).map((id) => (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={`px-4 py-2 rounded-lg text-sm capitalize ${id === 'chart' ? 'lg:hidden' : ''} ${tab === id ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
+                  data-testid={`detail-tab-${id}`}
+                >{id}</button>
+              ))}
+            </div>
+
+            {tab === 'chart' && (
+              <div className="lg:hidden">
+                <PriceChart mint={mint} />
+              </div>
+            )}
+
+            {tab === 'info' && (() => {
+              const launchpad = info?.firstPool?.launchpad || (info as any)?.launchpad;
+              const devAddr = (info as any)?.devAddress || info?.dev || '';
+              const poolAddr = (info as any)?.poolAddress || '';
+              const poolDex = (info as any)?.poolDex || '';
+              const poolLiq = (info as any)?.poolLiquidity;
+              return (
+                <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+                  <InfoAddressRow label="Contract Address" value={mint} />
+                  {devAddr && <InfoAddressRow label="Developer Wallet" value={devAddr} />}
+                  {poolAddr && <InfoAddressRow label={`Pool (${poolDex || 'DEX'})`} value={poolAddr} />}
+                  {poolLiq != null && <InfoTextRow label="Pool Liquidity" value={fmtUsd(poolLiq)} />}
+                  {launchpad && <InfoTextRow label="Launchpad" value={launchpad} isLast />}
+                </div>
+              );
+            })()}
+
+            {tab === 'security' && (() => {
+              const smartDegens = (info as any)?.smartDegens ?? 0;
+              const renownedWallets = (info as any)?.renownedWallets ?? 0;
+              const rugRatio = (info as any)?.rugRatio;
+              const ratTraderRate = (info as any)?.ratTraderRate;
+              const bundlerRate = (info as any)?.bundlerRate;
+              const audit = (info as any)?.audit || {};
+              const topHoldersPct = audit.topHoldersPercentage != null ? Number(audit.topHoldersPercentage) : null;
+              const devBalPct = audit.devBalancePercentage != null ? Number(audit.devBalancePercentage) : null;
+              return (
+                <div className="space-y-3">
+                  <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+                    <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
+                      {[
+                        { label: 'Smart Wallets', value: smartDegens > 0 ? `${smartDegens} SM` : '0 SM', color: smartDegens >= 3 ? 'text-emerald-400' : smartDegens > 0 ? 'text-yellow-400' : 'text-white/50' },
+                        { label: 'KOL Wallets', value: renownedWallets > 0 ? `${renownedWallets} KOL` : '0 KOL', color: renownedWallets > 0 ? 'text-blue-400' : 'text-white/50' },
+                        { label: 'Rug Ratio', value: rugRatio != null ? `${(rugRatio * 100).toFixed(1)}%` : '—', color: rugRatio != null && rugRatio > 0.5 ? 'text-red-400' : rugRatio != null && rugRatio > 0.2 ? 'text-yellow-400' : 'text-emerald-400' },
+                        { label: 'Rat Traders', value: ratTraderRate != null ? `${(ratTraderRate * 100).toFixed(1)}%` : '—', color: ratTraderRate != null && ratTraderRate > 0.3 ? 'text-red-400' : 'text-white/70' },
+                      ].map((s) => (
+                        <div key={s.label} className="px-3 py-2.5 text-center">
+                          <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">{s.label}</div>
+                          <div className={`text-sm font-bold mt-0.5 ${s.color}`}>{s.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+                    <div className="px-4 py-2.5 border-b border-purple-500/20">
+                      <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Smart Money & Security</span>
+                    </div>
+                    {[
+                      { label: 'Mint Authority', value: audit.mintAuthorityDisabled ? '✓ Disabled' : '⚠ Active', color: audit.mintAuthorityDisabled ? 'text-emerald-400' : 'text-red-400' },
+                      { label: 'Freeze Authority', value: audit.freezeAuthorityDisabled ? '✓ Disabled' : '⚠ Active', color: audit.freezeAuthorityDisabled ? 'text-emerald-400' : 'text-red-400' },
+                      topHoldersPct != null ? { label: 'Top Holders', value: `${topHoldersPct.toFixed(1)}%`, color: topHoldersPct > 50 ? 'text-red-400' : topHoldersPct > 30 ? 'text-yellow-400' : 'text-emerald-400' } : null,
+                      devBalPct != null ? { label: 'Dev Balance', value: `${devBalPct.toFixed(2)}%`, color: devBalPct > 5 ? 'text-red-400' : 'text-emerald-400' } : null,
+                      bundlerRate != null ? { label: 'Bundler Rate', value: `${(bundlerRate * 100).toFixed(1)}%`, color: bundlerRate > 0.3 ? 'text-red-400' : 'text-white/70' } : null,
+                    ].filter(Boolean).map((row: any) => (
+                      <div key={row.label} className="flex items-center justify-between px-4 py-2 border-b border-purple-500/10 last:border-0">
+                        <span className="text-white/60 text-xs">{row.label}</span>
+                        <span className={`text-xs font-semibold ${row.color}`}>{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {tab === 'holders' && (
+              <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-white font-semibold">Top holders</h3>
+                  <a href={`https://app.bubblemaps.io/sol/token/${mint}`} target="_blank" rel="noreferrer"
+                    className="text-xs px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/10">Bubble map</a>
+                </div>
+                {holdersLoading && <div className="text-center text-white/50 text-sm py-6">Loading top holders…</div>}
+                {!holdersLoading && (holdersData?.holders?.length ?? 0) === 0 && <div className="text-center text-white/50 text-sm py-6">No holders found.</div>}
+                <div className="divide-y divide-white/5">
+                  {(() => {
+                    const devAddr = (info as any)?.devAddress || info?.dev || '';
+                    const poolAddr = (info as any)?.poolAddress || '';
+                    const poolLiq = (info as any)?.poolLiquidity;
+                    const tagFor = (h: any) => {
+                      const addr = h.address; const apiTags: string[] = h.tags || []; const label: string = h.label || '';
+                      if (h.addrType === 2 || apiTags.includes('pump_amm') || apiTags.includes('raydium') || label === 'pump.fun-bonding-curve' || (label && label.startsWith('liquidity-pool:')) || (poolAddr && addr === poolAddr)) {
+                        const dex = h.exchange || (info as any)?.poolDex || 'Pool'; const liqStr = poolLiq != null && addr === poolAddr ? ` · ${fmtUsd(poolLiq)}` : '';
+                        return { name: `${dex}${liqStr}`, icon: Droplet, color: 'text-sky-400', bg: 'bg-sky-500/10' };
+                      }
+                      if (apiTags.includes('dev') || (devAddr && addr === devAddr)) return { name: 'Developer', icon: Hammer, color: 'text-amber-400', bg: 'bg-amber-500/10' };
+                      return null;
+                    };
+                    return (holdersData?.holders || []).slice(0, 20).map((h: any) => {
+                      const pct = h.pct != null ? h.pct * 100 : (totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0);
+                      const tag = tagFor(h); const apiTags: string[] = h.tags || []; const isSm = apiTags.includes('smart_degen'); const isKol = apiTags.includes('renowned');
+                      return (
+                        <a key={h.address} href={`https://gmgn.ai/sol/address/${h.address}`} target="_blank" rel="noreferrer"
+                          className={`flex items-center justify-between py-2.5 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors ${tag?.bg || ''}`}>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {tag ? <div className="flex items-center gap-1.5"><tag.icon className={`h-3.5 w-3.5 ${tag.color} shrink-0`} /><span className={`text-xs font-semibold ${tag.color}`}>{tag.name}</span></div>
+                              : <span className="font-mono text-xs text-purple-300 truncate">{h.name || shortMint(h.address)}</span>}
+                            {isSm && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SM</span>}
+                            {isKol && <span className="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">KOL</span>}
+                          </div>
+                          <div className="flex items-center gap-3 text-right">
+                            {h.usdValue > 0 && <div className="text-xs text-white/50 tabular-nums">{fmtUsd(h.usdValue)}</div>}
+                            <div className="text-white tabular-nums text-xs font-semibold">{pct.toFixed(2)}%</div>
+                          </div>
+                        </a>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {tab === 'traders' && (
+              <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 overflow-hidden">
+                {tradersLoading && <div className="text-center text-white/50 text-sm py-8">Loading…</div>}
+                {!tradersLoading && (tradersData?.traders?.length ?? 0) === 0 && <div className="text-center text-white/50 text-sm py-8">No trades found.</div>}
+                {(tradersData?.traders || []).length > 0 && (
+                  <div className="overflow-x-auto">
+                    <div className="grid text-[10px] text-purple-300/40 font-semibold tracking-wider uppercase px-3 py-2 border-b border-white/5"
+                      style={{ gridTemplateColumns: '52px 44px 90px 100px 1fr 110px' }}>
+                      <span>Time</span><span>Type</span><span>Value</span><span>Price</span><span>Amount</span><span>By</span>
+                    </div>
+                    <div className="divide-y divide-white/5">
+                      {(tradersData?.traders || []).map((h: any) => {
+                        const isBuy = h.lastTradeType !== 'sell';
+                        const timeAgo = h.lastActive ? relAge(h.lastActive * 1000) : '—';
+                        const value = h.lastTradeUsd > 0 ? fmtUsd(h.lastTradeUsd) : isBuy ? (h.buyCount > 0 ? fmtUsd(h.buyVolume / h.buyCount) : '—') : (h.sellCount > 0 ? fmtUsd(h.sellVolume / h.sellCount) : '—');
+                        const price = h.lastTradePrice > 0 ? `$${h.lastTradePrice < 0.000001 ? h.lastTradePrice.toExponential(2) : h.lastTradePrice < 0.001 ? h.lastTradePrice.toFixed(7) : h.lastTradePrice < 1 ? h.lastTradePrice.toFixed(5) : h.lastTradePrice.toFixed(4)}` : isBuy ? (h.avgCost > 0 ? `$${h.avgCost.toFixed(h.avgCost < 0.001 ? 7 : 5)}` : '—') : (h.avgSold > 0 ? `$${h.avgSold.toFixed(h.avgSold < 0.001 ? 7 : 5)}` : '—');
+                        const tokenAmt = h.lastTradeTokenAmount > 0 ? fmtCount(h.lastTradeTokenAmount) : isBuy ? (h.buyAmount > 0 ? fmtCount(h.buyAmount) : '—') : (h.sellAmount > 0 ? fmtCount(h.sellAmount) : '—');
+                        const isSm = h.tags?.includes('smart_degen'); const isKol = h.tags?.includes('renowned');
+                        const shortBy = h.name || `${h.address.slice(0, 6)}…${h.address.slice(-4)}`;
+                        return (
+                          <a key={h.address} href={`https://gmgn.ai/sol/address/${h.address}`} target="_blank" rel="noreferrer"
+                            className="grid items-center py-2.5 px-3 hover:bg-white/5 transition-colors"
+                            style={{ gridTemplateColumns: '52px 44px 90px 100px 1fr 110px' }}>
+                            <span className="text-white/50 text-xs tabular-nums">{timeAgo}</span>
+                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-bold ${isBuy ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>{isBuy ? 'B' : 'S'}</span>
+                            <span className={`text-sm tabular-nums font-medium ${isBuy ? 'text-emerald-300' : 'text-red-300'}`}>{value}</span>
+                            <span className="text-white/70 text-xs tabular-nums">{price}</span>
+                            <span className="text-white text-xs tabular-nums truncate">{tokenAmt}</span>
+                            <div className="flex items-center gap-1 justify-end min-w-0">
+                              {isSm && <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">SM</span>}
+                              {isKol && <span className="text-[9px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">KOL</span>}
+                              <span className="font-mono text-purple-200 text-xs truncate">{shortBy}</span>
+                            </div>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="lg:w-[360px] lg:shrink-0 space-y-3">
+          {/* RIGHT: token info + swap card (sidebar) */}
+          <div className="lg:w-[300px] lg:shrink-0 space-y-3">
             <div className="bg-black/40 rounded-2xl border border-purple-500/20 px-4 py-4">
               <div className="flex items-center gap-3">
                 {(() => {
@@ -1117,239 +1291,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             </div>
           </div>
         </div>
-
-        <div className="flex gap-2 mb-3 flex-wrap">
-          {(['chart', 'info', 'security', 'holders', 'traders'] as const).map((id) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={`px-4 py-2 rounded-lg text-sm capitalize ${id === 'chart' ? 'lg:hidden' : ''} ${tab === id ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
-              data-testid={`detail-tab-${id}`}
-            >{id}</button>
-          ))}
-        </div>
-
-        {tab === 'chart' && (
-          <div className="lg:hidden">
-            <PriceChart mint={mint} />
-          </div>
-        )}
-
-        {tab === 'info' && (() => {
-          const launchpad = info?.firstPool?.launchpad || (info as any)?.launchpad;
-          const devAddr = (info as any)?.devAddress || info?.dev || '';
-          const poolAddr = (info as any)?.poolAddress || '';
-          const poolDex = (info as any)?.poolDex || '';
-          const poolLiq = (info as any)?.poolLiquidity;
-          return (
-            <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
-              <InfoAddressRow label="Contract Address" value={mint} />
-              {devAddr && <InfoAddressRow label="Developer Wallet" value={devAddr} />}
-              {poolAddr && <InfoAddressRow label={`Pool (${poolDex || 'DEX'})`} value={poolAddr} />}
-              {poolLiq != null && <InfoTextRow label="Pool Liquidity" value={fmtUsd(poolLiq)} />}
-              {launchpad && <InfoTextRow label="Launchpad" value={launchpad} isLast />}
-            </div>
-          );
-        })()}
-
-        {tab === 'security' && (() => {
-          const smartDegens = (info as any)?.smartDegens ?? 0;
-          const renownedWallets = (info as any)?.renownedWallets ?? 0;
-          const rugRatio = (info as any)?.rugRatio;
-          const ratTraderRate = (info as any)?.ratTraderRate;
-          const bundlerRate = (info as any)?.bundlerRate;
-          const bondingProgress = (info as any)?.bondingProgress;
-          const top10 = (info as any)?.top10HolderRate;
-          const live: any = liveData?.live || {};
-          const priceUsd = live.priceUsd ?? (info as any)?.usdPrice;
-          const fmtP = (v?: number) => {
-            if (!v) return '—';
-            if (v < 0.000001) return `$${v.toExponential(2)}`;
-            if (v < 0.001) return `$${v.toFixed(7)}`;
-            if (v < 1) return `$${v.toFixed(5)}`;
-            return `$${v.toFixed(4)}`;
-          };
-          const stats = [
-            { label: 'Price', value: fmtP(priceUsd), color: 'text-emerald-400' },
-            { label: 'Smart Wallets', value: smartDegens > 0 ? `${smartDegens} SM` : '0 SM', color: smartDegens >= 3 ? 'text-emerald-400' : smartDegens > 0 ? 'text-yellow-400' : 'text-white/50' },
-            { label: 'KOL Wallets', value: renownedWallets > 0 ? `${renownedWallets} KOL` : '0 KOL', color: renownedWallets > 0 ? 'text-blue-400' : 'text-white/50' },
-            { label: 'Rug Risk', value: rugRatio != null ? `${Math.round(rugRatio * 100)}%` : '—', color: rugRatio == null ? 'text-white' : rugRatio > 0.3 ? 'text-red-400' : rugRatio > 0.1 ? 'text-yellow-400' : 'text-emerald-400' },
-            { label: 'Rat Traders', value: ratTraderRate != null ? `${Math.round(ratTraderRate * 100)}%` : '—', color: ratTraderRate != null && ratTraderRate > 0.3 ? 'text-red-400' : ratTraderRate != null ? 'text-emerald-400' : 'text-white' },
-            { label: 'Bundler Rate', value: bundlerRate != null ? `${Math.round(bundlerRate * 100)}%` : '—', color: bundlerRate != null && bundlerRate > 0.3 ? 'text-red-400' : bundlerRate != null ? 'text-emerald-400' : 'text-white' },
-            { label: 'Top 10 Hold', value: top10 != null ? `${Math.round(top10 * 100)}%` : '—', color: top10 != null && top10 > 0.5 ? 'text-red-400' : top10 != null && top10 > 0.2 ? 'text-yellow-400' : 'text-emerald-400' },
-          ];
-          return (
-            <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-purple-500/20">
-                <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Smart Money & Security</span>
-              </div>
-              <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
-                {stats.map((s) => (
-                  <div key={s.label} className="px-3 py-3 text-center">
-                    <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">{s.label}</div>
-                    <div className={`text-base font-bold tabular-nums mt-1 ${s.color}`}>{s.value}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
-
-        {tab === 'holders' && (
-          <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white font-semibold">Top holders</h3>
-              <a
-                href={`https://app.bubblemaps.io/sol/token/${mint}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/10"
-              >
-                Bubble map
-              </a>
-            </div>
-            {holdersLoading && <div className="text-center text-white/50 text-sm py-6">Loading top holders…</div>}
-            {!holdersLoading && (holdersData?.holders?.length ?? 0) === 0 && (
-              <div className="text-center text-white/50 text-sm py-6">No holders found.</div>
-            )}
-            <div className="divide-y divide-white/5">
-              {(() => {
-                const devAddr = (info as any)?.devAddress || info?.dev || '';
-                const poolAddr = (info as any)?.poolAddress || '';
-                const poolLiq = (info as any)?.poolLiquidity;
-                const tagFor = (h: any) => {
-                  const addr = h.address;
-                  const apiTags: string[] = h.tags || [];
-                  const label: string = h.label || '';
-                  // Pool: addr_type=2 or API tags or address match or classic labels
-                  if (h.addrType === 2 || apiTags.includes('pump_amm') || apiTags.includes('raydium') ||
-                    label === 'pump.fun-bonding-curve' || (label && label.startsWith('liquidity-pool:')) ||
-                    (poolAddr && addr === poolAddr)) {
-                    const dex = h.exchange || (info as any)?.poolDex || 'Pool';
-                    const liqStr = poolLiq != null && addr === poolAddr ? ` · ${fmtUsd(poolLiq)}` : '';
-                    return { name: `${dex}${liqStr}`, icon: Droplet, color: 'text-sky-400', bg: 'bg-sky-500/10' };
-                  }
-                  // Dev: API tag or address match
-                  if (apiTags.includes('dev') || (devAddr && addr === devAddr)) {
-                    return { name: 'Developer', icon: Hammer, color: 'text-amber-400', bg: 'bg-amber-500/10' };
-                  }
-                  return null;
-                };
-                const list = holdersData?.holders || [];
-                return list.slice(0, 20).map((h: any) => {
-                  const pct = h.pct != null ? h.pct * 100 : (totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0);
-                  const tag = tagFor(h);
-                  const linkAddr = h.address;
-                  const apiTags: string[] = h.tags || [];
-                  const isSm = apiTags.includes('smart_degen');
-                  const isKol = apiTags.includes('renowned');
-                  return (
-                    <a
-                      key={h.address}
-                      href={`https://gmgn.ai/sol/address/${linkAddr}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`flex items-center justify-between py-2.5 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors ${tag?.bg || ''}`}
-                      data-testid={`holder-row-${linkAddr}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        {tag ? (
-                          <div className="flex items-center gap-1.5">
-                            <tag.icon className={`h-3.5 w-3.5 ${tag.color} shrink-0`} />
-                            <span className={`text-xs font-semibold ${tag.color}`}>{tag.name}</span>
-                          </div>
-                        ) : (
-                          <span className="font-mono text-xs text-purple-300 truncate">
-                            {h.name || shortMint(linkAddr)}
-                          </span>
-                        )}
-                        {isSm && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SM</span>}
-                        {isKol && <span className="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">KOL</span>}
-                      </div>
-                      <div className="flex items-center gap-3 text-right">
-                        {h.usdValue > 0 && (
-                          <div className="text-xs text-white/50 tabular-nums">{fmtUsd(h.usdValue)}</div>
-                        )}
-                        <div className="text-white tabular-nums text-xs font-semibold">{pct.toFixed(2)}%</div>
-                      </div>
-                    </a>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        )}
       </div>
-
-        {tab === 'traders' && (
-          <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 overflow-hidden">
-            {tradersLoading && <div className="text-center text-white/50 text-sm py-8">Loading…</div>}
-            {!tradersLoading && (tradersData?.traders?.length ?? 0) === 0 && (
-              <div className="text-center text-white/50 text-sm py-8">No trades found.</div>
-            )}
-            {(tradersData?.traders || []).length > 0 && (
-              <div className="overflow-x-auto">
-                {/* Header */}
-                <div className="grid text-[10px] text-purple-300/40 font-semibold tracking-wider uppercase px-3 py-2 border-b border-white/5"
-                  style={{ gridTemplateColumns: '52px 44px 90px 100px 1fr 110px' }}>
-                  <span>Time</span>
-                  <span>Type</span>
-                  <span>Value</span>
-                  <span>Price</span>
-                  <span>Amount</span>
-                  <span>By</span>
-                </div>
-                <div className="divide-y divide-white/5">
-                  {(tradersData?.traders || []).map((h: any) => {
-                    const isBuy = h.lastTradeType !== 'sell';
-                    const timeAgo = h.lastActive ? relAge(h.lastActive * 1000) : '—';
-                    const value = h.lastTradeUsd > 0 ? fmtUsd(h.lastTradeUsd)
-                      : isBuy ? (h.buyCount > 0 ? fmtUsd(h.buyVolume / h.buyCount) : '—')
-                      : (h.sellCount > 0 ? fmtUsd(h.sellVolume / h.sellCount) : '—');
-                    const price = h.lastTradePrice > 0 ? `$${h.lastTradePrice < 0.000001 ? h.lastTradePrice.toExponential(2) : h.lastTradePrice < 0.001 ? h.lastTradePrice.toFixed(7) : h.lastTradePrice < 1 ? h.lastTradePrice.toFixed(5) : h.lastTradePrice.toFixed(4)}`
-                      : isBuy ? (h.avgCost > 0 ? `$${h.avgCost.toFixed(h.avgCost < 0.001 ? 7 : 5)}` : '—')
-                      : (h.avgSold > 0 ? `$${h.avgSold.toFixed(h.avgSold < 0.001 ? 7 : 5)}` : '—');
-                    const tokenAmt = h.lastTradeTokenAmount > 0 ? fmtCount(h.lastTradeTokenAmount)
-                      : isBuy ? (h.buyAmount > 0 ? fmtCount(h.buyAmount) : '—')
-                      : (h.sellAmount > 0 ? fmtCount(h.sellAmount) : '—');
-                    const isSm = h.tags?.includes('smart_degen');
-                    const isKol = h.tags?.includes('renowned');
-                    const shortBy = h.name || `${h.address.slice(0, 6)}…${h.address.slice(-4)}`;
-                    return (
-                      <a
-                        key={h.address}
-                        href={`https://gmgn.ai/sol/address/${h.address}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="grid items-center py-2.5 px-3 hover:bg-white/5 transition-colors"
-                        style={{ gridTemplateColumns: '52px 44px 90px 100px 1fr 110px' }}
-                      >
-                        {/* Time */}
-                        <span className="text-white/50 text-xs tabular-nums">{timeAgo}</span>
-                        {/* Type */}
-                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-bold ${isBuy ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
-                          {isBuy ? 'B' : 'S'}
-                        </span>
-                        {/* Value */}
-                        <span className={`text-sm tabular-nums font-medium ${isBuy ? 'text-emerald-300' : 'text-red-300'}`}>{value}</span>
-                        {/* Price */}
-                        <span className="text-white/70 text-xs tabular-nums">{price}</span>
-                        {/* Amount */}
-                        <span className="text-white text-xs tabular-nums truncate">{tokenAmt}</span>
-                        {/* By */}
-                        <div className="flex items-center gap-1 justify-end min-w-0">
-                          {isSm && <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">SM</span>}
-                          {isKol && <span className="text-[9px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">KOL</span>}
-                          <span className="font-mono text-purple-200 text-xs truncate">{shortBy}</span>
-                        </div>
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
       {tradeFor && (
         <TradeDialog token={tokenForTrade} action={tradeFor} onClose={() => setTradeFor(null)} />
@@ -1633,18 +1575,18 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
   }
 
   return (
-    <div className={flat ? 'space-y-3' : 'bg-purple-900/40 border border-purple-500/20 rounded-2xl p-3 space-y-3'}>
-      <div className="grid grid-cols-2 bg-purple-950/50 border border-purple-500/20 rounded-lg p-1 gap-1">
+    <div className={flat ? 'space-y-2' : 'bg-purple-900/40 border border-purple-500/20 rounded-2xl p-2.5 space-y-2'}>
+      <div className="grid grid-cols-2 bg-purple-950/50 border border-purple-500/20 rounded-lg p-0.5 gap-0.5">
         <button
           onClick={() => { setSide('buy'); setAmount(''); }}
-          className={`py-2 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1.5 text-white ${side === 'buy' ? 'bg-purple-600' : 'hover:bg-white/5'}`}
+          className={`py-1.5 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1 text-white ${side === 'buy' ? 'bg-purple-600' : 'hover:bg-white/5'}`}
           data-testid="swap-tab-buy"
-        ><Zap className="h-3.5 w-3.5" /> Buy</button>
+        ><Zap className="h-3 w-3" /> Buy</button>
         <button
           onClick={() => { setSide('sell'); setAmount(''); }}
-          className={`py-2 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1.5 text-white ${side === 'sell' ? 'bg-purple-600' : 'hover:bg-white/5'}`}
+          className={`py-1.5 rounded-md text-sm font-semibold transition flex items-center justify-center gap-1 text-white ${side === 'sell' ? 'bg-purple-600' : 'hover:bg-white/5'}`}
           data-testid="swap-tab-sell"
-        ><ArrowDownUp className="h-3.5 w-3.5" /> Sell</button>
+        ><ArrowDownUp className="h-3 w-3" /> Sell</button>
       </div>
       {(() => {
         const paySym = side === 'buy' ? 'SOL' : sym;
@@ -1666,21 +1608,21 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
         const allPresets = [...presets, 'MAX'];
         return (
           <>
-            <div className="flex items-center text-sm">
-              <span className="text-white">Balance: <span className="text-white">{balText}</span></span>
+            <div className="flex items-center text-xs text-white/70">
+              Balance: <span className="text-white ml-1">{balText}</span>
             </div>
-            <div className="bg-purple-950/50 rounded-lg border border-purple-500/40 px-3 py-2 flex items-center gap-3">
+            <div className="bg-purple-950/50 rounded-lg border border-purple-500/40 px-3 py-1.5 flex items-center gap-2">
               <div className="text-white text-sm font-semibold">{paySym}</div>
               <input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.0"
                 inputMode="decimal"
-                className="flex-1 bg-transparent text-white text-base font-bold outline-none"
+                className="flex-1 bg-transparent text-white text-sm font-bold outline-none"
                 data-testid="input-swap-amount"
               />
             </div>
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-5 gap-1">
               {allPresets.map((p) => (
                 <button
                   key={p}
@@ -1694,20 +1636,18 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
                       else if (side === 'buy' && balance != null) setAmount((balance * pct).toFixed(4));
                     } else setAmount(p);
                   }}
-                  className="py-1.5 rounded-md text-xs bg-purple-950/50 border border-purple-500/20 text-white hover:bg-purple-600/40"
+                  className="py-1 rounded-md text-xs bg-purple-950/50 border border-purple-500/20 text-white hover:bg-purple-600/40"
                   data-testid={`swap-preset-${p}`}
                 >{p}</button>
               ))}
             </div>
-            <div className="flex items-center justify-between text-sm pt-1">
-              <span className="text-white">You receive:</span>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-white/70">You receive:</span>
               <span className="text-white font-semibold tabular-nums">{recvVal} {recvSym}</span>
             </div>
-            <div className="space-y-1 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-white">Fee</span>
-                <span className="text-white font-semibold">0.50%</span>
-              </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-white/70">Fee</span>
+              <span className="text-white font-semibold">0.50%</span>
             </div>
           </>
         );
@@ -1715,10 +1655,10 @@ function SwapCard({ token, flat }: { token: Token; flat?: boolean }) {
       <Button
         onClick={submit}
         disabled={busy || !publicKey}
-        className={`w-full py-4 text-sm font-bold rounded-xl ${side === 'buy' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-90'}`}
+        className={`w-full py-2.5 text-sm font-bold rounded-xl ${side === 'buy' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90' : 'bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-90'}`}
         data-testid="button-quick-swap"
       >
-        {busy ? 'Sending…' : !publicKey ? 'Connect Wallet in Header' : side === 'buy' ? 'Buy' : 'Sell'}
+        {busy ? 'Sending…' : !publicKey ? 'Connect Wallet' : side === 'buy' ? 'Buy' : 'Sell'}
       </Button>
     </div>
   );
