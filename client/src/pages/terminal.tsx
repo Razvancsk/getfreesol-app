@@ -168,6 +168,15 @@ function ago(ts?: number) {
   return `${Math.floor(s / 86400)}d`;
 }
 
+// Forces a re-render every second so ago() stays live
+function useTick() {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+}
+
 function fmtSol(n?: number) {
   if (!n || !Number.isFinite(n)) return '—';
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
@@ -432,8 +441,9 @@ export function TerminalView() {
   const [, navigate] = useLocation();
   const { publicKey: walletKey, setVisible: openWallet, disconnect: disconnectWallet, connected: isWalletConnected, select: selectWallet } = useReownWallet();
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  useTick(); // re-render every second so ago() timestamps stay live
 
-  // Live feed via SSE — server pushes updates every 10 seconds
+  // Live feed via SSE — server pushes updates every 5 seconds
   const [liveData, setLiveData] = useState<{ new: Token[]; bonding: Token[]; migrated: Token[]; trending: Token[]; status: any } | null>(() => {
     try {
       const raw = localStorage.getItem('terminal_sse_cache');
