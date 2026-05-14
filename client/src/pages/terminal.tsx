@@ -1462,47 +1462,63 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     enabled: tab === 'holders' && !!mint,
     staleTime: 60_000,
   });
-  // Live trade feed: poll every 3s, accumulate new trades detected via timestamp change
+  // Live trade feed via pumpapi.io WebSocket stream
   const [liveTrades, setLiveTrades] = useState<any[]>([]);
   const [tradesLoading, setTradesLoading] = useState(false);
-  const prevTimestamps = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (tab !== 'traders' || !mint) return;
-    let cancelled = false;
+    setLiveTrades([]);
+    setTradesLoading(true);
 
-    async function poll() {
-      if (cancelled) return;
-      if (liveTrades.length === 0) setTradesLoading(true);
+    const ws = new WebSocket('wss://pumpapi.io/stream');
+    let alive = true;
+
+    ws.onopen = () => {
+      if (!alive) return;
+      ws.send(JSON.stringify({ action: 'subscribe', mint }));
+    };
+
+    ws.onmessage = (event) => {
+      if (!alive) return;
       try {
-        const r = await fetch(`/api/terminal/token-trades/${mint}`);
-        if (!r.ok || cancelled) return;
-        const { trades } = await r.json() as { trades: any[] };
-        if (cancelled) return;
+        const msg = JSON.parse(event.data);
+        const txType: string = (msg.txType || msg.type || '').toLowerCase();
+        if (txType !== 'buy' && txType !== 'sell') return;
 
-        const newEntries: any[] = [];
-        for (const t of trades) {
-          const prev = prevTimestamps.current.get(t.walletAddress) ?? 0;
-          if (t.timestamp > 0 && t.timestamp !== prev) {
-            newEntries.push(t);
-            prevTimestamps.current.set(t.walletAddress, t.timestamp);
-          }
-        }
-        if (newEntries.length > 0) {
-          setLiveTrades(prev =>
-            [...newEntries, ...prev]
-              .sort((a, b) => b.timestamp - a.timestamp)
-              .slice(0, 80)
-          );
-        }
-      } catch { /* ignore */ } finally {
-        if (!cancelled) setTradesLoading(false);
-      }
-    }
+        const solAmt  = Number(msg.solAmount  ?? msg.sol_amount  ?? 0);
+        const tokAmt  = Number(msg.tokenAmount ?? msg.token_amount ?? 0);
+        const tsSec   = msg.timestamp
+          ? (msg.timestamp > 1e12 ? msg.timestamp / 1000 : msg.timestamp)
+          : Date.now() / 1000;
+        const mcapSol = Number(msg.marketCapSol ?? msg.market_cap_sol ?? 0);
+        // Approximate price in SOL per token from market cap
+        const priceSol = (mcapSol > 0 && tokAmt > 0) ? mcapSol / 1_000_000_000 : 0;
 
-    poll();
-    const interval = setInterval(poll, 3000);
-    return () => { cancelled = true; clearInterval(interval); };
+        const trade = {
+          type:          txType,
+          timestamp:     tsSec,
+          usdValue:      0,          // no SOL/USD rate here; display as SOL
+          solAmount:     solAmt,
+          price:         priceSol,
+          tokenAmount:   tokAmt,
+          walletAddress: msg.traderPublicKey ?? msg.user ?? '',
+          signature:     msg.signature ?? msg.txHash ?? '',
+          tags:          [],
+        };
+
+        setTradesLoading(false);
+        setLiveTrades(prev => [trade, ...prev].slice(0, 100));
+      } catch { /* ignore malformed */ }
+    };
+
+    ws.onerror = () => { if (alive) setTradesLoading(false); };
+    ws.onclose = () => { if (alive) setTradesLoading(false); };
+
+    return () => {
+      alive = false;
+      ws.close();
+    };
   }, [tab, mint]);
 
   const { data: jupMarket } = useQuery<any>({
@@ -1710,7 +1726,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                       {liveTrades.map((tx: any, i: number) => {
                         const isBuy = tx.type !== 'sell';
                         const timeAgo = tx.timestamp > 0 ? relAge(tx.timestamp) : '—';
-                        const value = tx.usdValue > 0 ? fmtUsd(tx.usdValue) : '—';
+                        const value = tx.usdValue > 0 ? fmtUsd(tx.usdValue) : tx.solAmount > 0 ? `◎${tx.solAmount.toFixed(3)}` : '—';
                         const fmtPrice = (p: number) => p <= 0 ? '—' : `$${p < 0.000001 ? p.toExponential(2) : p < 0.001 ? p.toFixed(7) : p < 1 ? p.toFixed(5) : p.toFixed(4)}`;
                         const price = fmtPrice(tx.price);
                         const tokenAmt = tx.tokenAmount > 0 ? fmtCount(tx.tokenAmount) : '—';
