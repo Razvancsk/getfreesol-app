@@ -839,7 +839,7 @@ export function TerminalView() {
 
     if (launchpadFilter.size > 0 && launchpadFilter.size < ALL_LAUNCHPADS.length && isGmgnTab && debouncedSearch.length === 0) {
       list = list.filter(t => {
-        const lp = (t.launchpad || '').toLowerCase();
+        const lp = (t.launchpad || (Array.isArray(t.tags) && t.tags[0]) || '').toLowerCase();
         if (launchpadFilter.has('pump') && (lp === 'pump.fun' || lp.includes('pump_agent'))) return true;
         if (launchpadFilter.has('mayhem') && lp.includes('mayhem')) return true;
         if (launchpadFilter.has('letsbonk') && lp.includes('letsbonk')) return true;
@@ -1164,7 +1164,8 @@ export function TerminalView() {
                 </div>
                 {/* Badges */}
                 {(() => {
-                  const lpInfo = t.launchpad ? findLaunchpad(t.launchpad) : undefined;
+                  const rawTag = t.launchpad || (Array.isArray(t.tags) && t.tags[0]) || '';
+                  const lpInfo = rawTag ? findLaunchpad(rawTag) : undefined;
                   const hasBadge = lpInfo || (t.smartDegens ?? 0) > 0 || (t.renownedCount ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3;
                   if (!hasBadge) return null;
                   return (

@@ -18,6 +18,7 @@ export interface GmgnToken {
   bondingPct?: number;
   migrated?: boolean;
   launchpad?: string;
+  tags?: string[];
   smartDegens?: number;
   renownedCount?: number;
   rugRatio?: number;
@@ -92,6 +93,7 @@ function mapJupiterToken(t: any, overrideMigrated?: boolean): GmgnToken {
     bondingPct: undefined,
     migrated: overrideMigrated ?? !!(t.graduatedPool),
     launchpad: inferLaunchpad(t),
+    tags: Array.isArray(t.tags) ? t.tags.map(String) : [],
     smartDegens: 0,
     renownedCount: 0,
   };
