@@ -56,9 +56,16 @@ function n(v: any): number | undefined {
   return Number.isFinite(x) ? x : undefined;
 }
 
-// Map Jupiter /tokens/v2/recent token to GmgnToken
-function mapJupiterToken(t: any): GmgnToken {
-  // Jupiter uses flat stats fields: stats1h, stats24h (not nested stats['1h'])
+// Infer launchpad from Jupiter token — top-level launchpad field or mint address suffix
+function inferLaunchpad(t: any): string {
+  if (t.launchpad) return t.launchpad;
+  const mint: string = t.id || '';
+  if (mint.endsWith('pump')) return 'pump.fun';
+  return '';
+}
+
+// Map any Jupiter token response format to GmgnToken
+function mapJupiterToken(t: any, overrideMigrated?: boolean): GmgnToken {
   const s1h = t.stats1h || {};
   const s24h = t.stats24h || {};
   const createdAt = t.firstPool?.createdAt ? new Date(t.firstPool.createdAt).getTime()
@@ -82,8 +89,8 @@ function mapJupiterToken(t: any): GmgnToken {
     txns: (buys + sells) || undefined,
     createdAt,
     bondingPct: undefined,
-    migrated: !!(t.graduatedPool),
-    launchpad: t.launchpad || 'pump.fun',
+    migrated: overrideMigrated ?? !!(t.graduatedPool),
+    launchpad: inferLaunchpad(t),
     smartDegens: 0,
     renownedCount: 0,
   };
@@ -141,7 +148,6 @@ function applyImageCache(tokens: GmgnToken[]): GmgnToken[] {
 
 
 let trendingTick = 0;
-let rateLimitBackoff = 0; // ms to skip next poll if rate limited
 
 function dedupeByMint(tokens: GmgnToken[]): GmgnToken[] {
   const seen = new Set<string>();
@@ -149,78 +155,77 @@ function dedupeByMint(tokens: GmgnToken[]): GmgnToken[] {
 }
 
 async function poll() {
-  // Skip poll during backoff (rate limit recovery)
-  if (rateLimitBackoff > 0) {
-    rateLimitBackoff -= 5000;
-    return;
-  }
-  // Skip poll if no SSE clients are watching — saves API quota
   if (sseClients.size === 0 && cache.new.length > 0) return;
 
-  try {
-    const c = getClient();
+  const jupKey = process.env.JUPITER_API_KEY || '';
+  const jupHeaders: Record<string, string> = { 'Accept': 'application/json' };
+  if (jupKey) jupHeaders['x-api-key'] = jupKey;
 
-    // New tokens — Jupiter /tokens/v2/recent (reliable, rich metadata, good images)
+  let anySuccess = false;
+
+  // New + Bonding — Jupiter /tokens/v2/recent (newest tokens, have launchpad tag)
+  try {
+    const r = await fetch('https://api.jup.ag/tokens/v2/recent', {
+      headers: jupHeaders,
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.ok) {
+      const tokens: any[] = await r.json();
+      const mapped = dedupeByMint(tokens.map(t => mapJupiterToken(t)).filter(t => t.mint));
+      if (mapped.length) {
+        cache.new = mapped;
+        // All recent tokens are on bonding curve (no graduatedPool)
+        cache.bonding = mapped.filter(t => !t.migrated);
+        anySuccess = true;
+        console.log(`[jup] recent: ${mapped.length} (bonding: ${cache.bonding.length})`);
+      }
+    }
+  } catch (e: any) {
+    console.error('[jup] recent failed:', e?.message);
+  }
+
+  // Migrated — Jupiter /tokens/v2/toptrending/5m (recently active, many just graduated)
+  // Launchpad inferred from Jupiter launchpad field or mint address suffix (pump.fun → ends in "pump")
+  trendingTick++;
+  if (trendingTick % 3 === 1) {
     try {
-      const jupKey = process.env.JUPITER_API_KEY || '';
-      const r = await fetch('https://api.jup.ag/tokens/v2/recent', {
-        headers: { 'Accept': 'application/json', ...(jupKey ? { 'x-api-key': jupKey } : {}) },
+      const r2 = await fetch('https://api.jup.ag/tokens/v2/toptrending/5m?limit=50', {
+        headers: jupHeaders,
         signal: AbortSignal.timeout(8000),
       });
-      if (r.ok) {
-        const tokens: any[] = await r.json();
-        const mapped = dedupeByMint(tokens.map(mapJupiterToken).filter(t => t.mint));
-        if (mapped.length) cache.new = mapped;
-        console.log(`[jup] recent tokens: ${mapped.length}`);
+      if (r2.ok) {
+        const tokens: any[] = await r2.json();
+        const mapped = dedupeByMint(
+          tokens.map(t => mapJupiterToken(t, true)).filter(t => t.mint)
+        );
+        if (mapped.length) {
+          cache.migrated = mapped;
+          anySuccess = true;
+          console.log(`[jup] toptrending/5m (migrated): ${mapped.length}`);
+        }
       }
     } catch (e: any) {
-      console.error('[jup] recent tokens failed:', e?.message);
+      console.error('[jup] toptrending failed:', e?.message);
     }
 
-    // Bonding + Migrated — GMGN only (specialises in bonding curve progress)
+    // SOL price from Jupiter price v3
     try {
-      const data: any = await c.getTrenches('sol', ['near_completion', 'completed']);
-      const bondArr: any[] = data?.near_completion || data?.pump || [];
-      const migArr: any[] = data?.completed || [];
-
-      if (bondArr.length) cache.bonding = dedupeByMint(applyImageCache(bondArr.map(mapToken).filter(t => t.mint)));
-      if (migArr.length) cache.migrated = dedupeByMint(applyImageCache(migArr.map(mapToken).filter(t => t.mint)));
-      console.log(`[gmgn] bonding=${cache.bonding.length} migrated=${cache.migrated.length}`);
-    } catch (e: any) {
-      const msg = (e?.apiError || e?.message || '');
-      if (msg.includes('RATE_LIMIT')) {
-        rateLimitBackoff = 30000;
-        console.warn('[gmgn] rate limited — backing off 30s');
-      } else {
-        console.error('[gmgn] trenches fetch failed:', msg);
+      const pr = await fetch(
+        'https://api.jup.ag/price/v3?ids=So11111111111111111111111111111111111111112',
+        { headers: jupHeaders, signal: AbortSignal.timeout(5000) }
+      );
+      if (pr.ok) {
+        const pd: any = await pr.json();
+        const p = Number(pd?.data?.['So11111111111111111111111111111111111111112']?.price || 0);
+        if (p > 0) solUsdPrice = p;
       }
-    }
+    } catch {}
+  }
 
-    // Trending + SOL price — only every 10th cycle (~50s)
-    trendingTick++;
-    if (trendingTick % 10 === 1) {
-      try {
-        const data: any = await c.getTrendingSwaps('sol', '1h', { orderby: 'volume', direction: 'desc', limit: 50 });
-        const arr: any[] = data?.rank || (Array.isArray(data) ? data : []);
-        if (arr.length) cache.trending = dedupeByMint(arr.map(mapToken).filter(t => t.mint));
-      } catch (e: any) {
-        console.error('[gmgn] trending fetch failed:', e?.message);
-      }
-
-      // SOL price from GMGN
-      try {
-        const solInfo: any = await c.getTokenInfo('sol', 'So11111111111111111111111111111111111111112');
-        const solPrice = Number(solInfo?.price?.price || 0);
-        if (solPrice > 0) solUsdPrice = solPrice;
-      } catch {}
-    }
-
+  if (anySuccess) {
     connected = true;
     lastUpdate = Date.now();
     notifySse();
-  } catch (e: any) {
-    console.error('[gmgn] poll error:', e.message);
-    connected = false;
   }
 }
 
