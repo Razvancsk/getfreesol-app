@@ -287,10 +287,9 @@ function useDebounced<T>(value: T, ms: number): T {
   return v;
 }
 
-function HoldingsDrawer({ trigger }: { trigger: React.ReactNode }) {
+function HoldingsDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { publicKey, setVisible } = useReownWallet();
   const [, navigate] = useLocation();
-  const [open, setOpen] = useState(false);
   const [portfolioTab, setPortfolioTab] = useState<'holdings' | 'activity'>('holdings');
   const addr = publicKey?.toBase58();
 
@@ -330,8 +329,7 @@ function HoldingsDrawer({ trigger }: { trigger: React.ReactNode }) {
   const stats = statsData?.stats;
 
   return (
-    <Sheet open={open} onOpenChange={(v) => setOpen(v)}>
-      <SheetTrigger asChild>{trigger}</SheetTrigger>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="bg-gradient-to-b from-slate-900 via-purple-950 to-slate-900 border-purple-500/30 text-white w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="text-white">My Portfolio</SheetTitle>
@@ -441,6 +439,7 @@ export function TerminalView() {
   const [, navigate] = useLocation();
   const { publicKey: walletKey, setVisible: openWallet, disconnect: disconnectWallet, connected: isWalletConnected, select: selectWallet } = useReownWallet();
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [holdingsOpen, setHoldingsOpen] = useState(false);
   useTick(); // re-render every second so ago() timestamps stay live
 
   // Live feed via SSE — server pushes updates every 5 seconds
@@ -507,6 +506,7 @@ export function TerminalView() {
 
   return (
     <div className="text-white">
+      <HoldingsDrawer open={holdingsOpen} onOpenChange={setHoldingsOpen} />
       <div>
         <div className="flex items-center justify-end gap-2 mb-4">
           {isWalletConnected && walletKey ? (
@@ -524,11 +524,14 @@ export function TerminalView() {
               )}
               {walletMenuOpen && (
                 <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg overflow-hidden min-w-full">
-                  <HoldingsDrawer trigger={
-                    <div className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm text-center truncate" onClick={() => setWalletMenuOpen(false)}>
-                      Portfolio
-                    </div>
-                  } />
+                  <div
+                    onClick={() => { setWalletMenuOpen(false); setHoldingsOpen(true); }}
+                    className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm text-center truncate"
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                    data-testid="button-portfolio"
+                  >
+                    Portfolio
+                  </div>
                   <div
                     onClick={() => { disconnectWallet(); setWalletMenuOpen(false); }}
                     className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm text-center truncate"
