@@ -56,9 +56,10 @@ function n(v: any): number | undefined {
   return Number.isFinite(x) ? x : undefined;
 }
 
-// Infer launchpad from Jupiter token — top-level launchpad field or mint address suffix
+// Infer launchpad from Jupiter token — top-level launchpad field, then tags array, then mint suffix
 function inferLaunchpad(t: any): string {
   if (t.launchpad) return t.launchpad;
+  if (Array.isArray(t.tags) && t.tags.length > 0) return String(t.tags[0]);
   const mint: string = t.id || '';
   if (mint.endsWith('pump')) return 'pump.fun';
   return '';
