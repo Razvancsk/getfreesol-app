@@ -435,7 +435,7 @@ export function TerminalView() {
   const [search, setSearch] = useState('');
   const [trendingInterval, setTrendingInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
   const [trendingCategory, setTrendingCategory] = useState<'toptrending' | 'toptraded'>('toptrending');
-  const [launchpadFilter, setLaunchpadFilter] = useState<'all' | 'pump' | 'letsbonk' | 'meteora' | 'moonshot'>('all');
+  const [launchpadFilter, setLaunchpadFilter] = useState<'all' | 'pump' | 'letsbonk' | 'meteora' | 'moonshot' | 'bags'>('all');
   const [tradeFor, setTradeFor] = useState<{ token: Token; action: 'buy' | 'sell' } | null>(null);
   const [, navigate] = useLocation();
   const { publicKey: walletKey, setVisible: openWallet, disconnect: disconnectWallet, connected: isWalletConnected, select: selectWallet } = useReownWallet();
@@ -507,6 +507,7 @@ export function TerminalView() {
         if (launchpadFilter === 'letsbonk') return lp.includes('bonk') || lp.includes('letsbonk');
         if (launchpadFilter === 'meteora') return lp.includes('meteora');
         if (launchpadFilter === 'moonshot') return lp.includes('moonshot');
+        if (launchpadFilter === 'bags') return lp.includes('bag');
         return true;
       });
     }
@@ -610,26 +611,44 @@ export function TerminalView() {
         </div>
 
         {isGmgnTab && debouncedSearch.length === 0 && (
-          <div className="flex gap-2 flex-wrap mb-3">
-            {([
-              { id: 'all',      label: 'All' },
-              { id: 'pump',     label: 'Pump.fun' },
-              { id: 'letsbonk', label: 'LetsBonk' },
-              { id: 'meteora',  label: 'Meteora' },
-              { id: 'moonshot', label: 'Moonshot' },
-            ] as const).map(lp => (
-              <button
-                key={lp.id}
-                onClick={() => setLaunchpadFilter(lp.id)}
-                className={`text-xs px-3 py-1 rounded-full border transition font-semibold ${
-                  launchpadFilter === lp.id
-                    ? 'bg-purple-600 border-purple-500 text-white'
-                    : 'border-white/20 text-white/50 hover:text-white/80 hover:border-white/40'
-                }`}
-              >
-                {lp.label}
-              </button>
-            ))}
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-white/50 text-[11px] font-semibold uppercase tracking-wider">Launchpads</span>
+              {launchpadFilter !== 'all' && (
+                <button onClick={() => setLaunchpadFilter('all')} className="text-[11px] px-2 py-0.5 rounded border border-white/20 text-white/50 hover:text-white/70 transition">
+                  Show All
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-y-1.5 gap-x-2">
+              {([
+                { id: 'pump',     label: 'Pump.fun',  color: '#88D693' },
+                { id: 'letsbonk', label: 'LetsBonk',  color: '#E78C19' },
+                { id: 'meteora',  label: 'Meteora',   color: '#07E993' },
+                { id: 'moonshot', label: 'Moonshot',  color: '#FF88FE' },
+                { id: 'bags',     label: 'Bags',      color: '#00D62B' },
+              ] as const).map(lp => {
+                const active = launchpadFilter === 'all' || launchpadFilter === lp.id;
+                return (
+                  <button
+                    key={lp.id}
+                    onClick={() => setLaunchpadFilter(launchpadFilter === lp.id ? 'all' : lp.id)}
+                    className="inline-flex items-center gap-1 px-1.5 h-[22px] rounded-2xl text-[11px] cursor-pointer select-none transition-all w-fit"
+                    style={active ? {
+                      border: `1px solid ${lp.color}99`,
+                      color: lp.color,
+                      backgroundColor: `${lp.color}1a`,
+                    } : {
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: 'rgba(255,255,255,0.25)',
+                    }}
+                  >
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: active ? lp.color : 'rgba(255,255,255,0.2)' }} />
+                    {lp.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
