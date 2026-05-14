@@ -1421,12 +1421,12 @@ function InfoAddressRow({ label, value, isLast }: { label: string; value?: strin
     } catch {}
   };
   return (
-    <div className={`py-5 px-4 text-center ${isLast ? '' : 'border-b border-purple-500/20'}`}>
-      <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">{label}</div>
-      <div className="flex items-center justify-center gap-2 mt-2">
-        <span className="text-white font-mono text-sm">{value ? shortAddr(value) : '—'}</span>
+    <div className={`flex items-center justify-between gap-2 px-4 py-2 ${isLast ? '' : 'border-b border-purple-500/20'}`}>
+      <span className="text-purple-300/70 text-xs font-semibold tracking-wide uppercase shrink-0">{label}</span>
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="text-white font-mono text-xs truncate">{value ? shortAddr(value) : '—'}</span>
         {value && (
-          <button onClick={onCopy} className="text-xs px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-white" data-testid={`button-copy-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+          <button onClick={onCopy} className="text-[10px] px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white shrink-0" data-testid={`button-copy-${label.toLowerCase().replace(/\s+/g, '-')}`}>
             Copy
           </button>
         )}
@@ -1438,9 +1438,9 @@ function InfoAddressRow({ label, value, isLast }: { label: string; value?: strin
 function InfoTextRow({ label, value, isLast }: { label: string; value?: React.ReactNode; isLast?: boolean }) {
   if (!value) return null;
   return (
-    <div className={`py-5 px-4 text-center ${isLast ? '' : 'border-b border-purple-500/20'}`}>
-      <div className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">{label}</div>
-      <div className="text-white text-base mt-2">{value}</div>
+    <div className={`flex items-center justify-between gap-2 px-4 py-2 ${isLast ? '' : 'border-b border-purple-500/20'}`}>
+      <span className="text-purple-300/70 text-xs font-semibold tracking-wide uppercase shrink-0">{label}</span>
+      <span className="text-white text-xs font-medium">{value}</span>
     </div>
   );
 }
