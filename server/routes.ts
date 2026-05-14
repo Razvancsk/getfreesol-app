@@ -1695,8 +1695,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // Points disabled for swaps
-            const pointsAwarded = 0;
+            // Award 1 point per $1 traded (tiered: 1x up to $1K, 1.5x up to $10K, 2x above $10K)
+            let pointsAwarded = 0;
+            if (swapUsdValue >= 1) {
+              if (swapUsdValue <= 1000) {
+                pointsAwarded = Math.floor(swapUsdValue * 1);
+              } else if (swapUsdValue <= 10000) {
+                pointsAwarded = Math.floor(1000 + (swapUsdValue - 1000) * 1.5);
+              } else {
+                pointsAwarded = Math.floor(1000 + 13500 + (swapUsdValue - 10000) * 2);
+              }
+            }
+            // Upsert points into userPoints table
+            if (pointsAwarded > 0) {
+              try {
+                await db
+                  .insert(userPoints)
+                  .values({ walletAddress, points: pointsAwarded, accountsClosed: 0 })
+                  .onConflictDoUpdate({
+                    target: userPoints.walletAddress,
+                    set: { points: sql`${userPoints.points} + ${pointsAwarded}`, lastUpdated: new Date() }
+                  });
+              } catch (ptErr) {
+                console.error('Failed to award swap points:', ptErr);
+              }
+            }
             
             // Record the swap
             // platformFee might be an object from Jupiter, extract the fee amount
