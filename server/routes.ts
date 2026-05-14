@@ -13056,72 +13056,66 @@ Claimer: ${walletAddress}`;
       const jupHeaders: Record<string, string> = { 'Accept': 'application/json' };
       if (jupKey) jupHeaders['x-api-key'] = jupKey;
 
-      // Jupiter + GMGN in parallel; GMGN failure is non-fatal
-      const [jupRes, gmgnInfo] = await Promise.all([
-        fetch(`https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`, {
-          headers: jupHeaders,
-          signal: AbortSignal.timeout(8000),
-        }),
-        getGmgnTokenInfo(mint).catch(() => null),
-      ]);
+      const jupRes = await fetch(`https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`, {
+        headers: jupHeaders,
+        signal: AbortSignal.timeout(8000),
+      });
 
       const jupArr: any[] = jupRes.ok ? (await jupRes.json()) : [];
       const tokens: any[] = Array.isArray(jupArr) ? jupArr : (jupArr?.tokens || []);
-      const jt: any = tokens.find((t: any) => (t.id || t.address) === mint) || tokens[0] || null;
-      const g: any = gmgnInfo || {};
+      const jt: any = tokens.find((t: any) => t.id === mint) || tokens[0] || null;
 
-      const stats1h: any = jt?.stats?.['1h'] || {};
-      const stats24h: any = jt?.stats?.['24h'] || {};
-      const jupAudit: any = jt?.audit || {};
+      if (!jt) return res.status(404).json({ error: 'token not found' });
 
-      const priceNum = jt?.usdPrice ? parseFloat(jt.usdPrice) : (g.usdPrice || undefined);
-      const circulatingSupply = g.circSupply || g.totalSupply || 0;
-      const mcap = jt?.mcap ?? (priceNum && circulatingSupply ? priceNum * circulatingSupply : undefined) ?? g.mcap ?? undefined;
+      const s1h: any = jt.stats1h || {};
+      const s24h: any = jt.stats24h || {};
+      const audit: any = jt.audit || {};
+      const priceNum = jt.usdPrice ? Number(jt.usdPrice) : undefined;
+      const supply = Number(jt.circSupply || jt.totalSupply || 0);
+      const mcap = jt.mcap ?? (priceNum && supply ? priceNum * supply : undefined);
 
       res.json({
         id: mint,
         mint,
-        name: jt?.name || g.name || '',
-        symbol: jt?.symbol || g.symbol || '',
-        icon: jt?.icon || g.icon || '',
-        decimals: jt?.decimals ?? g.decimals ?? undefined,
-        totalSupply: circulatingSupply,
-        circSupply: circulatingSupply,
+        name: jt.name || '',
+        symbol: jt.symbol || '',
+        icon: jt.icon || '',
+        decimals: jt.decimals ?? undefined,
+        totalSupply: supply,
+        circSupply: supply,
         usdPrice: priceNum,
         mcap,
-        fdv: jt?.fdv ?? mcap ?? undefined,
-        liquidity: jt?.liquidity ?? g.liquidity ?? undefined,
-        holderCount: jt?.holderCount ?? g.holderCount ?? undefined,
-        organicScore: jt?.organicScore ?? null,
-        organicScoreLabel: jt?.organicScoreLabel ?? null,
-        isVerified: jt?.isVerified ?? false,
-        launchpad: jt?.firstPool?.launchpad || g.launchpad || '',
-        bondingProgress: g.bondingProgress,
-        firstPool: jt?.firstPool || null,
-        twitter: g.twitter || '',
-        website: g.website || '',
-        telegram: g.telegram || '',
-        devAddress: g.devAddress || '',
-        poolAddress: g.poolAddress || '',
-        poolDex: g.poolDex || '',
-        poolLiquidity: g.poolLiquidity,
-        smartDegens: g.smartDegens ?? 0,
-        renownedWallets: g.renownedWallets ?? 0,
-        rugRatio: g.rugRatio,
-        ratTraderRate: g.ratTraderRate,
-        bundlerRate: g.bundlerRate,
+        fdv: jt.fdv ?? mcap ?? undefined,
+        liquidity: jt.liquidity ?? undefined,
+        holderCount: jt.holderCount ?? undefined,
+        organicScore: jt.organicScore ?? null,
+        organicScoreLabel: jt.organicScoreLabel ?? null,
+        isVerified: jt.isVerified ?? false,
+        tags: jt.tags ?? [],
+        launchpad: jt.launchpad || '',
+        graduatedPool: jt.graduatedPool || null,
+        graduatedAt: jt.graduatedAt || null,
+        firstPool: jt.firstPool || null,
+        twitter: jt.twitter || '',
+        website: jt.website || '',
+        discord: jt.discord || '',
+        devAddress: jt.dev || '',
+        poolAddress: jt.graduatedPool || jt.firstPool?.id || '',
         audit: {
-          mintAuthorityDisabled: jupAudit.mintAuthorityDisabled ?? g.audit?.mintAuthorityDisabled ?? false,
-          freezeAuthorityDisabled: jupAudit.freezeAuthorityDisabled ?? g.audit?.freezeAuthorityDisabled ?? false,
-          topHoldersPercentage: jupAudit.topHoldersPercentage ?? g.audit?.topHoldersPercentage ?? null,
-          devBalancePercentage: g.audit?.devBalancePercentage ?? null,
-          isSus: jupAudit.isSus ?? false,
+          mintAuthorityDisabled: audit.mintAuthorityDisabled ?? !jt.mintAuthority ?? false,
+          freezeAuthorityDisabled: audit.freezeAuthorityDisabled ?? !jt.freezeAuthority ?? false,
+          topHoldersPercentage: audit.topHoldersPercentage ?? null,
+          devMints: audit.devMints ?? null,
+          devMigrations: audit.devMigrations ?? null,
+          isSus: audit.isSus ?? false,
         },
         stats24h: {
-          priceChange: stats24h.priceChange ?? stats1h.priceChange ?? g.stats24h?.priceChange ?? 0,
-          numBuys: stats24h.buys ?? g.stats24h?.numBuys ?? 0,
-          numSells: stats24h.sells ?? g.stats24h?.numSells ?? 0,
-          volume: stats24h.volume ?? g.stats24h?.volume ?? 0,
+          priceChange: s24h.priceChange ?? s1h.priceChange ?? 0,
+          numBuys: s24h.numBuys ?? s1h.numBuys ?? 0,
+          numSells: s24h.numSells ?? s1h.numSells ?? 0,
+          volume: (s24h.buyVolume ?? 0) + (s24h.sellVolume ?? 0) || (s1h.buyVolume ?? 0) + (s1h.sellVolume ?? 0) || 0,
+          buyVolume: s24h.buyVolume ?? s1h.buyVolume ?? 0,
+          sellVolume: s24h.sellVolume ?? s1h.sellVolume ?? 0,
         },
       });
     } catch (e: any) {

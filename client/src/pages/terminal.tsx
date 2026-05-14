@@ -1188,19 +1188,19 @@ function SignalsView() {
 
 type JupMint = {
   id: string; mint?: string; name?: string; symbol?: string; icon?: string;
-  decimals?: number; twitter?: string; website?: string; telegram?: string; discord?: string; dev?: string;
+  decimals?: number; twitter?: string; website?: string; telegram?: string; discord?: string;
+  devAddress?: string; dev?: string;
   circSupply?: number; totalSupply?: number; holderCount?: number;
-  fdv?: number; mcap?: number; usdPrice?: number; usdPrice_?: number; liquidity?: number;
-  organicScore?: number; isVerified?: boolean;
-  audit?: { mintAuthorityDisabled?: boolean; freezeAuthorityDisabled?: boolean; topHoldersPercentage?: number; devBalancePercentage?: number };
-  stats5m?: { holderChange?: number;[k: string]: any }; stats1h?: { holderChange?: number;[k: string]: any }; stats6h?: { holderChange?: number;[k: string]: any }; stats24h?: { holderChange?: number;[k: string]: any };
-  firstPool?: { id?: string; createdAt?: string; launchpad?: string };
-  launchpad?: string; graduatedPool?: string;
+  fdv?: number; mcap?: number; usdPrice?: number; liquidity?: number;
+  organicScore?: number; organicScoreLabel?: string; isVerified?: boolean;
+  tags?: string[];
+  launchpad?: string; graduatedPool?: string | null; graduatedAt?: string | null;
+  audit?: { mintAuthorityDisabled?: boolean; freezeAuthorityDisabled?: boolean; topHoldersPercentage?: number; devMints?: number; devMigrations?: number; isSus?: boolean };
+  stats5m?: { holderChange?: number;[k: string]: any }; stats1h?: { holderChange?: number;[k: string]: any }; stats6h?: { holderChange?: number;[k: string]: any }; stats24h?: { holderChange?: number; numBuys?: number; numSells?: number; volume?: number; buyVolume?: number; sellVolume?: number; priceChange?: number;[k: string]: any };
+  firstPool?: { id?: string; createdAt?: string };
+  poolAddress?: string;
   socials?: { twitter?: string; website?: string; telegram?: string; discord?: string };
   metadata?: { extensions?: { twitter?: string; website?: string; telegram?: string; discord?: string } };
-  // GMGN fields
-  smartDegens?: number; renownedWallets?: number; rugRatio?: number;
-  ratTraderRate?: number; bundlerRate?: number; bondingProgress?: number;
 };
 
 function pickSocials(info?: JupMint): { twitter?: string; website?: string; telegram?: string; discord?: string } {
@@ -1472,58 +1472,55 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             </div>
 
             {tab === 'info' && (() => {
-              const launchpad = info?.firstPool?.launchpad || (info as any)?.launchpad;
-              const devAddr = (info as any)?.devAddress || info?.dev || '';
+              const launchpad = (info as any)?.launchpad;
+              const devAddr = (info as any)?.devAddress || '';
               const poolAddr = (info as any)?.poolAddress || '';
-              const poolDex = (info as any)?.poolDex || '';
-              const poolLiq = (info as any)?.poolLiquidity;
+              const graduatedAt = (info as any)?.graduatedAt;
               return (
                 <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
                   <InfoAddressRow label="Contract Address" value={mint} />
                   {devAddr && <InfoAddressRow label="Developer Wallet" value={devAddr} />}
-                  {poolAddr && <InfoAddressRow label={`Pool (${poolDex || 'DEX'})`} value={poolAddr} />}
-                  {poolLiq != null && <InfoTextRow label="Pool Liquidity" value={fmtUsd(poolLiq)} />}
-                  {launchpad && <InfoTextRow label="Launchpad" value={launchpad} isLast />}
+                  {poolAddr && <InfoAddressRow label={graduatedAt ? 'DEX Pool' : 'Pool'} value={poolAddr} />}
+                  {launchpad && <InfoTextRow label="Launchpad" value={launchpad} />}
+                  {graduatedAt && <InfoTextRow label="Graduated" value={new Date(graduatedAt).toLocaleDateString()} isLast />}
+                  {!graduatedAt && launchpad && <InfoTextRow label="" value="" isLast />}
                 </div>
               );
             })()}
 
             {tab === 'security' && (() => {
-              const smartDegens = (info as any)?.smartDegens ?? 0;
-              const renownedWallets = (info as any)?.renownedWallets ?? 0;
-              const rugRatio = (info as any)?.rugRatio;
-              const ratTraderRate = (info as any)?.ratTraderRate;
-              const bundlerRate = (info as any)?.bundlerRate;
               const audit = (info as any)?.audit || {};
               const topHoldersPct = audit.topHoldersPercentage != null ? Number(audit.topHoldersPercentage) : null;
-              const devBalPct = audit.devBalancePercentage != null ? Number(audit.devBalancePercentage) : null;
+              const devMints = audit.devMints != null ? Number(audit.devMints) : null;
+              const devMigrations = audit.devMigrations != null ? Number(audit.devMigrations) : null;
+              const organicScore = (info as any)?.organicScore;
+              const organicLabel = (info as any)?.organicScoreLabel;
               return (
                 <div className="space-y-3">
-                  <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
-                    <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
-                      {[
-                        { label: 'Smart Wallets', value: smartDegens > 0 ? `${smartDegens} SM` : '0 SM', color: smartDegens >= 3 ? 'text-emerald-400' : smartDegens > 0 ? 'text-yellow-400' : 'text-white/50' },
-                        { label: 'KOL Wallets', value: renownedWallets > 0 ? `${renownedWallets} KOL` : '0 KOL', color: renownedWallets > 0 ? 'text-blue-400' : 'text-white/50' },
-                        { label: 'Rug Ratio', value: rugRatio != null ? `${(rugRatio * 100).toFixed(1)}%` : '—', color: rugRatio != null && rugRatio > 0.5 ? 'text-red-400' : rugRatio != null && rugRatio > 0.2 ? 'text-yellow-400' : 'text-emerald-400' },
-                        { label: 'Rat Traders', value: ratTraderRate != null ? `${(ratTraderRate * 100).toFixed(1)}%` : '—', color: ratTraderRate != null && ratTraderRate > 0.3 ? 'text-red-400' : 'text-white/70' },
-                      ].map((s) => (
-                        <div key={s.label} className="px-3 py-2.5 text-center">
-                          <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">{s.label}</div>
-                          <div className={`text-sm font-bold mt-0.5 ${s.color}`}>{s.value}</div>
+                  {organicScore != null && (
+                    <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+                      <div className="grid grid-cols-2 divide-x divide-purple-500/20">
+                        <div className="px-3 py-2.5 text-center">
+                          <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">Organic Score</div>
+                          <div className={`text-sm font-bold mt-0.5 ${organicScore >= 70 ? 'text-emerald-400' : organicScore >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>{organicScore.toFixed(0)}/100</div>
                         </div>
-                      ))}
+                        <div className="px-3 py-2.5 text-center">
+                          <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">Quality</div>
+                          <div className={`text-sm font-bold mt-0.5 capitalize ${organicLabel === 'high' ? 'text-emerald-400' : organicLabel === 'medium' ? 'text-yellow-400' : 'text-red-400'}`}>{organicLabel || '—'}</div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
                     <div className="px-4 py-2.5 border-b border-purple-500/20">
-                      <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Smart Money & Security</span>
+                      <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Security</span>
                     </div>
                     {[
                       { label: 'Mint Authority', value: audit.mintAuthorityDisabled ? '✓ Disabled' : '⚠ Active', color: audit.mintAuthorityDisabled ? 'text-emerald-400' : 'text-red-400' },
                       { label: 'Freeze Authority', value: audit.freezeAuthorityDisabled ? '✓ Disabled' : '⚠ Active', color: audit.freezeAuthorityDisabled ? 'text-emerald-400' : 'text-red-400' },
-                      topHoldersPct != null ? { label: 'Top Holders', value: `${topHoldersPct.toFixed(1)}%`, color: topHoldersPct > 50 ? 'text-red-400' : topHoldersPct > 30 ? 'text-yellow-400' : 'text-emerald-400' } : null,
-                      devBalPct != null ? { label: 'Dev Balance', value: `${devBalPct.toFixed(2)}%`, color: devBalPct > 5 ? 'text-red-400' : 'text-emerald-400' } : null,
-                      bundlerRate != null ? { label: 'Bundler Rate', value: `${(bundlerRate * 100).toFixed(1)}%`, color: bundlerRate > 0.3 ? 'text-red-400' : 'text-white/70' } : null,
+                      topHoldersPct != null ? { label: 'Top 10 Holders', value: `${topHoldersPct.toFixed(1)}%`, color: topHoldersPct > 50 ? 'text-red-400' : topHoldersPct > 30 ? 'text-yellow-400' : 'text-emerald-400' } : null,
+                      devMints != null ? { label: 'Dev Token Launches', value: devMints.toLocaleString(), color: devMints > 100 ? 'text-red-400' : devMints > 10 ? 'text-yellow-400' : 'text-emerald-400' } : null,
+                      devMigrations != null ? { label: 'Dev Migrations', value: devMigrations.toLocaleString(), color: devMigrations > 10 ? 'text-red-400' : devMigrations > 3 ? 'text-yellow-400' : 'text-white/70' } : null,
                     ].filter(Boolean).map((row: any) => (
                       <div key={row.label} className="flex items-center justify-between px-4 py-2 border-b border-purple-500/10 last:border-0">
                         <span className="text-white/60 text-xs">{row.label}</span>

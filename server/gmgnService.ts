@@ -58,11 +58,17 @@ function n(v: any): number | undefined {
 
 // Map Jupiter /tokens/v2/recent token to GmgnToken
 function mapJupiterToken(t: any): GmgnToken {
-  const s1h = t.stats?.['1h'] || {};
-  const s24h = t.stats?.['24h'] || {};
-  const createdAt = t.firstPool?.createdAt ? new Date(t.firstPool.createdAt).getTime() : undefined;
+  // Jupiter uses flat stats fields: stats1h, stats24h (not nested stats['1h'])
+  const s1h = t.stats1h || {};
+  const s24h = t.stats24h || {};
+  const createdAt = t.firstPool?.createdAt ? new Date(t.firstPool.createdAt).getTime()
+    : t.createdAt ? new Date(t.createdAt).getTime() : undefined;
+  const buys = Number(s1h.numBuys ?? s24h.numBuys ?? 0);
+  const sells = Number(s1h.numSells ?? s24h.numSells ?? 0);
+  const volume = (Number(s24h.buyVolume ?? 0) + Number(s24h.sellVolume ?? 0))
+    || (Number(s1h.buyVolume ?? 0) + Number(s1h.sellVolume ?? 0)) || undefined;
   return {
-    mint: t.id || t.address || '',
+    mint: t.id || '',
     name: t.name || '',
     symbol: t.symbol || '',
     imageUri: t.icon || '',
@@ -70,14 +76,14 @@ function mapJupiterToken(t: any): GmgnToken {
     pctChange: s1h.priceChange ?? s24h.priceChange ?? undefined,
     marketCapUsd: t.mcap ?? t.fdv ?? undefined,
     liquidityUsd: t.liquidity ?? undefined,
-    volumeUsd: s24h.volume ?? s1h.volume ?? undefined,
-    buys: Number(s1h.buys ?? s24h.buys ?? 0),
-    sells: Number(s1h.sells ?? s24h.sells ?? 0),
-    txns: (Number(s1h.buys ?? 0) + Number(s1h.sells ?? 0)) || undefined,
+    volumeUsd: volume,
+    buys,
+    sells,
+    txns: (buys + sells) || undefined,
     createdAt,
     bondingPct: undefined,
-    migrated: false,
-    launchpad: t.firstPool?.launchpad || 'pump.fun',
+    migrated: !!(t.graduatedPool),
+    launchpad: t.launchpad || 'pump.fun',
     smartDegens: 0,
     renownedCount: 0,
   };
