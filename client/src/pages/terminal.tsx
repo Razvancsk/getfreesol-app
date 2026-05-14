@@ -90,7 +90,7 @@ function TokenAvatar({ token, bondPct, migrated, size = 92 }: { token: Token; bo
   const IMG = SIZE - GAP * 2;
   const RX = Math.round(SIZE * 0.18);
   const pct = migrated ? 100 : Math.max(0, Math.min(100, bondPct));
-  const arcPct = pct < 1 && pct > 0 ? 1 : pct; // show at least 1% arc so tiny progress is visible
+  const arcPct = pct > 0 && pct < 1 ? 1 : pct; // show at least 1% arc so tiny progress is visible
   const ringColor = migrated
     ? '#34d399'
     : pct >= 80 ? '#fb923c'
@@ -139,7 +139,7 @@ function TokenAvatar({ token, bondPct, migrated, size = 92 }: { token: Token; bo
         className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-black/70 border border-white/10 text-[9px] font-bold tabular-nums leading-none"
         style={{ color: ringColor }}
       >
-        {migrated ? '✓' : `${Math.round(pct)}%`}
+        {migrated ? '✓' : pct === 0 ? '0%' : pct < 1 ? '<1%' : pct < 10 ? `${pct.toFixed(1)}%` : `${Math.round(pct)}%`}
       </div>
     </div>
   );
@@ -950,7 +950,7 @@ export function TerminalView() {
             const totalTx = (t.buys ?? 0) + (t.sells ?? 0);
             const pct = t.pctChange;
             const pctUp = (pct ?? 0) >= 0;
-            const bondPct = Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
+            const bondPct = Math.min(100, parseFloat(((t.bondingPct ?? 0) * 100).toFixed(1)));
             const isMigrated = tab === 'migrated' || !!t.migrated || (t.bondingPct ?? 0) >= 1;
             const cardPrice = t.priceUsd;
             const cardMcap = t.marketCapUsd;
@@ -1524,7 +1524,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                     symbol: t.symbol || info?.symbol,
                     imageUri: t.imageUri || info?.icon,
                   };
-                  const bondPct = Math.min(100, Math.round((t.bondingPct ?? 0) * 100));
+                  const bondPct = Math.min(100, parseFloat(((t.bondingPct ?? 0) * 100).toFixed(1)));
                   const isMigrated = !!t.migrated || (t.bondingPct ?? 0) >= 1 || !!(info as any)?.graduatedPool;
                   return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isMigrated} size={80} />;
                 })()}

@@ -84,7 +84,8 @@ function mapToken(t: any): GmgnToken {
     txns: txns ?? undefined,
     createdAt: t.created_timestamp ? Number(t.created_timestamp) * 1000
              : (t.open_timestamp ? Number(t.open_timestamp) * 1000 : undefined),
-    bondingPct: t.progress != null ? Number(t.progress) : undefined,
+    bondingPct: t.launchpad_progress != null ? Number(t.launchpad_progress)
+             : t.progress != null ? Number(t.progress) : undefined,
     migrated: !!(t.complete_timestamp && t.complete_timestamp > 0) || !!(t.open_timestamp && t.open_timestamp > 0),
     launchpad: t.launchpad_platform || t.launchpad || t.exchange || 'pump.fun',
     smartDegens: Number(t.smart_degen_count) || 0,
