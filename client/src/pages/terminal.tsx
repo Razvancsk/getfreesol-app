@@ -1136,30 +1136,49 @@ export function TerminalView() {
                 className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4 hover:border-purple-500/40 transition-all cursor-pointer overflow-hidden active:scale-[0.98] font-bold"
                 data-testid={`row-${t.mint}`}
               >
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <TokenAvatar token={t} bondPct={bondPct} migrated={isMigrated} />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-white text-base truncate">{t.name || t.symbol || 'Unknown'}</span>
+                {(() => {
+                  const rawTag = t.launchpad || (Array.isArray(t.tags) && t.tags[0]) || '';
+                  const lpInfo = rawTag ? findLaunchpad(rawTag) : undefined;
+                  return (
+                    <>
+                      <div className="flex items-center justify-between gap-3 mb-1">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <TokenAvatar token={t} bondPct={bondPct} migrated={isMigrated} />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-white text-base truncate">{t.name || t.symbol || 'Unknown'}</span>
+                            </div>
+                            <div className="text-sm truncate flex items-center gap-2">
+                              <span className="text-white">{t.symbol || shortMint(t.mint)}</span>
+                              {t.createdAt && (
+                                <span className="text-green-400 font-bold tabular-nums">{ago(t.createdAt)}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="font-bold text-white text-base tabular-nums">{fmtPriceUsd(cardPrice)}</div>
+                          {pct != null && Number.isFinite(pct) && (
+                            <div className={`text-right text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
+                              {pctUp ? '+' : ''}{(pct ?? 0).toFixed(2)}%
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-sm truncate flex items-center gap-2">
-                        <span className="text-white">{t.symbol || shortMint(t.mint)}</span>
-                        {t.createdAt && (
-                          <span className="text-green-400 font-bold tabular-nums">{ago(t.createdAt)}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="font-bold text-white text-base tabular-nums">{fmtPriceUsd(cardPrice)}</div>
-                    {pct != null && Number.isFinite(pct) && (
-                      <div className={`text-right text-sm font-medium ${pctUp ? 'text-green-400' : 'text-red-400'}`}>
-                        {pctUp ? '+' : ''}{(pct ?? 0).toFixed(2)}%
-                      </div>
-                    )}
-                  </div>
-                </div>
+                      {lpInfo && (
+                        <div className="mb-2">
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold"
+                            style={{ color: lpInfo.color, backgroundColor: `${lpInfo.color}18`, border: `1px solid ${lpInfo.color}50` }}
+                          >
+                            {lpInfo.icon}
+                            {lpInfo.label}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
@@ -1181,40 +1200,25 @@ export function TerminalView() {
                   </div>
                 </div>
                 {/* Badges */}
-                {(() => {
-                  const rawTag = t.launchpad || (Array.isArray(t.tags) && t.tags[0]) || '';
-                  const lpInfo = rawTag ? findLaunchpad(rawTag) : undefined;
-                  const hasBadge = lpInfo || (t.smartDegens ?? 0) > 0 || (t.renownedCount ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3;
-                  if (!hasBadge) return null;
-                  return (
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      {lpInfo && (
-                        <span
-                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold"
-                          style={{ color: lpInfo.color, backgroundColor: `${lpInfo.color}18`, border: `1px solid ${lpInfo.color}50` }}
-                        >
-                          {lpInfo.icon}
-                          {lpInfo.label}
-                        </span>
-                      )}
-                      {(t.smartDegens ?? 0) > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">
-                          {t.smartDegens} SM
-                        </span>
-                      )}
-                      {(t.renownedCount ?? 0) > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">
-                          {t.renownedCount} KOL
-                        </span>
-                      )}
-                      {(t.rugRatio ?? 0) > 0.3 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 font-semibold">
-                          RUG {Math.round((t.rugRatio ?? 0) * 100)}%
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
+                {((t.smartDegens ?? 0) > 0 || (t.renownedCount ?? 0) > 0 || (t.rugRatio ?? 0) > 0.3) && (
+                  <div className="flex flex-wrap gap-1.5 items-center mt-2">
+                    {(t.smartDegens ?? 0) > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">
+                        {t.smartDegens} SM
+                      </span>
+                    )}
+                    {(t.renownedCount ?? 0) > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 text-blue-300 font-semibold">
+                        {t.renownedCount} KOL
+                      </span>
+                    )}
+                    {(t.rugRatio ?? 0) > 0.3 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 font-semibold">
+                        RUG {Math.round((t.rugRatio ?? 0) * 100)}%
+                      </span>
+                    )}
+                  </div>
+                )}
 
               </div>
             );
