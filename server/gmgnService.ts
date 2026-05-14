@@ -421,13 +421,36 @@ function dedupeWallets(wallets: any[]): any[] {
   });
 }
 
+async function enrichWithStats(wallets: any[]): Promise<any[]> {
+  const results = await Promise.allSettled(
+    wallets.map(async (w) => {
+      try {
+        const stats: any = await getClient().getWalletStats('sol', w.address, '7d');
+        return {
+          ...w,
+          profit7d: Number(stats?.realized_profit) || 0,
+          winRate: Number(stats?.pnl_stat?.winrate) || 0,
+          txCount: (Number(stats?.buy) || 0) + (Number(stats?.sell) || 0),
+          name: w.name || stats?.common?.name || stats?.common?.nick_name || '',
+          avatar: w.avatar || stats?.common?.avatar || '',
+          tags: w.tags?.length ? w.tags : (stats?.common?.tags || []),
+        };
+      } catch {
+        return w;
+      }
+    })
+  );
+  return results.map((r) => (r.status === 'fulfilled' ? r.value : null)).filter(Boolean);
+}
+
 export async function getSmartMoneyWallets(limit = 20): Promise<any[]> {
   try {
     const data: any = await getClient().getSmartMoney('sol', limit);
     const arr: any[] = Array.isArray(data) ? data : (data?.list || data?.rank || data?.wallets || []);
     const mapped = dedupeWallets(arr.map((w: any) => mapWalletFromTx(w, 'sm')).filter((w: any) => w.address));
-    console.log(`[gmgn] smart money: ${mapped.length} wallets`);
-    return mapped;
+    const enriched = await enrichWithStats(mapped.slice(0, 20));
+    console.log(`[gmgn] smart money: ${enriched.length} wallets`);
+    return enriched;
   } catch (e: any) {
     console.error('[gmgn] smart money fetch failed:', e.message);
     return [];
@@ -439,8 +462,9 @@ export async function getKolWallets(limit = 20): Promise<any[]> {
     const data: any = await getClient().getKol('sol', limit);
     const arr: any[] = Array.isArray(data) ? data : (data?.list || data?.rank || data?.wallets || []);
     const mapped = dedupeWallets(arr.map((w: any) => mapWalletFromTx(w, 'kol')).filter((w: any) => w.address));
-    console.log(`[gmgn] kol: ${mapped.length} wallets`);
-    return mapped;
+    const enriched = await enrichWithStats(mapped.slice(0, 20));
+    console.log(`[gmgn] kol: ${enriched.length} wallets`);
+    return enriched;
   } catch (e: any) {
     console.error('[gmgn] kol fetch failed:', e.message);
     return [];
