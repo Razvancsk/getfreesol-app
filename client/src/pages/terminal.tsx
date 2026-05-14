@@ -524,34 +524,47 @@ function buildServerFilterParams(f: MetricFilters, type: string): string | null 
   return null;
 }
 
+function FilterRow({ label, unit, minVal, maxVal, onMinChange, onMaxChange }: {
+  label: string; unit?: string;
+  minVal: string; maxVal: string;
+  onMinChange: (v: string) => void; onMaxChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 py-2 border-b border-white/5">
+      <span className="text-white/60 text-[12px] w-[110px] shrink-0">{label}</span>
+      <div className="flex gap-1.5 flex-1">
+        <div className="relative flex-1">
+          <input
+            type="text" inputMode="decimal" placeholder="Min"
+            value={minVal}
+            onChange={e => onMinChange(e.target.value)}
+            className="w-full bg-[#2a2a2a] border-0 ring-1 ring-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:ring-purple-500/60 placeholder:text-white/20"
+            style={unit ? { paddingRight: unit.length > 2 ? '2.5rem' : '1.8rem' } : {}}
+          />
+          {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 text-[10px] pointer-events-none">{unit}</span>}
+        </div>
+        <div className="relative flex-1">
+          <input
+            type="text" inputMode="decimal" placeholder="Max"
+            value={maxVal}
+            onChange={e => onMaxChange(e.target.value)}
+            className="w-full bg-[#2a2a2a] border-0 ring-1 ring-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:ring-purple-500/60 placeholder:text-white/20"
+            style={unit ? { paddingRight: unit.length > 2 ? '2.5rem' : '1.8rem' } : {}}
+          />
+          {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 text-[10px] pointer-events-none">{unit}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MetricFilterDrawer({ open, onOpenChange, applied, onApply }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   applied: MetricFilters; onApply: (f: MetricFilters) => void;
 }) {
   const [draft, setDraft] = useState<MetricFilters>(applied);
   useEffect(() => { if (open) setDraft(applied); }, [open]);
-  const set = (k: keyof MetricFilters) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setDraft(d => ({ ...d, [k]: e.target.value }));
-
-  const Row = ({ label, unit, minKey, maxKey }: { label: string; unit?: string; minKey: keyof MetricFilters; maxKey: keyof MetricFilters }) => (
-    <div className="flex items-center gap-2 py-2 border-b border-white/5">
-      <span className="text-white/60 text-[12px] w-[110px] shrink-0">{label}</span>
-      <div className="flex gap-1.5 flex-1">
-        <div className="relative flex-1">
-          <input type="text" inputMode="decimal" placeholder="Min" value={draft[minKey]} onChange={set(minKey)}
-            className="w-full bg-[#2a2a2a] border border-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:border-purple-500/60 placeholder:text-white/20"
-          />
-          {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 text-[10px]">{unit}</span>}
-        </div>
-        <div className="relative flex-1">
-          <input type="text" inputMode="decimal" placeholder="Max" value={draft[maxKey]} onChange={set(maxKey)}
-            className="w-full bg-[#2a2a2a] border border-white/10 rounded-md text-white text-[12px] px-2 py-1.5 outline-none focus:border-purple-500/60 placeholder:text-white/20"
-          />
-          {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 text-[10px]">{unit}</span>}
-        </div>
-      </div>
-    </div>
-  );
+  const upd = (k: keyof MetricFilters) => (v: string) => setDraft(d => ({ ...d, [k]: v }));
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -570,26 +583,26 @@ function MetricFilterDrawer({ open, onOpenChange, applied, onApply }: {
           <p className="text-white/30 text-[11px] mb-3">Filter by token metrics. Values in <span className="text-white/50">K</span> = thousands USD.</p>
 
           <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-3">Market</div>
-          <Row label="MKT Cap" unit="K" minKey="mcapMin" maxKey="mcapMax" />
-          <Row label="Liquidity" unit="K" minKey="liqMin" maxKey="liqMax" />
-          <Row label="Volume" unit="K" minKey="volMin" maxKey="volMax" />
-          <Row label="B. Curve" unit="%" minKey="bcurveMin" maxKey="bcurveMax" />
-          <Row label="Age" unit="min" minKey="ageMin" maxKey="ageMax" />
+          <FilterRow label="MKT Cap" unit="K" minVal={draft.mcapMin} maxVal={draft.mcapMax} onMinChange={upd('mcapMin')} onMaxChange={upd('mcapMax')} />
+          <FilterRow label="Liquidity" unit="K" minVal={draft.liqMin} maxVal={draft.liqMax} onMinChange={upd('liqMin')} onMaxChange={upd('liqMax')} />
+          <FilterRow label="Volume" unit="K" minVal={draft.volMin} maxVal={draft.volMax} onMinChange={upd('volMin')} onMaxChange={upd('volMax')} />
+          <FilterRow label="B. Curve" unit="%" minVal={draft.bcurveMin} maxVal={draft.bcurveMax} onMinChange={upd('bcurveMin')} onMaxChange={upd('bcurveMax')} />
+          <FilterRow label="Age" unit="min" minVal={draft.ageMin} maxVal={draft.ageMax} onMinChange={upd('ageMin')} onMaxChange={upd('ageMax')} />
 
           <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-4">Trading</div>
-          <Row label="Buys" minKey="buysMin" maxKey="buysMax" />
-          <Row label="Sells" minKey="sellsMin" maxKey="sellsMax" />
-          <Row label="TXs" minKey="txnsMin" maxKey="txnsMax" />
+          <FilterRow label="Buys" minVal={draft.buysMin} maxVal={draft.buysMax} onMinChange={upd('buysMin')} onMaxChange={upd('buysMax')} />
+          <FilterRow label="Sells" minVal={draft.sellsMin} maxVal={draft.sellsMax} onMinChange={upd('sellsMin')} onMaxChange={upd('sellsMax')} />
+          <FilterRow label="TXs" minVal={draft.txnsMin} maxVal={draft.txnsMax} onMinChange={upd('txnsMin')} onMaxChange={upd('txnsMax')} />
 
           <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-4">Holders</div>
-          <Row label="Smart Money" minKey="smartMin" maxKey="smartMax" />
-          <Row label="KOLs" minKey="kolsMin" maxKey="kolsMax" />
-          <Row label="Holders" minKey="holderMin" maxKey="holderMax" />
+          <FilterRow label="Smart Money" minVal={draft.smartMin} maxVal={draft.smartMax} onMinChange={upd('smartMin')} onMaxChange={upd('smartMax')} />
+          <FilterRow label="KOLs" minVal={draft.kolsMin} maxVal={draft.kolsMax} onMinChange={upd('kolsMin')} onMaxChange={upd('kolsMax')} />
+          <FilterRow label="Holders" minVal={draft.holderMin} maxVal={draft.holderMax} onMinChange={upd('holderMin')} onMaxChange={upd('holderMax')} />
 
           <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 mt-4">Risk</div>
-          <Row label="Rug %" unit="%" minKey="rugMin" maxKey="rugMax" />
-          <Row label="Bot Trader %" unit="%" minKey="botMin" maxKey="botMax" />
-          <Row label="Bundlers %" unit="%" minKey="bundlerMin" maxKey="bundlerMax" />
+          <FilterRow label="Rug %" unit="%" minVal={draft.rugMin} maxVal={draft.rugMax} onMinChange={upd('rugMin')} onMaxChange={upd('rugMax')} />
+          <FilterRow label="Bot Trader %" unit="%" minVal={draft.botMin} maxVal={draft.botMax} onMinChange={upd('botMin')} onMaxChange={upd('botMax')} />
+          <FilterRow label="Bundlers %" unit="%" minVal={draft.bundlerMin} maxVal={draft.bundlerMax} onMinChange={upd('bundlerMin')} onMaxChange={upd('bundlerMax')} />
         </div>
 
         <div className="sticky bottom-0 bg-[#141414] px-4 py-3 border-t border-white/10 flex gap-2 mt-2">
