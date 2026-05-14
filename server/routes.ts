@@ -7360,6 +7360,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       else if (period === '30d') since = new Date(Date.now() - 30 * 86400000);
       else if (period === '24h') since = new Date(Date.now() - 86400000);
 
+      const EXCLUDED_WALLETS = [
+        process.env.FEES_WALLET,
+        'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
+        '8SDc57qmSJypVz3qwHK4ijgJAjsKduyHbFr6Yow1hBRc',
+      ].filter(Boolean) as string[];
+
+      const exclusionClause = EXCLUDED_WALLETS.map(w => `${swapRecords.walletAddress.name} != '${w}'`).join(' AND ');
+      const baseWhere = since
+        ? sql`${swapRecords.swappedAt} >= ${since} AND ${swapRecords.usdValue}::numeric > 0 AND ${swapRecords.walletAddress} != ALL(${EXCLUDED_WALLETS})`
+        : sql`${swapRecords.usdValue}::numeric > 0 AND ${swapRecords.walletAddress} != ALL(${EXCLUDED_WALLETS})`;
+
       const results = await db
         .select({
           walletAddress: swapRecords.walletAddress,
@@ -7368,7 +7379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastTrade: sql<string>`MAX(${swapRecords.swappedAt})`,
         })
         .from(swapRecords)
-        .where(since ? sql`${swapRecords.swappedAt} >= ${since} AND ${swapRecords.usdValue}::numeric > 0` : sql`${swapRecords.usdValue}::numeric > 0`)
+        .where(baseWhere)
         .groupBy(swapRecords.walletAddress)
         .orderBy(sql`SUM(${swapRecords.usdValue}::numeric) DESC`)
         .limit(limitNum);
