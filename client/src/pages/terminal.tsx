@@ -796,7 +796,7 @@ export function TerminalView() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-3 gap-y-1.5 gap-x-2">
+            <div className="flex flex-wrap gap-1.5">
               {([
                 { id: 'pump',     label: 'Pump.fun',  color: '#88D693' },
                 { id: 'letsbonk', label: 'LetsBonk',  color: '#E78C19' },
