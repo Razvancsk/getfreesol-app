@@ -1475,7 +1475,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                       const pct = h.pct != null ? h.pct * 100 : (totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0);
                       const tag = tagFor(h); const apiTags: string[] = h.tags || []; const isSm = apiTags.includes('smart_degen'); const isKol = apiTags.includes('renowned');
                       return (
-                        <a key={h.address} href={`https://gmgn.ai/sol/address/${h.address}`} target="_blank" rel="noreferrer"
+                        <a key={h.address} href={`https://solscan.io/account/${h.address}`} target="_blank" rel="noreferrer"
                           className={`flex items-center justify-between py-2.5 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors ${tag?.bg || ''}`}>
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {tag ? <div className="flex items-center gap-1.5"><tag.icon className={`h-3.5 w-3.5 ${tag.color} shrink-0`} /><span className={`text-xs font-semibold ${tag.color}`}>{tag.name}</span></div>
@@ -1515,7 +1515,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                         const isSm = h.tags?.includes('smart_degen'); const isKol = h.tags?.includes('renowned');
                         const shortBy = h.name || `${h.address.slice(0, 6)}…${h.address.slice(-4)}`;
                         return (
-                          <a key={h.address} href={`https://gmgn.ai/sol/address/${h.address}`} target="_blank" rel="noreferrer"
+                          <a key={h.address} href={`https://solscan.io/account/${h.address}`} target="_blank" rel="noreferrer"
                             className="grid items-center py-2.5 px-3 hover:bg-white/5 transition-colors"
                             style={{ gridTemplateColumns: '52px 44px 90px 100px 1fr 110px' }}>
                             <span className="text-white/50 text-xs tabular-nums">{timeAgo}</span>
