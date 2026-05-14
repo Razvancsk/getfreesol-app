@@ -106,33 +106,6 @@ function applyImageCache(tokens: GmgnToken[]): GmgnToken[] {
   });
 }
 
-// Fetch missing images from pump.fun, waiting up to timeoutMs before returning
-async function waitForImages(tokens: GmgnToken[], timeoutMs: number): Promise<GmgnToken[]> {
-  const missing = tokens.filter(t => !t.imageUri);
-  if (!missing.length) return tokens;
-
-  await Promise.race([
-    Promise.allSettled(missing.map(async (t) => {
-      try {
-        const r = await fetch(`https://frontend-api.pump.fun/coins/${t.mint}`, {
-          signal: AbortSignal.timeout(timeoutMs - 100),
-          headers: { 'Accept': 'application/json' },
-        });
-        if (!r.ok) return;
-        const d: any = await r.json();
-        const img: string = d.image_uri || d.image || '';
-        if (img) imageCache.set(t.mint, img);
-      } catch {}
-    })),
-    new Promise<void>(resolve => setTimeout(resolve, timeoutMs)),
-  ]);
-
-  return tokens.map(t =>
-    !t.imageUri && imageCache.has(t.mint)
-      ? { ...t, imageUri: imageCache.get(t.mint)! }
-      : t
-  );
-}
 
 let trendingTick = 0;
 
@@ -147,12 +120,9 @@ async function poll() {
       const bondArr: any[] = data?.near_completion || data?.pump || [];
       const migArr: any[] = data?.completed || [];
 
-      // Map + apply cache, then wait for any still-missing images before SSE push
-      const [newTokens, bondTokens, migTokens] = await Promise.all([
-        newArr.length ? waitForImages(applyImageCache(newArr.map(mapToken).filter(t => t.mint)), 1500) : Promise.resolve(cache.new),
-        bondArr.length ? waitForImages(applyImageCache(bondArr.map(mapToken).filter(t => t.mint)), 1200) : Promise.resolve(cache.bonding),
-        migArr.length ? waitForImages(applyImageCache(migArr.map(mapToken).filter(t => t.mint)), 800) : Promise.resolve(cache.migrated),
-      ]);
+      const newTokens = newArr.length ? applyImageCache(newArr.map(mapToken).filter(t => t.mint)) : cache.new;
+      const bondTokens = bondArr.length ? applyImageCache(bondArr.map(mapToken).filter(t => t.mint)) : cache.bonding;
+      const migTokens = migArr.length ? applyImageCache(migArr.map(mapToken).filter(t => t.mint)) : cache.migrated;
 
       if (newArr.length) cache.new = newTokens;
       if (bondArr.length) cache.bonding = bondTokens;
@@ -162,7 +132,7 @@ async function poll() {
       console.error('[gmgn] trenches fetch failed:', e.message);
     }
 
-    // Trending + SOL price — only every 10th cycle (~30s) since it changes slowly
+    // Trending + SOL price — only every 10th cycle (~50s) since it changes slowly
     trendingTick++;
     if (trendingTick % 10 === 1) {
       try {
@@ -174,12 +144,11 @@ async function poll() {
         console.error('[gmgn] trending fetch failed:', e.message);
       }
 
+      // SOL price from GMGN
       try {
-        const r = await fetch('https://price.jup.ag/v6/price?ids=SOL', { signal: AbortSignal.timeout(5000) });
-        if (r.ok) {
-          const j: any = await r.json();
-          if (j?.data?.SOL?.price) solUsdPrice = Number(j.data.SOL.price);
-        }
+        const solInfo: any = await c.getTokenInfo('sol', 'So11111111111111111111111111111111111111112');
+        const solPrice = Number(solInfo?.price?.price || 0);
+        if (solPrice > 0) solUsdPrice = solPrice;
       } catch {}
     }
 
