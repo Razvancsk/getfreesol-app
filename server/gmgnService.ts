@@ -392,45 +392,55 @@ export async function getTopTraders(mint: string): Promise<any[]> {
   try {
     const data: any = await getClient().getTokenTopTraders('sol', mint, { limit: 20, orderby: 'last_active_timestamp', direction: 'desc' });
     const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
-    return arr.map((h: any) => ({
-      address: h.address || '',
-      name: h.name || h.twitter_name || '',
-      avatar: h.avatar || '',
-      twitter: h.twitter_username || '',
-      tags: Array.isArray(h.tags) ? h.tags : (h.tags ? [h.tags] : []),
-      makerTags: Array.isArray(h.maker_token_tags) ? h.maker_token_tags : [],
-      rank: h.wallet_tag_v2 || '',
-      nativeBalance: Number(h.native_balance) || 0,
-      lastActive: h.last_active_timestamp ? Number(h.last_active_timestamp) : null,
-      // Current holdings
-      balance: Number(h.amount_cur || h.balance || 0),
-      usdValue: Number(h.usd_value) || 0,
-      pct: Number(h.amount_percentage || 0),
-      // Buy side
-      buyVolume: Number(h.buy_volume_cur) || 0,
-      buyCount: Number(h.buy_tx_count_cur) || 0,
-      buyAmount: Number(h.buy_amount_cur) || 0,
-      avgCost: Number(h.avg_cost) || 0,
-      // Sell side
-      sellVolume: Number(h.sell_volume_cur) || 0,
-      sellCount: Number(h.sell_tx_count_cur) || 0,
-      sellAmount: Number(h.sell_amount_cur) || 0,
-      avgSold: Number(h.avg_sold) || 0,
-      // P&L
-      profit: Number(h.profit) || 0,
-      realizedProfit: Number(h.realized_profit) || 0,
-      unrealizedProfit: Number(h.unrealized_profit) || 0,
-      profitChange: Number(h.profit_change) || 0,
-      // Status
-      startHolding: h.start_holding_at ? Number(h.start_holding_at) : null,
-      endHolding: h.end_holding_at ? Number(h.end_holding_at) : null,
-      sellRatio: Number(h.sell_amount_percentage) || 0,
-      // Last trade: type from token_transfer, fallback inferred from sellRatio
-      lastTradeType: h.token_transfer?.type || (h.end_holding_at ? 'sell' : (h.sell_amount_percentage >= 0.99 ? 'sell' : 'buy')),
-      lastTradeUsd: Number(h.token_transfer?.cost_usd || h.token_transfer?.usd_value || 0),
-      lastTradeTokenAmount: Number(h.token_transfer?.token_amount || h.token_transfer?.amount || 0),
-      lastTradePrice: Number(h.token_transfer?.price || 0),
-    }));
+    return arr.map((h: any) => {
+      // Sold everything = net seller; still holds = net buyer
+      const soldAll = !!(h.end_holding_at && Number(h.end_holding_at) > 0)
+        || Number(h.sell_amount_percentage ?? h.sell_ratio ?? 0) >= 0.99;
+      const ttType: string = h.token_transfer?.event_type || h.token_transfer?.type || '';
+      const lastType = ttType.includes('sell') ? 'sell' : ttType.includes('buy') ? 'buy' : (soldAll ? 'sell' : 'buy');
+
+      // Try multiple field name variants GMGN uses across API versions
+      const buyVol = Number(h.buy_volume_cur ?? h.buy_volume_usd ?? h.buy_volume ?? h.total_buy_usd ?? 0);
+      const buyCnt = Number(h.buy_tx_count_cur ?? h.buy_count ?? h.buy_tx_count ?? 0);
+      const buyAmt = Number(h.buy_amount_cur ?? h.buy_amount ?? h.buy_token_amount ?? 0);
+      const sellVol = Number(h.sell_volume_cur ?? h.sell_volume_usd ?? h.sell_volume ?? h.total_sell_usd ?? 0);
+      const sellCnt = Number(h.sell_tx_count_cur ?? h.sell_count ?? h.sell_tx_count ?? 0);
+      const sellAmt = Number(h.sell_amount_cur ?? h.sell_amount ?? h.sell_token_amount ?? 0);
+
+      return {
+        address: h.address || '',
+        name: h.name || h.twitter_name || '',
+        avatar: h.avatar || '',
+        twitter: h.twitter_username || '',
+        tags: Array.isArray(h.tags) ? h.tags : (h.tags ? [h.tags] : []),
+        makerTags: Array.isArray(h.maker_token_tags) ? h.maker_token_tags : [],
+        rank: h.wallet_tag_v2 || '',
+        nativeBalance: Number(h.native_balance) || 0,
+        lastActive: h.last_active_timestamp ? Number(h.last_active_timestamp) : (h.start_holding_at ? Number(h.start_holding_at) : null),
+        balance: Number(h.amount_cur ?? h.balance ?? 0),
+        usdValue: Number(h.usd_value) || 0,
+        pct: Number(h.amount_percentage ?? 0),
+        buyVolume: buyVol,
+        buyCount: buyCnt,
+        buyAmount: buyAmt,
+        avgCost: Number(h.avg_cost ?? 0),
+        sellVolume: sellVol,
+        sellCount: sellCnt,
+        sellAmount: sellAmt,
+        avgSold: Number(h.avg_sold ?? 0),
+        profit: Number(h.profit) || 0,
+        realizedProfit: Number(h.realized_profit) || 0,
+        unrealizedProfit: Number(h.unrealized_profit) || 0,
+        profitChange: Number(h.profit_change) || 0,
+        startHolding: h.start_holding_at ? Number(h.start_holding_at) : null,
+        endHolding: h.end_holding_at ? Number(h.end_holding_at) : null,
+        sellRatio: Number(h.sell_amount_percentage ?? h.sell_ratio ?? 0),
+        lastTradeType: lastType,
+        lastTradeUsd: Number(h.token_transfer?.cost_usd ?? h.token_transfer?.usd_value ?? 0),
+        lastTradeTokenAmount: Number(h.token_transfer?.token_amount ?? h.token_transfer?.amount ?? 0),
+        lastTradePrice: Number(h.token_transfer?.price ?? 0),
+      };
+    });
   } catch { return []; }
 }
 
@@ -605,6 +615,37 @@ export async function getWalletStats(address: string): Promise<any> {
   } catch (e: any) {
     console.error('[gmgn] wallet stats fetch failed:', e.message);
     return null;
+  }
+}
+
+// Returns traders sorted by last_active_timestamp — each entry's token_transfer is their most recent trade.
+// Client polls this every 3s and detects new/updated entries to build a live trade feed.
+export async function getTokenRecentTrades(mint: string): Promise<any[]> {
+  try {
+    const data: any = await getClient().getTokenTopTraders('sol', mint, {
+      limit: 30, orderby: 'last_active_timestamp', direction: 'desc',
+    });
+    const arr: any[] = data?.list || (Array.isArray(data) ? data : []);
+    return arr.map((h: any) => {
+      const tt = h.token_transfer || {};
+      const rawType: string = tt.event_type || tt.type || '';
+      const type = rawType.includes('sell') ? 'sell' : 'buy';
+      const lastActiveTs = h.last_active_timestamp ? Number(h.last_active_timestamp) * 1000 : 0;
+      return {
+        walletAddress: h.address || '',
+        walletName: h.name || h.twitter_name || '',
+        tags: Array.isArray(h.tags) ? h.tags : (h.tags ? [h.tags] : []),
+        type,
+        usdValue: Number(tt.cost_usd ?? tt.usd_value ?? 0),
+        price: Number(tt.price ?? 0),
+        tokenAmount: Number(tt.token_amount ?? tt.amount ?? 0),
+        timestamp: lastActiveTs,
+        signature: tt.tx_hash || tt.signature || '',
+      };
+    });
+  } catch (e: any) {
+    console.error('[gmgn] token recent trades failed:', e.message);
+    return [];
   }
 }
 

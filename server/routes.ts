@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
-import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, addSseClient, getTokenPoolInfo as getGmgnTokenPool, getWalletTokenBalance as getGmgnTokenBalance, getCreatedTokens as getGmgnCreatedTokens, getUserInfo as getGmgnUserInfo, getFollowWalletActivity as getGmgnFollowWallet, fetchFilteredTrenches } from './gmgnService';
+import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, addSseClient, getTokenPoolInfo as getGmgnTokenPool, getWalletTokenBalance as getGmgnTokenBalance, getCreatedTokens as getGmgnCreatedTokens, getUserInfo as getGmgnUserInfo, getFollowWalletActivity as getGmgnFollowWallet, fetchFilteredTrenches, getTokenRecentTrades as getGmgnTokenRecentTrades } from './gmgnService';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement, swapRecords } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -13112,6 +13112,17 @@ Claimer: ${walletAddress}`;
       res.json({ traders });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'traders failed' });
+    }
+  });
+
+  app.get('/api/terminal/token-trades/:mint', async (req, res) => {
+    try {
+      const mint = String(req.params.mint || '').trim();
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const trades = await getGmgnTokenRecentTrades(mint);
+      res.json({ trades });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'token-trades failed' });
     }
   });
 

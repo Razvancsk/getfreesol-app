@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { useReownWallet } from '@/hooks/useReownWallet';
@@ -1299,16 +1299,44 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     enabled: tab === 'holders' && !!mint,
     staleTime: 60_000,
   });
-  const { data: tradersData, isFetching: tradersLoading } = useQuery<{ traders: any[] }>({
-    queryKey: ['/api/terminal/traders', mint],
-    queryFn: async () => {
-      const r = await fetch(`/api/terminal/traders/${mint}`);
-      if (!r.ok) throw new Error('traders failed');
-      return r.json();
-    },
-    enabled: tab === 'traders' && !!mint,
-    staleTime: 60_000,
-  });
+  // Live trade feed: poll every 3s, accumulate new trades detected via timestamp change
+  const [liveTrades, setLiveTrades] = useState<any[]>([]);
+  const [tradesLoading, setTradesLoading] = useState(false);
+  const prevTimestamps = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    if (tab !== 'traders' || !mint) return;
+    let cancelled = false;
+
+    async function poll() {
+      if (cancelled) return;
+      if (liveTrades.length === 0) setTradesLoading(true);
+      try {
+        const r = await fetch(`/api/terminal/token-trades/${mint}`);
+        if (!r.ok || cancelled) return;
+        const { trades } = await r.json() as { trades: any[] };
+        if (cancelled) return;
+
+        const newEntries: any[] = [];
+        for (const t of trades) {
+          const prev = prevTimestamps.current.get(t.walletAddress) ?? 0;
+          if (t.timestamp > 0 && t.timestamp !== prev) {
+            newEntries.push(t);
+            prevTimestamps.current.set(t.walletAddress, t.timestamp);
+          }
+        }
+        if (newEntries.length > 0) {
+          setLiveTrades(prev => [...newEntries, ...prev].slice(0, 80));
+        }
+      } catch { /* ignore */ } finally {
+        if (!cancelled) setTradesLoading(false);
+      }
+    }
+
+    poll();
+    const interval = setInterval(poll, 3000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [tab, mint]);
 
   const { data: jupMarket } = useQuery<any>({
     queryKey: ['/api/terminal/jup-market', mint],
@@ -1497,25 +1525,28 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
 
             {tab === 'traders' && (
               <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 overflow-hidden">
-                {tradersLoading && <div className="text-center text-white/50 text-sm py-8">Loading…</div>}
-                {!tradersLoading && (tradersData?.traders?.length ?? 0) === 0 && <div className="text-center text-white/50 text-sm py-8">No trades found.</div>}
-                {(tradersData?.traders || []).length > 0 && (
+                {tradesLoading && liveTrades.length === 0 && <div className="text-center text-white/50 text-sm py-8">Loading trades…</div>}
+                {!tradesLoading && liveTrades.length === 0 && <div className="text-center text-white/50 text-sm py-8">No recent trades found.</div>}
+                {liveTrades.length > 0 && (
                   <div className="overflow-x-auto">
                     <div className="grid text-[10px] text-purple-300/40 font-semibold tracking-wider uppercase px-3 py-2 border-b border-white/5"
                       style={{ gridTemplateColumns: '52px 44px 90px 100px 1fr 110px' }}>
                       <span>Time</span><span>Type</span><span>Value</span><span>Price</span><span>Amount</span><span>By</span>
                     </div>
                     <div className="divide-y divide-white/5">
-                      {(tradersData?.traders || []).map((h: any) => {
-                        const isBuy = h.lastTradeType !== 'sell';
-                        const timeAgo = h.lastActive ? relAge(h.lastActive * 1000) : '—';
-                        const value = h.lastTradeUsd > 0 ? fmtUsd(h.lastTradeUsd) : isBuy ? (h.buyCount > 0 ? fmtUsd(h.buyVolume / h.buyCount) : '—') : (h.sellCount > 0 ? fmtUsd(h.sellVolume / h.sellCount) : '—');
-                        const price = h.lastTradePrice > 0 ? `$${h.lastTradePrice < 0.000001 ? h.lastTradePrice.toExponential(2) : h.lastTradePrice < 0.001 ? h.lastTradePrice.toFixed(7) : h.lastTradePrice < 1 ? h.lastTradePrice.toFixed(5) : h.lastTradePrice.toFixed(4)}` : isBuy ? (h.avgCost > 0 ? `$${h.avgCost.toFixed(h.avgCost < 0.001 ? 7 : 5)}` : '—') : (h.avgSold > 0 ? `$${h.avgSold.toFixed(h.avgSold < 0.001 ? 7 : 5)}` : '—');
-                        const tokenAmt = h.lastTradeTokenAmount > 0 ? fmtCount(h.lastTradeTokenAmount) : isBuy ? (h.buyAmount > 0 ? fmtCount(h.buyAmount) : '—') : (h.sellAmount > 0 ? fmtCount(h.sellAmount) : '—');
-                        const isSm = h.tags?.includes('smart_degen'); const isKol = h.tags?.includes('renowned');
-                        const shortBy = h.name || `${h.address.slice(0, 6)}…${h.address.slice(-4)}`;
+                      {liveTrades.map((tx: any, i: number) => {
+                        const isBuy = tx.type !== 'sell';
+                        const timeAgo = tx.timestamp > 0 ? relAge(tx.timestamp) : '—';
+                        const value = tx.usdValue > 0 ? fmtUsd(tx.usdValue) : '—';
+                        const fmtPrice = (p: number) => p <= 0 ? '—' : `$${p < 0.000001 ? p.toExponential(2) : p < 0.001 ? p.toFixed(7) : p < 1 ? p.toFixed(5) : p.toFixed(4)}`;
+                        const price = fmtPrice(tx.price);
+                        const tokenAmt = tx.tokenAmount > 0 ? fmtCount(tx.tokenAmount) : '—';
+                        const isSm = tx.tags?.includes('smart_degen');
+                        const isKol = tx.tags?.includes('renowned');
+                        const shortBy = tx.walletName || `${tx.walletAddress.slice(0, 6)}…${tx.walletAddress.slice(-4)}`;
+                        const key = tx.signature || `${tx.walletAddress}-${tx.timestamp}-${i}`;
                         return (
-                          <a key={h.address} href={`https://solscan.io/account/${h.address}`} target="_blank" rel="noreferrer"
+                          <a key={key} href={tx.signature ? `https://solscan.io/tx/${tx.signature}` : `https://solscan.io/account/${tx.walletAddress}`} target="_blank" rel="noreferrer"
                             className="grid items-center py-2.5 px-3 hover:bg-white/5 transition-colors"
                             style={{ gridTemplateColumns: '52px 44px 90px 100px 1fr 110px' }}>
                             <span className="text-white/50 text-xs tabular-nums">{timeAgo}</span>
