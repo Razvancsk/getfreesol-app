@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
-import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, addSseClient } from './gmgnService';
+import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, addSseClient, getTokenPoolInfo as getGmgnTokenPool, getWalletTokenBalance as getGmgnTokenBalance, getCreatedTokens as getGmgnCreatedTokens, getUserInfo as getGmgnUserInfo, getFollowWalletActivity as getGmgnFollowWallet } from './gmgnService';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -13046,6 +13046,58 @@ Claimer: ${walletAddress}`;
       res.json({ wallets });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'kol failed' });
+    }
+  });
+
+  app.get('/api/terminal/follow-wallet', async (req, res) => {
+    try {
+      const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+      const activity = await getGmgnFollowWallet(limit);
+      res.json({ activity });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'follow-wallet failed' });
+    }
+  });
+
+  app.get('/api/terminal/token-pool/:mint', async (req, res) => {
+    try {
+      const { mint } = req.params;
+      if (!mint) return res.status(400).json({ error: 'mint required' });
+      const pool = await getGmgnTokenPool(mint);
+      res.json({ pool });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'token-pool failed' });
+    }
+  });
+
+  app.get('/api/terminal/wallet-token-balance', async (req, res) => {
+    try {
+      const { wallet, token } = req.query;
+      if (!wallet || !token) return res.status(400).json({ error: 'wallet and token required' });
+      const balance = await getGmgnTokenBalance(String(wallet), String(token));
+      res.json({ balance });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'wallet-token-balance failed' });
+    }
+  });
+
+  app.get('/api/terminal/created-tokens/:address', async (req, res) => {
+    try {
+      const { address } = req.params;
+      if (!address) return res.status(400).json({ error: 'address required' });
+      const tokens = await getGmgnCreatedTokens(address);
+      res.json({ tokens });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'created-tokens failed' });
+    }
+  });
+
+  app.get('/api/terminal/user-info', async (req, res) => {
+    try {
+      const info = await getGmgnUserInfo();
+      res.json({ info });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message || 'user-info failed' });
     }
   });
 
