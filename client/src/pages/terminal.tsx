@@ -1421,11 +1421,20 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
   // Live price (3s) takes priority over full market data (30s) and GMGN fallback
   const jupPrice = jupLivePrice?.price ?? jupMarket?.price ?? null;
   const priceUsd = jupPrice ?? liveT.priceUsd ?? (info as any)?.usdPrice;
+  // Merge name/symbol/icon from all available sources — GMGN info, Jupiter market, live feed
+  const tokenName = info?.name || (jupMarket as any)?.name || liveT.name || '';
+  const tokenSymbol = info?.symbol || (jupMarket as any)?.symbol || liveT.symbol || '';
+  const tokenIcon = info?.icon || (jupMarket as any)?.icon || liveT.imageUri || '';
+  // Merge market stats from all sources
+  const marketCap = (jupMarket as any)?.marketCap ?? (info as any)?.mcap ?? liveT.marketCapUsd ?? (priceUsd && totalSupply ? priceUsd * totalSupply : null);
+  const liquidity = (jupMarket as any)?.liquidity ?? (info as any)?.liquidity ?? liveT.liquidityUsd;
+  const volume24h = (jupMarket as any)?.volume24h ?? s24.volume ?? liveT.volumeUsd;
+  const holderCount = (jupMarket as any)?.holders ?? (info as any)?.holderCount;
   const tokenForTrade: Token = {
     mint,
-    name: info?.name,
-    symbol: info?.symbol,
-    imageUri: info?.icon,
+    name: tokenName,
+    symbol: tokenSymbol,
+    imageUri: tokenIcon,
     priceUsd,
     marketCapSol: liveT.marketCapSol,
     priceSol: liveT.priceSol,
@@ -1628,9 +1637,9 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   const tokenForAvatar: Token = {
                     ...t,
                     mint,
-                    name: t.name || info?.name,
-                    symbol: t.symbol || info?.symbol,
-                    imageUri: t.imageUri || info?.icon,
+                    name: t.name || tokenName,
+                    symbol: t.symbol || tokenSymbol,
+                    imageUri: t.imageUri || tokenIcon,
                   };
                   const rawBondPct = t.bondingPct ?? ((info as any)?.bondingProgress ?? 0);
                   const bondPct = Math.min(100, parseFloat((rawBondPct * 100).toFixed(1)));
@@ -1639,8 +1648,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                 })()}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xl md:text-2xl font-bold text-white leading-tight">{info?.symbol || '—'}</span>
-                    <span className="text-sm md:text-base text-white/60 truncate">{info?.name || 'Unknown'}</span>
+                    <span className="text-xl md:text-2xl font-bold text-white leading-tight">{tokenSymbol || '—'}</span>
+                    <span className="text-sm md:text-base text-white/60 truncate">{tokenName || shortMint(mint)}</span>
                   </div>
                   {/* Price display */}
                   {(() => {
@@ -1674,16 +1683,12 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
 
             <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
               <div className="grid grid-cols-2 divide-x divide-y divide-purple-500/20">
-                {(() => {
-                  const live: any = liveData?.live || {};
-                  const tx = (Number(jupMarket?.buys24h || live.buys) || 0) + (Number(jupMarket?.sells24h || live.sells) || 0);
-                  return [
-                    { label: 'MARKET CAP', value: fmtUsd(jupMarket?.marketCap ?? live.marketCapUsd) },
-                    { label: 'LIQUIDITY', value: fmtUsd(jupMarket?.liquidity ?? live.liquidityUsd) },
-                    { label: 'VOLUME 24H', value: fmtUsd(jupMarket?.volume24h ?? live.volumeUsd) },
-                    { label: 'HOLDERS', value: jupMarket?.holders ? String(jupMarket.holders) : tx > 0 ? String(tx) : '—' },
-                  ];
-                })().map((s) => (
+                {[
+                  { label: 'MARKET CAP', value: fmtUsd(marketCap) },
+                  { label: 'LIQUIDITY', value: fmtUsd(liquidity) },
+                  { label: 'VOLUME 24H', value: fmtUsd(volume24h) },
+                  { label: 'HOLDERS', value: holderCount ? holderCount.toLocaleString() : '—' },
+                ].map((s) => (
                   <div key={s.label} className="px-3 py-2.5 md:px-4 md:py-3 text-center min-w-0">
                     <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase truncate">{s.label}</div>
                     <div className="text-white text-sm md:text-lg font-bold tabular-nums mt-0.5 truncate">{s.value}</div>
@@ -1721,8 +1726,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           <div className="relative w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-t border-purple-500/40 rounded-t-2xl p-3 pb-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                {info?.icon && <img src={info.icon} className="h-7 w-7 rounded-full" alt="" />}
-                <div className="text-white font-bold text-lg">Trade {info?.symbol || ''}</div>
+                {tokenIcon && <img src={tokenIcon} className="h-7 w-7 rounded-full" alt="" />}
+                <div className="text-white font-bold text-lg">Trade {tokenSymbol || ''}</div>
               </div>
               <button onClick={() => setMobileSwapOpen(false)} className="text-white text-3xl leading-none px-2" data-testid="button-close-swap">×</button>
             </div>
