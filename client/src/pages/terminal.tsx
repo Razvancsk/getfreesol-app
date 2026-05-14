@@ -303,7 +303,6 @@ export default function TerminalPage() {
                 </a>
               </Link>
             </div>
-            <p className="text-white/60 text-xs">Live Solana launchpad screener · Pump.fun · LetsBonk · Meteora · Bags · Moonshot</p>
           </div>
         </div>
         <TerminalView />
