@@ -597,7 +597,13 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
     return newOrder.slice(0, limit).map((m) => tokens.get(m)).filter((t): t is Token => !!t).map(serialize);
   }
   if (type === 'migrated') {
-    return migratedOrder.slice(0, limit).map((m) => tokens.get(m)).filter((t): t is Token => !!t).map(serialize);
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    return migratedOrder
+      .map((m) => tokens.get(m))
+      .filter((t): t is Token => !!t && !!t.name && !!t.imageUri && (t.migratedAt ?? 0) >= cutoff)
+      .sort((a, b) => (b.migratedAt ?? 0) - (a.migratedAt ?? 0))
+      .slice(0, limit)
+      .map(serialize);
   }
   // bonding: all active bonding-curve tokens (any progress), sorted highest-first
   return [...tokens.values()]
