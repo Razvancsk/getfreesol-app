@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
-import { getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, getTokenPoolInfo as getGmgnTokenPool, getWalletTokenBalance as getGmgnTokenBalance, getCreatedTokens as getGmgnCreatedTokens, getUserInfo as getGmgnUserInfo, getFollowWalletActivity as getGmgnFollowWallet, fetchFilteredTrenches, getTokenRecentTrades as getGmgnTokenRecentTrades } from './gmgnService';
+import { getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenPoolInfo as getGmgnTokenPool, getWalletTokenBalance as getGmgnTokenBalance, getCreatedTokens as getGmgnCreatedTokens, getUserInfo as getGmgnUserInfo, getFollowWalletActivity as getGmgnFollowWallet, fetchFilteredTrenches } from './gmgnService';
 import { startPumpStream, getFeed as pumpFeed, getStreamStatus as pumpStatus, getTokenLive as pumpTokenLive, getSolUsd as pumpSolUsd } from './pumpStream';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement, swapRecords } from "@shared/schema";
@@ -13127,76 +13127,18 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  app.get('/api/terminal/token-security/:mint', async (req, res) => {
-    try {
-      const mint = String(req.params.mint || '').trim();
-      if (!mint) return res.status(400).json({ error: 'mint required' });
-      const security = await getGmgnTokenSecurity(mint);
-      res.json({ security });
-    } catch (e: any) {
-      res.status(500).json({ error: e?.message || 'token security failed' });
-    }
-  });
 
   app.get('/api/terminal/token-live/:mint', async (req, res) => {
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
-      // pumpStream has real-time data; fall back to GMGN for older tokens
-      const streamLive = pumpTokenLive(mint);
-      if (streamLive) return res.json({ live: streamLive });
-      const live = await getGmgnTokenLive(mint);
-      res.json({ live });
+      const live = pumpTokenLive(mint);
+      res.json({ live: live || null });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'live failed' });
     }
   });
 
-  app.get('/api/terminal/kline/:mint', async (req, res) => {
-    try {
-      const mint = String(req.params.mint || '').trim();
-      if (!mint) return res.status(400).json({ error: 'mint required' });
-      const resolution = String(req.query.resolution || '15m');
-      const limit = Math.min(200, Number(req.query.limit || 100));
-      const candles = await getGmgnKline(mint, resolution, limit);
-      res.json({ candles });
-    } catch (e: any) {
-      res.status(500).json({ error: e?.message || 'kline failed' });
-    }
-  });
-
-  app.get('/api/terminal/holders/:mint', async (req, res) => {
-    try {
-      const mint = String(req.params.mint || '').trim();
-      if (!mint) return res.status(400).json({ error: 'mint required' });
-      const holders = await getGmgnTopHolders(mint);
-      res.json({ holders });
-    } catch (e: any) {
-      res.status(500).json({ error: e?.message || 'holders failed' });
-    }
-  });
-
-  app.get('/api/terminal/traders/:mint', async (req, res) => {
-    try {
-      const mint = String(req.params.mint || '').trim();
-      if (!mint) return res.status(400).json({ error: 'mint required' });
-      const traders = await getGmgnTopTraders(mint);
-      res.json({ traders });
-    } catch (e: any) {
-      res.status(500).json({ error: e?.message || 'traders failed' });
-    }
-  });
-
-  app.get('/api/terminal/token-trades/:mint', async (req, res) => {
-    try {
-      const mint = String(req.params.mint || '').trim();
-      if (!mint) return res.status(400).json({ error: 'mint required' });
-      const trades = await getGmgnTokenRecentTrades(mint);
-      res.json({ trades });
-    } catch (e: any) {
-      res.status(500).json({ error: e?.message || 'token-trades failed' });
-    }
-  });
 
   app.get('/api/terminal/signals', async (req, res) => {
     try {
@@ -13431,26 +13373,6 @@ Claimer: ${walletAddress}`;
           icon: live.imageUri ?? null,
         });
       }
-      // Fallback: GMGN live data
-      try {
-        const gmgnLive = await getGmgnTokenLive(mint);
-        if (gmgnLive) {
-          return res.json({
-            price: gmgnLive.priceUsd ?? null,
-            priceConfidence: null,
-            marketCap: gmgnLive.marketCapUsd ?? null,
-            liquidity: gmgnLive.liquidityUsd ?? null,
-            volume24h: gmgnLive.volumeUsd ?? null,
-            buys24h: gmgnLive.buys ?? null,
-            sells24h: gmgnLive.sells ?? null,
-            holders: null,
-            organicScore: null, organicScoreLabel: null, isVerified: false,
-            mintDisabled: null, freezeDisabled: null, topHoldersPct: null, isSus: false,
-            name: gmgnLive.name ?? null, symbol: gmgnLive.symbol ?? null,
-            decimals: null, icon: gmgnLive.imageUri ?? null,
-          });
-        }
-      } catch {}
       res.json({ price: null, marketCap: null, liquidity: null, volume24h: null });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'market failed' });
@@ -13554,11 +13476,6 @@ Claimer: ${walletAddress}`;
       if (live?.priceUsd) {
         return res.json({ price: live.priceUsd, confidence: 'high' });
       }
-      // Fallback: GMGN for tokens not yet seen on stream
-      try {
-        const gmgnLive = await getGmgnTokenLive(mint);
-        if (gmgnLive?.priceUsd) return res.json({ price: gmgnLive.priceUsd, confidence: null });
-      } catch {}
       res.json({ price: null, confidence: null });
     } catch (e: any) {
       res.status(500).json({ error: e?.message || 'price failed' });

@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, Droplet, Hammer, ArrowDownUp, Zap, Settings, Wallet as WalletIcon, Bell, Users, Activity, BarChart2, SlidersHorizontal, X as XIcon } from 'lucide-react';
+import { ArrowLeft, Flame, Sparkles, Rocket, Search, ExternalLink, TrendingUp, TrendingDown, Copy, Globe, Send, MessageCircle, ArrowDownUp, Zap, Settings, Wallet as WalletIcon, Bell, Users, Activity, BarChart2, SlidersHorizontal, X as XIcon } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 
@@ -1342,7 +1342,7 @@ function PriceChart({ mint }: { mint: string }) {
 
 export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => void }) {
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<'info' | 'security' | 'holders' | 'traders'>('info');
+  const [tab, setTab] = useState<'info' | 'security' | 'traders'>('info');
   const [tradeFor, setTradeFor] = useState<'buy' | 'sell' | null>(null);
 
   const { data: info, isLoading } = useQuery<JupMint>({
@@ -1366,16 +1366,6 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     },
     refetchInterval: 15000,
     enabled: !!mint,
-  });
-  const { data: holdersData, isFetching: holdersLoading } = useQuery<{ holders: { address: string; owner?: string; amount: number; uiAmount?: number; pct?: number; label?: string; profit?: number }[] }>({
-    queryKey: ['/api/terminal/holders', mint],
-    queryFn: async () => {
-      const r = await fetch(`/api/terminal/holders/${mint}`);
-      if (!r.ok) throw new Error('holders failed');
-      return r.json();
-    },
-    enabled: tab === 'holders' && !!mint,
-    staleTime: 60_000,
   });
   // Live trade feed + bonding progress + price/mcap via pumpapi.io WebSocket stream
   const [liveTrades, setLiveTrades] = useState<any[]>([]);
@@ -1545,7 +1535,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
             <PriceChart mint={mint} />
 
             <div className="flex gap-2 flex-wrap">
-              {(['info', 'security', 'holders', 'traders'] as const).map((id) => (
+              {(['info', 'security', 'traders'] as const).map((id) => (
                 <button
                   key={id}
                   onClick={() => setTab(id)}
@@ -1616,52 +1606,6 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               );
             })()}
 
-            {tab === 'holders' && (
-              <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-white font-semibold">Top holders</h3>
-                  <a href={`https://app.bubblemaps.io/sol/token/${mint}`} target="_blank" rel="noreferrer"
-                    className="text-xs px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/10">Bubble map</a>
-                </div>
-                {holdersLoading && <div className="text-center text-white/50 text-sm py-6">Loading top holders…</div>}
-                {!holdersLoading && (holdersData?.holders?.length ?? 0) === 0 && <div className="text-center text-white/50 text-sm py-6">No holders found.</div>}
-                <div className="divide-y divide-white/5">
-                  {(() => {
-                    const devAddr = (info as any)?.devAddress || info?.dev || '';
-                    const poolAddr = (info as any)?.poolAddress || '';
-                    const poolLiq = (info as any)?.poolLiquidity;
-                    const tagFor = (h: any) => {
-                      const addr = h.address; const apiTags: string[] = h.tags || []; const label: string = h.label || '';
-                      if (h.addrType === 2 || apiTags.includes('pump_amm') || apiTags.includes('raydium') || label === 'pump.fun-bonding-curve' || (label && label.startsWith('liquidity-pool:')) || (poolAddr && addr === poolAddr)) {
-                        const dex = h.exchange || (info as any)?.poolDex || 'Pool'; const liqStr = poolLiq != null && addr === poolAddr ? ` · ${fmtUsd(poolLiq)}` : '';
-                        return { name: `${dex}${liqStr}`, icon: Droplet, color: 'text-sky-400', bg: 'bg-sky-500/10' };
-                      }
-                      if (apiTags.includes('dev') || (devAddr && addr === devAddr)) return { name: 'Developer', icon: Hammer, color: 'text-amber-400', bg: 'bg-amber-500/10' };
-                      return null;
-                    };
-                    return (holdersData?.holders || []).slice(0, 20).map((h: any) => {
-                      const pct = h.pct != null ? h.pct * 100 : (totalSupply > 0 ? (h.amount / totalSupply) * 100 : 0);
-                      const tag = tagFor(h); const apiTags: string[] = h.tags || []; const isSm = apiTags.includes('smart_degen'); const isKol = apiTags.includes('renowned');
-                      return (
-                        <a key={h.address} href={`https://solscan.io/account/${h.address}`} target="_blank" rel="noreferrer"
-                          className={`flex items-center justify-between py-2.5 text-sm hover:bg-white/5 px-2 -mx-2 rounded transition-colors ${tag?.bg || ''}`}>
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {tag ? <div className="flex items-center gap-1.5"><tag.icon className={`h-3.5 w-3.5 ${tag.color} shrink-0`} /><span className={`text-xs font-semibold ${tag.color}`}>{tag.name}</span></div>
-                              : <span className="font-mono text-xs text-purple-300 truncate">{h.name || shortMint(h.address)}</span>}
-                            {isSm && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SM</span>}
-                            {isKol && <span className="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">KOL</span>}
-                          </div>
-                          <div className="flex items-center gap-3 text-right">
-                            {h.usdValue > 0 && <div className="text-xs text-white/50 tabular-nums">{fmtUsd(h.usdValue)}</div>}
-                            <div className="text-white tabular-nums text-xs font-semibold">{pct.toFixed(2)}%</div>
-                          </div>
-                        </a>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-            )}
 
             {tab === 'traders' && (
               <div className="bg-purple-900/40 rounded-2xl border border-purple-500/20 overflow-hidden">
