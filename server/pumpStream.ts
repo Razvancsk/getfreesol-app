@@ -43,6 +43,7 @@ type Token = {
   firstMarketCapQuoteUsd?: number;
   quoteVolumeUsd?: number;
   bondingPct?: number;
+  devWallet?: string;
   createdAt?: number;
   firstSeen?: number;
   lastSeen: number;
@@ -373,6 +374,7 @@ function handleEvent(ev: Event) {
     const createPatch: Partial<Token> = {
       name: ev.name, symbol: ev.symbol, imageUri: directImg,
       pool: ev.pool, createdAt: ts,
+      devWallet: ev.user || ev.creator || undefined,
     };
     if (migTarget != null) createPatch.migrationTarget = migTarget;
     if (ev.solInPool != null) createPatch.solInPool = ev.solInPool;
@@ -582,6 +584,7 @@ function serialize(t: Token) {
     liquidityUsd: liqUsd,
     volumeUsd: volUsd,
     bondingPct: t.bondingPct,
+    devWallet: t.devWallet,
     createdAt: t.createdAt ?? t.firstSeen,
     lastSeen: t.lastSeen,
     buys: t.buys,

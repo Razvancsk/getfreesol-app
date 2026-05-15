@@ -1235,16 +1235,8 @@ type JupMint = {
   metadata?: { extensions?: { twitter?: string; website?: string; telegram?: string; discord?: string } };
 };
 
-function pickSocials(info?: JupMint): { twitter?: string; website?: string; telegram?: string; discord?: string } {
-  if (!info) return {};
-  const ext = (info as any)?.metadata?.extensions || {};
-  const s = (info as any)?.socials || {};
-  return {
-    twitter: info.twitter || s.twitter || ext.twitter,
-    website: info.website || s.website || ext.website,
-    telegram: info.telegram || s.telegram || ext.telegram,
-    discord: info.discord || s.discord || ext.discord,
-  };
+function pickSocials(): { twitter?: string; website?: string; telegram?: string; discord?: string } {
+  return {};
 }
 
 function fmtNum(n?: number): string {
@@ -1342,19 +1334,9 @@ function PriceChart({ mint }: { mint: string }) {
 
 export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => void }) {
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<'info' | 'security' | 'traders'>('info');
+  const [tab, setTab] = useState<'info' | 'traders'>('info');
   const [tradeFor, setTradeFor] = useState<'buy' | 'sell' | null>(null);
 
-  const { data: info, isLoading } = useQuery<JupMint>({
-    queryKey: ['/api/terminal/token', mint],
-    queryFn: async () => {
-      const r = await fetch(`/api/terminal/token/${mint}`);
-      if (!r.ok) throw new Error('info failed');
-      return r.json();
-    },
-    refetchInterval: 10_000,
-    enabled: !!mint,
-  });
   const { data: liveData } = useQuery<{ live: Token | null }>({
     queryKey: ['/api/terminal/token-live', mint],
     queryFn: async () => {
@@ -1484,26 +1466,21 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     staleTime: 2_000,
   });
 
-  const s24 = info?.stats24h || {};
-  const pct24 = typeof s24.priceChange === 'number' ? s24.priceChange : undefined;
-  const pctUp = (pct24 ?? 0) >= 0;
-  const totalSupply = info?.totalSupply ?? info?.circSupply ?? 0;
   const liveT: any = liveData?.live || {};
   // SOL/USD from stream data — included in each serialized pumpStream token
   const streamSolUsd: number = (liveT as any)?.solUsd ?? 0;
   // pumpStream WebSocket events give real-time price/mcap in SOL
   const streamPriceUsd = livePriceSol && streamSolUsd ? livePriceSol * streamSolUsd : null;
   const streamMcapUsd  = liveMcapSol  && streamSolUsd ? liveMcapSol  * streamSolUsd : null;
-  // Priority: live WebSocket stream → polled market data → GMGN info → SSE live
   const jupPrice = jupLivePrice?.price ?? jupMarket?.price ?? null;
-  const priceUsd = streamPriceUsd ?? jupPrice ?? (info as any)?.usdPrice ?? liveT.priceUsd;
-  const tokenName = info?.name || (jupMarket as any)?.name || liveT.name || '';
-  const tokenSymbol = info?.symbol || (jupMarket as any)?.symbol || liveT.symbol || '';
-  const tokenIcon = info?.icon || (jupMarket as any)?.icon || liveT.imageUri || '';
-  const marketCap = streamMcapUsd ?? (info as any)?.mcap ?? (jupMarket as any)?.marketCap ?? liveT.marketCapUsd ?? (priceUsd && totalSupply ? priceUsd * totalSupply : null);
-  const liquidity = (info as any)?.liquidity ?? (jupMarket as any)?.liquidity ?? liveT.liquidityUsd;
-  const volume24h = s24.volume ?? (jupMarket as any)?.volume24h ?? liveT.volumeUsd;
-  const holderCount = (info as any)?.holderCount ?? (jupMarket as any)?.holders;
+  const priceUsd = streamPriceUsd ?? jupPrice ?? liveT.priceUsd;
+  const tokenName = liveT.name || (jupMarket as any)?.name || '';
+  const tokenSymbol = liveT.symbol || (jupMarket as any)?.symbol || '';
+  const tokenIcon = liveT.imageUri || (jupMarket as any)?.icon || '';
+  const marketCap = streamMcapUsd ?? (jupMarket as any)?.marketCap ?? liveT.marketCapUsd ?? null;
+  const liquidity = liveT.liquidityUsd ?? (jupMarket as any)?.liquidity;
+  const volume24h = liveT.volumeUsd ?? (jupMarket as any)?.volume24h;
+  const pctUp = true;
   const tokenForTrade: Token = {
     mint,
     name: tokenName,
@@ -1525,17 +1502,13 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           </Button>
         </div>
 
-        {isLoading && !info && (
-          <div className="text-center text-white/50 py-16">Loading token…</div>
-        )}
-
         <div className="flex flex-col lg:flex-row lg:gap-4">
           {/* LEFT: chart + tabs + tab content — order-2 on mobile (shows below token card) */}
           <div className="order-2 lg:order-1 flex-1 min-w-0 space-y-3">
             <PriceChart mint={mint} />
 
             <div className="flex gap-2 flex-wrap">
-              {(['info', 'security', 'traders'] as const).map((id) => (
+              {(['info', 'traders'] as const).map((id) => (
                 <button
                   key={id}
                   onClick={() => setTab(id)}
@@ -1545,66 +1518,15 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
               ))}
             </div>
 
-            {tab === 'info' && (() => {
-              const launchpad = (info as any)?.launchpad;
-              const devAddr = (info as any)?.devAddress || '';
-              const poolAddr = (info as any)?.poolAddress || '';
-              const graduatedAt = (info as any)?.graduatedAt;
-              return (
-                <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
-                  <InfoAddressRow label="Contract Address" value={mint} />
-                  {devAddr && <InfoAddressRow label="Developer Wallet" value={devAddr} />}
-                  {poolAddr && <InfoAddressRow label={graduatedAt ? 'DEX Pool' : 'Pool'} value={poolAddr} />}
-                  {launchpad && <InfoTextRow label="Launchpad" value={launchpad} />}
-                  {graduatedAt && <InfoTextRow label="Graduated" value={new Date(graduatedAt).toLocaleDateString()} isLast />}
-                  {!graduatedAt && launchpad && <InfoTextRow label="" value="" isLast />}
-                </div>
-              );
-            })()}
-
-            {tab === 'security' && (() => {
-              const audit = (info as any)?.audit || {};
-              const topHoldersPct = audit.topHoldersPercentage != null ? Number(audit.topHoldersPercentage) : null;
-              const devMints = audit.devMints != null ? Number(audit.devMints) : null;
-              const devMigrations = audit.devMigrations != null ? Number(audit.devMigrations) : null;
-              const organicScore = (info as any)?.organicScore;
-              const organicLabel = (info as any)?.organicScoreLabel;
-              return (
-                <div className="space-y-3">
-                  {organicScore != null && (
-                    <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
-                      <div className="grid grid-cols-2 divide-x divide-purple-500/20">
-                        <div className="px-3 py-2.5 text-center">
-                          <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">Organic Score</div>
-                          <div className={`text-sm font-bold mt-0.5 ${organicScore >= 70 ? 'text-emerald-400' : organicScore >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>{organicScore.toFixed(0)}/100</div>
-                        </div>
-                        <div className="px-3 py-2.5 text-center">
-                          <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase">Quality</div>
-                          <div className={`text-sm font-bold mt-0.5 capitalize ${organicLabel === 'high' ? 'text-emerald-400' : organicLabel === 'medium' ? 'text-yellow-400' : 'text-red-400'}`}>{organicLabel || '—'}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
-                    <div className="px-4 py-2.5 border-b border-purple-500/20">
-                      <span className="text-purple-300/70 text-xs font-semibold tracking-wider uppercase">Security</span>
-                    </div>
-                    {[
-                      { label: 'Mint Authority', value: audit.mintAuthorityDisabled ? '✓ Disabled' : '⚠ Active', color: audit.mintAuthorityDisabled ? 'text-emerald-400' : 'text-red-400' },
-                      { label: 'Freeze Authority', value: audit.freezeAuthorityDisabled ? '✓ Disabled' : '⚠ Active', color: audit.freezeAuthorityDisabled ? 'text-emerald-400' : 'text-red-400' },
-                      topHoldersPct != null ? { label: 'Top 10 Holders', value: `${topHoldersPct.toFixed(1)}%`, color: topHoldersPct > 50 ? 'text-red-400' : topHoldersPct > 30 ? 'text-yellow-400' : 'text-emerald-400' } : null,
-                      devMints != null ? { label: 'Dev Token Launches', value: devMints.toLocaleString(), color: devMints > 100 ? 'text-red-400' : devMints > 10 ? 'text-yellow-400' : 'text-emerald-400' } : null,
-                      devMigrations != null ? { label: 'Dev Migrations', value: devMigrations.toLocaleString(), color: devMigrations > 10 ? 'text-red-400' : devMigrations > 3 ? 'text-yellow-400' : 'text-white/70' } : null,
-                    ].filter(Boolean).map((row: any) => (
-                      <div key={row.label} className="flex items-center justify-between px-4 py-2 border-b border-purple-500/10 last:border-0">
-                        <span className="text-white/60 text-xs">{row.label}</span>
-                        <span className={`text-xs font-semibold ${row.color}`}>{row.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
+            {tab === 'info' && (
+              <div className="bg-purple-900/40 border border-purple-500/20 rounded-2xl overflow-hidden">
+                <InfoAddressRow label="Contract Address" value={mint} />
+                {liveT.devWallet && <InfoAddressRow label="Developer Wallet" value={liveT.devWallet} />}
+                {liveT.launchpad && <InfoTextRow label="Launchpad" value={liveT.launchpad} />}
+                {liveT.migratedAt && <InfoTextRow label="Graduated" value={new Date(liveT.migratedAt).toLocaleDateString()} isLast />}
+                {!liveT.migratedAt && liveT.launchpad && <InfoTextRow label="" value="" isLast />}
+              </div>
+            )}
 
 
             {tab === 'traders' && (
@@ -1688,9 +1610,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                     );
                   })()}
                   <div className="flex items-center gap-2 mt-0.5 text-xs text-white/50">
-                    {info?.firstPool?.createdAt && (
-                      <span>{relAge(info.firstPool.createdAt)}</span>
-                    )}
+                    {liveT.createdAt && <span>{relAge(liveT.createdAt)}</span>}
                     <span className="font-mono">{shortMint(mint)}</span>
                     <button
                       onClick={() => navigator.clipboard.writeText(mint).catch(() => {})}
@@ -1701,7 +1621,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                       <Copy className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <SocialIcons socials={pickSocials(info)} mint={mint} />
+                  <SocialIcons socials={pickSocials()} mint={mint} />
                 </div>
               </div>
             </div>
@@ -1712,7 +1632,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                   { label: 'MARKET CAP', value: fmtUsd(marketCap) },
                   { label: 'LIQUIDITY', value: fmtUsd(liquidity) },
                   { label: 'VOLUME 24H', value: fmtUsd(volume24h) },
-                  { label: 'HOLDERS', value: holderCount ? holderCount.toLocaleString() : '—' },
+                  { label: 'BUYS / SELLS', value: liveT.buys != null ? `${liveT.buys} / ${liveT.sells ?? 0}` : '—' },
                 ].map((s) => (
                   <div key={s.label} className="px-3 py-2.5 md:px-4 md:py-3 text-center min-w-0">
                     <div className="text-purple-300/70 text-[10px] font-semibold tracking-wider uppercase truncate">{s.label}</div>
