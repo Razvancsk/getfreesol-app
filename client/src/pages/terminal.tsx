@@ -1588,9 +1588,9 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                     symbol: t.symbol || tokenSymbol,
                     imageUri: t.imageUri || tokenIcon,
                   };
-                  const rawBondPct = liveBondPct ?? t.bondingPct ?? ((info as any)?.bondingProgress ?? 0);
+                  const rawBondPct = liveBondPct ?? t.bondingPct ?? 0;
                   const bondPct = Math.min(100, parseFloat((rawBondPct * 100).toFixed(1)));
-                  const isMigrated = liveMigrated || !!t.migrated || rawBondPct >= 1 || !!(info as any)?.graduatedPool;
+                  const isMigrated = liveMigrated || !!t.migrated || rawBondPct >= 1;
                   return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isMigrated} size={80} />;
                 })()}
                 <div className="min-w-0 flex-1">
