@@ -84,7 +84,7 @@ const BOND_DEFAULTS: Record<string, { target: number; initVSol: number }> = {
   'bags':              { target: 85, initVSol: 0  },
   'moonshot':          { target: 85, initVSol: 0  },
 };
-const ALMOST_BOND_THRESHOLD = 0.5; // 50%+ progress, < 100% (not migrated)
+const BOND_SHOW_THRESHOLD = 0; // show all bonding-curve tokens (0–100%)
 
 const tokens = new Map<string, Token>();
 const newOrder: string[] = [];
@@ -599,9 +599,9 @@ export function getFeed(type: 'new' | 'bonding' | 'migrated', limit = 50) {
   if (type === 'migrated') {
     return migratedOrder.slice(0, limit).map((m) => tokens.get(m)).filter((t): t is Token => !!t).map(serialize);
   }
-  // bonding: any bonding-curve launchpad, not migrated, ≥ threshold, sorted desc
+  // bonding: all active bonding-curve tokens (any progress), sorted highest-first
   return [...tokens.values()]
-    .filter((t) => !!t.name && !!t.imageUri && !t.migrated && isBondingPool(t.pool) && (t.bondingPct ?? 0) >= ALMOST_BOND_THRESHOLD && (t.bondingPct ?? 0) < 1)
+    .filter((t) => !!t.name && !!t.imageUri && !t.migrated && isBondingPool(t.pool) && t.bondingPct != null && (t.bondingPct ?? 0) > BOND_SHOW_THRESHOLD && (t.bondingPct ?? 0) < 1)
     .sort((a, b) => (b.bondingPct ?? 0) - (a.bondingPct ?? 0))
     .slice(0, limit)
     .map(serialize);
