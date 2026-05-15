@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
 import { computeGsolLstPnl } from './gsolLstPnl';
-import { startGmgnService, getFeed as getGmgnFeed, getTrending as getGmgnTrending, getStreamStatus as getGmgnStatus, getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, addSseClient, getTokenPoolInfo as getGmgnTokenPool, getWalletTokenBalance as getGmgnTokenBalance, getCreatedTokens as getGmgnCreatedTokens, getUserInfo as getGmgnUserInfo, getFollowWalletActivity as getGmgnFollowWallet, fetchFilteredTrenches, getTokenRecentTrades as getGmgnTokenRecentTrades } from './gmgnService';
+import { getTokenInfo as getGmgnTokenInfo, getTokenLive as getGmgnTokenLive, getTokenSecurity as getGmgnTokenSecurity, getTopTraders as getGmgnTopTraders, getTopHolders as getGmgnTopHolders, getSignals as getGmgnSignals, getSmartMoneyWallets as getGmgnSmartMoney, getKolWallets as getGmgnKol, getWalletHoldings as getGmgnWalletHoldings, getWalletStats as getGmgnWalletStats, getWalletActivity as getGmgnWalletActivity, getTokenKlineData as getGmgnKline, getTokenPoolInfo as getGmgnTokenPool, getWalletTokenBalance as getGmgnTokenBalance, getCreatedTokens as getGmgnCreatedTokens, getUserInfo as getGmgnUserInfo, getFollowWalletActivity as getGmgnFollowWallet, fetchFilteredTrenches, getTokenRecentTrades as getGmgnTokenRecentTrades } from './gmgnService';
+import { startPumpStream, getFeed as pumpFeed, getStreamStatus as pumpStatus, getTokenLive as pumpTokenLive, getSolUsd as pumpSolUsd } from './pumpStream';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement, swapRecords } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -12898,26 +12899,29 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // ── /api/terminal — Solana token screener (powered by GMGN) ──
-  try { startGmgnService(); } catch (e: any) { console.error('[gmgn] start failed', e?.message); }
+  // ── /api/terminal — Solana token screener (powered by pumpapi.io stream) ──
+  try { startPumpStream(); } catch (e: any) { console.error('[pumpStream] start failed', e?.message); }
 
-  // SSE — push feed updates to connected clients in real-time
+  // SSE — push feed updates every 2s so clients get fresh token data
   app.get('/api/terminal/stream', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
-    const send = (data: string) => res.write(`data: ${data}\n\n`);
-    // Send current data immediately
-    send(JSON.stringify({
-      new: getGmgnFeed('new', 50),
-      bonding: getGmgnFeed('bonding', 50),
-      migrated: getGmgnFeed('migrated', 50),
-      trending: getGmgnTrending(50),
-      status: getGmgnStatus(),
-    }));
-    const remove = addSseClient(send);
-    req.on('close', remove);
+    const sendCurrent = () => {
+      try {
+        res.write(`data: ${JSON.stringify({
+          new: pumpFeed('new', 50),
+          bonding: pumpFeed('bonding', 50),
+          migrated: pumpFeed('migrated', 50),
+          trending: [],
+          status: pumpStatus(),
+        })}\n\n`);
+      } catch { /* client gone */ }
+    };
+    sendCurrent(); // immediate snapshot
+    const timer = setInterval(sendCurrent, 2000);
+    req.on('close', () => clearInterval(timer));
   });
 
   app.get('/api/terminal/feed', (req, res) => {
@@ -12926,12 +12930,12 @@ Claimer: ${walletAddress}`;
       return res.status(400).json({ error: 'type must be new|bonding|migrated' });
     }
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
-    res.json({ tokens: getGmgnFeed(t as any, limit), status: getGmgnStatus() });
+    res.json({ tokens: pumpFeed(t as any, limit), status: pumpStatus() });
   });
 
   app.get('/api/terminal/trending', (req, res) => {
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
-    res.json({ tokens: getGmgnTrending(limit), status: getGmgnStatus() });
+    res.json({ tokens: pumpFeed('new', limit), status: pumpStatus() });
   });
 
   // Jupiter Tokens v2 trending — toptrending, toptraded, toporganicscore
@@ -13138,6 +13142,9 @@ Claimer: ${walletAddress}`;
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
+      // pumpStream has real-time data; fall back to GMGN for older tokens
+      const streamLive = pumpTokenLive(mint);
+      if (streamLive) return res.json({ live: streamLive });
       const live = await getGmgnTokenLive(mint);
       res.json({ live });
     } catch (e: any) {
@@ -13395,52 +13402,58 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Jupiter Tokens v2 + Price v3 — combined market data for a token
+  // Market data — pumpStream primary, GMGN live fallback
   app.get('/api/terminal/jup-market/:mint', async (req, res) => {
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
-      const apiKey = process.env.JUPITER_API_KEY;
-      const headers: Record<string, string> = {};
-      if (apiKey) headers['x-api-key'] = apiKey;
-
-      const [tokenRes, priceRes] = await Promise.all([
-        fetch(`https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`, { headers }),
-        fetch(`https://api.jup.ag/price/v3?ids=${encodeURIComponent(mint)}`, { headers }),
-      ]);
-
-      const tokenArr: any[] = tokenRes.ok ? (await tokenRes.json()) : [];
-      const priceData: any = priceRes.ok ? (await priceRes.json()) : {};
-
-      const tokens: any[] = Array.isArray(tokenArr) ? tokenArr : (tokenArr?.tokens || []);
-      const token: any = tokens.find((t: any) => t.id === mint || t.address === mint) || tokens[0] || null;
-      const priceEntry: any = priceData?.data?.[mint] || null;
-
-      const stats24h: any = token?.stats?.['24h'] || token?.['24h'] || {};
-
-      res.json({
-        price: priceEntry?.price ? parseFloat(priceEntry.price) : (token?.usdPrice ? parseFloat(token.usdPrice) : null),
-        priceConfidence: priceEntry?.confidenceLevel || null,
-        marketCap: token?.mcap ?? token?.fdv ?? null,
-        liquidity: token?.liquidity ?? null,
-        volume24h: stats24h?.volume ?? stats24h?.buyVolume ?? token?.volume24h ?? null,
-        buys24h: stats24h?.buys ?? stats24h?.buy ?? null,
-        sells24h: stats24h?.sells ?? stats24h?.sell ?? null,
-        holders: token?.holderCount ?? null,
-        organicScore: token?.organicScore ?? null,
-        organicScoreLabel: token?.organicScoreLabel ?? null,
-        isVerified: token?.isVerified ?? false,
-        mintDisabled: token?.audit?.mintAuthorityDisabled ?? null,
-        freezeDisabled: token?.audit?.freezeAuthorityDisabled ?? null,
-        topHoldersPct: token?.audit?.topHoldersPercentage ?? null,
-        isSus: !!(token?.audit?.isSus),
-        name: token?.name ?? null,
-        symbol: token?.symbol ?? null,
-        decimals: token?.decimals ?? null,
-        icon: token?.icon ?? null,
-      });
+      const live = pumpTokenLive(mint);
+      if (live) {
+        return res.json({
+          price: live.priceUsd ?? null,
+          priceConfidence: 'high',
+          marketCap: live.marketCapUsd ?? null,
+          liquidity: live.liquidityUsd ?? null,
+          volume24h: live.volumeUsd ?? null,
+          buys24h: (live as any).buys ?? null,
+          sells24h: (live as any).sells ?? null,
+          holders: null,
+          organicScore: null,
+          organicScoreLabel: null,
+          isVerified: false,
+          mintDisabled: null,
+          freezeDisabled: null,
+          topHoldersPct: null,
+          isSus: false,
+          name: live.name ?? null,
+          symbol: live.symbol ?? null,
+          decimals: null,
+          icon: live.imageUri ?? null,
+        });
+      }
+      // Fallback: GMGN live data
+      try {
+        const gmgnLive = await getGmgnTokenLive(mint);
+        if (gmgnLive) {
+          return res.json({
+            price: gmgnLive.priceUsd ?? null,
+            priceConfidence: null,
+            marketCap: gmgnLive.marketCapUsd ?? null,
+            liquidity: gmgnLive.liquidityUsd ?? null,
+            volume24h: gmgnLive.volumeUsd ?? null,
+            buys24h: gmgnLive.buys ?? null,
+            sells24h: gmgnLive.sells ?? null,
+            holders: null,
+            organicScore: null, organicScoreLabel: null, isVerified: false,
+            mintDisabled: null, freezeDisabled: null, topHoldersPct: null, isSus: false,
+            name: gmgnLive.name ?? null, symbol: gmgnLive.symbol ?? null,
+            decimals: null, icon: gmgnLive.imageUri ?? null,
+          });
+        }
+      } catch {}
+      res.json({ price: null, marketCap: null, liquidity: null, volume24h: null });
     } catch (e: any) {
-      res.status(500).json({ error: e?.message || 'jup-market failed' });
+      res.status(500).json({ error: e?.message || 'market failed' });
     }
   });
 
@@ -13532,24 +13545,23 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Jupiter live price — lightweight, safe to poll every 3s
+  // Live price — pumpStream primary (real-time from WebSocket events)
   app.get('/api/terminal/jup-price/:mint', async (req, res) => {
     try {
       const mint = String(req.params.mint || '').trim();
       if (!mint) return res.status(400).json({ error: 'mint required' });
-      const apiKey = process.env.JUPITER_API_KEY;
-      const headers: Record<string, string> = {};
-      if (apiKey) headers['x-api-key'] = apiKey;
-      const r = await fetch(`https://api.jup.ag/price/v3?ids=${encodeURIComponent(mint)}`, { headers });
-      if (!r.ok) return res.status(r.status).json({ error: `jupiter ${r.status}` });
-      const data: any = await r.json();
-      const entry: any = data?.data?.[mint] || null;
-      res.json({
-        price: entry?.price ? parseFloat(entry.price) : null,
-        confidence: entry?.confidenceLevel || null,
-      });
+      const live = pumpTokenLive(mint);
+      if (live?.priceUsd) {
+        return res.json({ price: live.priceUsd, confidence: 'high' });
+      }
+      // Fallback: GMGN for tokens not yet seen on stream
+      try {
+        const gmgnLive = await getGmgnTokenLive(mint);
+        if (gmgnLive?.priceUsd) return res.json({ price: gmgnLive.priceUsd, confidence: null });
+      } catch {}
+      res.json({ price: null, confidence: null });
     } catch (e: any) {
-      res.status(500).json({ error: e?.message || 'jup-price failed' });
+      res.status(500).json({ error: e?.message || 'price failed' });
     }
   });
 

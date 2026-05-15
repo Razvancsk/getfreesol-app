@@ -11,9 +11,12 @@ type Event = {
   user?: string;
   traderPublicKey?: string;
   initialBuy?: number;
-  vSolInBondingCurve?: number;
+  solAmount?: number;
+  solInPool?: number;           // actual SOL raised so far (0 → migrationTarget)
+  vSolInBondingCurve?: number;  // virtual SOL (initial reserve + solInPool)
   vTokensInBondingCurve?: number;
   marketCapSol?: number;
+  migrationThreshholds?: { quote?: number }; // per-token SOL target (varies: 30, 85, …)
   signature?: string;
   timestamp?: number;
   [k: string]: any;
@@ -25,10 +28,12 @@ type Token = {
   symbol?: string;
   imageUri?: string;
   pool?: string;
+  solInPool?: number;           // latest actual SOL in bonding curve
   vSolInBondingCurve?: number;
   vTokensInBondingCurve?: number;
   marketCapSol?: number;
   firstMarketCapSol?: number;
+  migrationTarget?: number;     // SOL amount at which this token migrates
   solVolume?: number;
   // pumpapi stream update: stablecoin-quoted pools (USDC/USDT) ship
   // marketCapQuote / quoteAmount instead of marketCapSol / solAmount.
@@ -65,18 +70,19 @@ async function refreshSolUsd() {
 const MAX_NEW = 200;
 const MAX_MIGRATED = 200;
 const MAX_TRACKED = 5000;
-// Bonding-curve launchpads & their target virtual SOL before migration.
-// pumpapi.io supports: pump, pump-amm, raydium-launchpad (bonk), raydium-cpmm,
-// meteora-launchpad (bags, moonshot), meteora-damm-v1/v2.
-// Only the *launchpad* pools have a bonding curve; the *-amm/-damm/-cpmm pools
-// are already full AMMs so progress isn't meaningful there.
-const BOND_TARGETS: Record<string, number> = {
-  'pump': 85,
-  'raydium-launchpad': 85,
-  'bonk': 85,
-  'meteora-launchpad': 85,
-  'bags': 85,
-  'moonshot': 85,
+// Bonding-curve pool IDs with default migration SOL targets.
+// The per-token target is stored in Token.migrationTarget (from create event's
+// migrationThreshholds.quote). These defaults are used when the create event
+// was missed (e.g. connection started mid-stream).
+// Progress uses solInPool (actual SOL raised, 0 → target) as primary source,
+// falling back to vSolInBondingCurve - initVSol where initVSol ≈ 30 for pump/bonk.
+const BOND_DEFAULTS: Record<string, { target: number; initVSol: number }> = {
+  'pump':              { target: 85, initVSol: 30 },
+  'raydium-launchpad': { target: 85, initVSol: 30 },
+  'bonk':              { target: 85, initVSol: 30 },
+  'meteora-launchpad': { target: 85, initVSol: 0  },
+  'bags':              { target: 85, initVSol: 0  },
+  'moonshot':          { target: 85, initVSol: 0  },
 };
 const ALMOST_BOND_THRESHOLD = 0.5; // 50%+ progress, < 100% (not migrated)
 
@@ -90,7 +96,7 @@ let reconnectTimer: NodeJS.Timeout | null = null;
 let lastEventAt = 0;
 
 function isBondingPool(pool: string | undefined): boolean {
-  return !!pool && pool in BOND_TARGETS;
+  return !!pool && pool in BOND_DEFAULTS;
 }
 
 // Pools that only exist AFTER a token has migrated/graduated to a full AMM.
@@ -105,11 +111,30 @@ function isMigratedPool(pool: string | undefined): boolean {
   return false;
 }
 
-function bondingPctFor(pool: string | undefined, vSol: number | undefined): number | undefined {
-  if (!vSol || !pool) return undefined;
-  const target = BOND_TARGETS[pool];
-  if (!target) return undefined;
-  return Math.min(1, vSol / target);
+// Compute bonding curve progress (0–1) from stream event fields.
+// Primary: solInPool = actual SOL raised (no offset needed, directly comparable to target).
+// Fallback: vSolInBondingCurve - initVSol (pump/bonk virtual reserve starts at ~30 SOL).
+// migrationTarget comes from create event's migrationThreshholds.quote (varies per token).
+function bondingPctFor(
+  pool: string | undefined,
+  solInPool: number | undefined,
+  vSolInBondingCurve: number | undefined,
+  migrationTarget: number | undefined,
+): number | undefined {
+  if (!pool) return undefined;
+  const defaults = BOND_DEFAULTS[pool];
+  if (!defaults) return undefined;
+  const target = migrationTarget ?? defaults.target;
+  if (target <= 0) return undefined;
+
+  if (solInPool != null && solInPool >= 0) {
+    return Math.min(1, solInPool / target);
+  }
+  if (vSolInBondingCurve != null) {
+    const realSol = Math.max(0, vSolInBondingCurve - defaults.initVSol);
+    return Math.min(1, realSol / target);
+  }
+  return undefined;
 }
 
 function launchpadLabel(pool: string | undefined): string {
@@ -344,17 +369,19 @@ function handleEvent(ev: Event) {
 
   if (ev.txType === 'create') {
     const directImg = ev.imageUri && looksLikeImage(ev.imageUri) ? ipfsToHttp(ev.imageUri) : ev.imageUri;
-    upsert(ev.mint, {
-      name: ev.name,
-      symbol: ev.symbol,
-      imageUri: directImg,
-      pool: ev.pool,
-      vSolInBondingCurve: ev.vSolInBondingCurve,
-      vTokensInBondingCurve: ev.vTokensInBondingCurve,
-      marketCapSol: ev.marketCapSol,
-      bondingPct: bondingPctFor(ev.pool, ev.vSolInBondingCurve),
-      createdAt: ts,
-    });
+    const migTarget = typeof ev.migrationThreshholds?.quote === 'number' ? ev.migrationThreshholds.quote : undefined;
+    const createPatch: Partial<Token> = {
+      name: ev.name, symbol: ev.symbol, imageUri: directImg,
+      pool: ev.pool, createdAt: ts,
+    };
+    if (migTarget != null) createPatch.migrationTarget = migTarget;
+    if (ev.solInPool != null) createPatch.solInPool = ev.solInPool;
+    if (ev.vSolInBondingCurve != null) createPatch.vSolInBondingCurve = ev.vSolInBondingCurve;
+    if (ev.vTokensInBondingCurve != null) createPatch.vTokensInBondingCurve = ev.vTokensInBondingCurve;
+    if (ev.marketCapSol != null) createPatch.marketCapSol = ev.marketCapSol;
+    const bp = bondingPctFor(ev.pool, ev.solInPool, ev.vSolInBondingCurve, migTarget);
+    if (bp != null) createPatch.bondingPct = bp;
+    upsert(ev.mint, createPatch);
     // If we only have a metadata URI (or no image at all), resolve it in the
     // background so the UI gets a real image once the JSON is fetched.
     const metaUri = ev.uri || (!directImg ? ev.imageUri : undefined);
@@ -417,10 +444,16 @@ function handleEvent(ev: Event) {
       pool: ev.pool ?? undefined,
     };
     if (isSolQuote) {
-      patch.vSolInBondingCurve = ev.vSolInBondingCurve ?? undefined;
-      patch.vTokensInBondingCurve = ev.vTokensInBondingCurve ?? undefined;
-      patch.marketCapSol = ev.marketCapSol ?? undefined;
-      patch.bondingPct = bondingPctFor(ev.pool, ev.vSolInBondingCurve);
+      // Only set fields present in this event — Object.assign would silently wipe
+      // previously computed values if we included undefined fields in the patch.
+      if (ev.solInPool != null) patch.solInPool = ev.solInPool;
+      if (ev.vSolInBondingCurve != null) patch.vSolInBondingCurve = ev.vSolInBondingCurve;
+      if (ev.vTokensInBondingCurve != null) patch.vTokensInBondingCurve = ev.vTokensInBondingCurve;
+      if (ev.marketCapSol != null) patch.marketCapSol = ev.marketCapSol;
+      // Compute progress; use migrationTarget stored on the existing token if available.
+      const existingTarget = tokens.get(ev.mint)?.migrationTarget;
+      const bp = bondingPctFor(ev.pool, ev.solInPool, ev.vSolInBondingCurve, existingTarget);
+      if (bp != null) patch.bondingPct = bp;
     } else if (isStableQuote) {
       patch.quoteMint = ev.quoteMint;
       if (typeof ev.marketCapQuote === 'number') patch.marketCapQuoteUsd = ev.marketCapQuote;
@@ -540,6 +573,7 @@ function serialize(t: Token) {
     imageUri: t.imageUri,
     pool: t.pool,
     launchpad: launchpadLabel(t.pool),
+    tags: t.pool ? [t.pool] : [],
     vSolInBondingCurve: t.vSolInBondingCurve,
     marketCapSol: t.marketCapSol,
     marketCapUsd: mcUsd,

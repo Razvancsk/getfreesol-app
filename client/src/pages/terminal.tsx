@@ -23,6 +23,7 @@ type Token = {
   imageUri?: string;
   pool?: string;
   launchpad?: string;
+  tags?: string[];
   vSolInBondingCurve?: number;
   marketCapSol?: number;
   marketCapUsd?: number;
@@ -659,89 +660,21 @@ function MetricFilterDrawer({ open, onOpenChange, applied, onApply }: {
 
 type LP = { id: string; label: string; color: string; icon: React.ReactNode };
 const ALL_LAUNCHPADS: LP[] = [
-  { id: 'pump',      label: 'Pumpfun',    color: '#88D693', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#e0e0e0" d="M8.1553 1.9789c1.6183-1.6182 4.242-1.6183 5.8602 0 1.6183 1.6182 1.6183 4.242 0 5.8602l-4.7412 4.7412c-1.6182 1.6182-4.242 1.6182-5.8602 0s-1.6182-4.242 0-5.8602z"/><path fill="#52d48f" d="m4.935 5.2037-3.05 3.0499C.3445 9.794.409 12.3562 2.029 13.9763s4.1822 1.6845 5.7227.144l3.05-3.0499z"/><path fill="#2d2f33" d="m4.6398 5.514.7908-.8497 5.9293 5.8263-.8019.8451z"/></svg> },
-  { id: 'letsbonk',  label: 'LetsBonk',   color: '#E78C19', icon: <img src="https://gmgn.ai/static/icons/icon_bonk_16px_bold_dark_s.52b90ef2.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'believe',   label: 'Believe',    color: '#00CD44', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#00CD44"><path fillRule="evenodd" d="M6.629.2134c.2325-.1213.5157.019.5606.2774l.788 4.543c.0586.3377-.3181.5798-.6005.3857l-1.2608-.8691c-.0106.0256-.0206.052-.0332.0771L4.7804 7.234l-.5606 1.2685-.125.3184a4 4 0 0 0-.0966.3271l-.2579 1.0264-.0302.1543a1.75 1.75 0 0 0-.0098.4687c.1785 1.5446 1.4871 2.7109 3.042 2.711h3.3897c1.2037-.0003 2.1794-.977 2.1796-2.1807v-.2822c-.0002-.9828-.7469-1.7914-1.7041-1.8887l-.1933-.0088-.1201-.0068c-.0033-.0003-.0065-.0016-.0098-.002a4 4 0 0 1-.2334.0088H8.2257c-.6412-.0002-1.161-.5208-1.1611-1.162 0-.6414.5198-1.162 1.1611-1.1622h1.8252c.7804 0 1.4187-.6376 1.4189-1.4248-.0002-.7319-.5564-1.3348-1.2636-1.4072l-.1436-.0059-.1191-.0059c-.5855-.0595-1.042-.555-1.042-1.1562 0-.6412.5199-1.162 1.1611-1.1621l.1924.0059c1.9738.1005 3.5388 1.739 3.5391 3.7314-.0001.8696-.2991 1.671-.7979 2.3086.9968.772 1.6395 1.9796 1.6397 3.3379v.2822c-.0003 2.4866-2.0173 4.5027-4.5039 4.5029H6.7423c-2.7348-.0001-5.036-2.0507-5.3496-4.7675a4.07 4.07 0 0 1 .0215-1.0938l.0732-.3574.2569-1.0274c.0656-.2622.1484-.52.247-.7714l.1035-.249.5762-1.3018.0098-.0254.0127-.0244 1.3115-2.624c.0082-.0164.0175-.032.0264-.0479l-1.4922-.4385c-.334-.0984-.378-.5536-.0694-.7148z" clipRule="evenodd"/></svg> },
-  { id: 'meteora',   label: 'Meteora',    color: '#FB5134', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#FB5134"><path d="M14.643 2.211c.2318.2869.4388.5948.6152.9218-1.3656 1.486-2.7715 2.936-4.1943 4.3662-.9054.8944-1.8181 1.7814-2.7422 2.6572-2.1619 2.0473-4.392 4.0245-6.7607 5.8437 1.7884-2.3086 3.7278-4.4851 5.7373-6.5956.9208-.9675 1.8573-1.9214 2.7998-2.8672 1.4879-1.4683 2.9959-2.92 4.5449-4.3262"/><path d="M15.6782 4.1152c.152.466.248.9566.2812 1.4649-.7212.7594-1.4531 1.509-2.1904 2.2519-1.0829 1.0689-2.1802 2.1267-3.3047 3.1553-1.601 1.4658-3.2587 2.8714-5.0117 4.165 1.1761-1.581 2.4455-3.0837 3.7686-4.5371 1.1611-1.279 2.3642-2.5216 3.582-3.7451.9447-.9304 1.9007-1.8525 2.875-2.7549"/><path d="M13.0063.8008c.3173.1862.6151.4012.8916.6406-1.416 1.5478-2.8765 3.0546-4.3555 4.541-.9494.9382-1.9063 1.87-2.8769 2.7861-2.1198 2.0017-4.3051 3.9353-6.625 5.7168 1.8299-2.3632 3.8185-4.5874 5.878-6.7441.876-.9168 1.7644-1.8216 2.6591-2.7197 1.451-1.4316 2.9206-2.8474 4.4287-4.2207"/></svg> },
-  { id: 'mayhem',    label: 'Mayhem',     color: '#E6445C', icon: <img src="https://gmgn.ai/static/icons/icon_mayhem_16px_s.bb4b08b6.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'bonkers',   label: 'Bonkers',    color: '#F7270E', icon: <img src="https://gmgn.ai/static/icons/icon_bokers_16px_s.47981a63.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'bags',      label: 'Bags',       color: '#00D62B', icon: <img src="https://gmgn.ai/static/icons/icon_bags_16px_bold_s.a8706154.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'memoo',     label: 'Memoo',      color: '#07E993', icon: <img src="https://gmgn.ai/static/icons/icon_memoo_16px_bold_dark_s.1ff1b732.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'liquid',    label: 'Liquid',     color: '#2894CB', icon: <img src="https://gmgn.ai/static/icons/icon_liquid_16px_s.88713c79.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'bankr',     label: 'Bankr',      color: '#9472FF', icon: <img src="https://gmgn.ai/static/icons/icon_bankr_16px_s.46f6b39f.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'zora',      label: 'Zora',       color: '#5A81F1', icon: <img src="https://gmgn.ai/static/icons/icon_zora_16px_s.bf565dc9.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'surge',     label: 'Surge',      color: '#56CB7C', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#56CB7C"><path d="M10.0142.498c1.9679 0 3.5634 1.426 3.5634 3.1846v1.7989h-2.788V3.6826c0-.3823-.3476-.6924-.7754-.6924H5.9868c-.4278 0-.7744.3101-.7744.6924v3.5987c0 .3822.3466.6923.7744.6923h2.0137V5.4512h2.0137c1.9934 0 3.6093 1.4442 3.6093 3.2256v3.5996c0 1.7814-1.6159 3.2256-3.6093 3.2256H5.9858c-1.9934-.0002-3.6093-1.4443-3.6093-3.2256v-1.7998h2.8818v1.7998c0 .3593.3256.6502.7275.6504h4.0284c.4021 0 .7285-.291.7285-.6504V8.6768c-.0001-.3594-.3265-.6504-.7285-.6504H8.0005v2.4394H5.9868c-1.9679 0-3.5635-1.426-3.5635-3.1845V3.6826C2.4233 1.9241 4.019.498 5.9868.498z"/></svg> },
-  { id: 'anoncoin',  label: 'Anoncoin',   color: '#9978F6', icon: <img src="https://gmgn.ai/static/icons/icon_anoncoin_16px_s.5458fab7.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'moonshot',  label: 'Moonshot',   color: '#FF88FE', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#e0e0e0" fillRule="evenodd" d="M12.5826 1.4433C14.6484 2.8905 16.0001 5.2886 16.0001 8c0 4.4153-3.5846 7.9999-7.9999 7.9999-2.6319 0-4.9687-1.2738-6.427-3.2379 4.9844 2.115 11.0221.5607 11.638-6.852.0019-.0225.6679.092 1.0484.159a.1439.1439 0 0 0 .1574-.1984c-.3545-.8578-1.535-3.713-1.8344-4.4272" clipRule="evenodd"/><path fill="#ff88fe" fillRule="evenodd" d="M.0005 8.0903A8 8 0 0 1 0 8c0-4.4154 3.5846-8 7.9999-8 1.6482 0 3.1808.4996 4.4542 1.3554L9.4249 5.2327a.1442.1442 0 0 0 .0938.2316c.3868.0539 1.0896.154 1.0882.1714-.544 6.6685-7.7328 6.6558-10.6064 2.4546" clipRule="evenodd"/></svg> },
-  { id: 'wendotdev', label: 'Wen.dev',    color: '#6060FF', icon: <img src="https://gmgn.ai/static/img/dex/logo/40x40/wendev_dark.png" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'heaven',    label: 'Heaven',     color: '#E5E5E6', icon: <img src="https://gmgn.ai/static/icons/icon_heaven_16px_dark_s.10570e45.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'sugar',     label: 'Sugar',      color: '#EF89AE', icon: <img src="https://gmgn.ai/static/img/dex/logo/40x40/sugar.png" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'token_mill',label: 'TokenMill',  color: '#FF5252', icon: <img src="https://gmgn.ai/static/img/cex/tokenmill.png" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'trends',    label: 'Trends',     color: '#F64838', icon: <img src="https://gmgn.ai/static/icons/icon_trends100_16px_s.b1760acd.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'trends_fun',label: 'Trends.fun', color: '#F2307D', icon: <img src="https://gmgn.ai/static/icons/icon_trends_16px_s.bb9dfed9.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
-  { id: 'studio',    label: 'Studio',     color: '#69D0B2', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#7ad4c9" d="M1.527 12.6033c.8 1.0841 3.072 3.2742 5.7599 3.3615-1.4618-2.2264-3.8617-3.2087-5.7598-3.3615"/><path fill="#8acdb3" d="m.9009 11.636-.6076-1.481c.836-.2488 3.1827-.4144 5.6767.8117 2.5352 1.2463 3.7574 3.7323 4.0516 4.8195-.36.2366-1.378.2469-1.6156.1737-2.4572-3.6505-6.0273-4.4037-7.505-4.3239"/><path fill="#d49dbb" d="M6.9834 10.155C3.3396 8.24 1.427 8.7239.0001 8.9542V7.8018c.8275-.5525 3.7098-1.3551 7.5989.7245 3.9345 2.1039 4.7687 5.089 4.6255 6.4559l-1.015.3968c-.5283-1.1089-1.4081-3.743-4.226-5.224"/><path fill="#e8ae87" d="M13.7115 13.844C10.8265 5.6072 3.4989 5.202.1957 6.029c0-.0613.0195-.255.0975-.5394.6346-1.1616 3.6775-1.9201 8.1127.237 3.5482 1.7257 5.3288 4.4284 5.8366 6.2939.1842.6764.0833 1.5673-.531 1.8235"/><path fill="#f9b95a" d="M15.9999 6.0296C12.6717 1.9252 7.9481.4904 6.0023.286c1.2141-.1924 2.3841-.5338 4.4317 0 .4388.1923 4.6951 1.4197 5.5659 5.7435"/><path fill="#f1a879" d="M15.7445 10.5734C12.7404 3.913 5.3649 2.4894 2.0526 2.6103c0-.073.3819-.3912 1.3754-.693 2.283-.693 4.9266.4809 7.3899 1.7433s5.7077 5.2898 4.9266 6.9128"/></svg> },
-  { id: 'moonit',    label: 'Moonit',     color: '#DFFF18', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#dfff18"><path d="M14.9318 1.6776c.0265-.1647.0469-.3327.0187-.4971-.1633-.9494-1.2411-1.4936-2.1173-.9872L1.5148 8.161c-.9067.524-.4256 1.9169.6105 1.7675l5.522-1.0724c.765-.1104 1.509.254 1.8983.9002.1065.1768.1616.3783.209.5792l1.1596 4.9139c.0237.1004.0515.2013.1033.2907.4382.7563 1.617.5324 1.7526-.3272.0173-.1098.0216-.2219.0393-.3317z"/></svg> },
-  { id: 'boop',      label: 'Boop',       color: '#2BBDEE', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#2bbdee"><path fill="#30353a" d="M14.7824 8.8923c.3035 2.9921-2.5333 4.7971-6.2182 5.1709s-6.9658-1.3415-7.231-3.9559c-.265-2.6143 1.622-5.002 5.9432-5.4402s7.2025 1.2331 7.506 4.2252"/><path fill="#9abdee" d="M9.7074 10.1459a.6503.6503 0 0 1 .9141-.0977c.2794.2254.3239.6347.0986.9141-.1805.2238-.4642.5626-.8262.8672-.3587.3017-.8358.6052-1.411.705-.5287.0917-1.0589.0362-1.4864-.0576-.3193-.0701-.6092-.1676-.831-.2646l-.1973-.0957-.1094-.0742a.6501.6501 0 0 1 .6075-1.1192l.121.0508.1055.0498c.1314.0569.3368.1296.583.1836.326.0715.6756.0994.9844.0459.2619-.0454.5312-.1955.7968-.4189.2626-.2209.482-.4796.6504-.6885"/><path fill="#9abdee" d="M4.5273 7.3921c.8916 0 1.6152.7226 1.6152 1.6142s-.7236 1.6143-1.6152 1.6143c-.8916-.0002-1.6143-.7227-1.6143-1.6143 0-.2504.0585-.4867.1602-.6982l-.7549-.295.2354-.6005.9297.3633a1.608 1.608 0 0 1 1.0439-.3838m.001.622c-.5479 0-.9922.4444-.9922.9922 0 .5479.4443.9922.9922.9922.5477-.0001.9921-.4444.9921-.9922s-.4444-.992-.9922-.9921"/><path fill="#9abdee" d="m12.8016 7.8325-.8135.3516a1.604 1.604 0 0 1 .166.6884h-.622c-.0111-.5381-.4505-.9715-.9912-.9716-.541 0-.9802.4334-.9912.9717h-.623c.011-.882.7286-1.5937 1.6132-1.5938.396 0 .7582.1432 1.039.3799l.9658-.418z"/></svg> },
-  { id: 'xstocks',   label: 'xStocks',    color: '#69D0B2', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#69D0B2"><path d="M15.3.8062A.106.106 0 0 0 15.1937.7h-4.7603L7.9999 3.1335 5.5666.7H.8062A.106.106 0 0 0 .7.8062v4.7604L3.1334 8 .7 10.4335v4.7603a.106.106 0 0 0 .1062.1062h4.7603L8 12.8666 10.4334 15.3h4.7603a.106.106 0 0 0 .1063-.1062v-4.7603L12.8665 8 15.3 5.5666z"/></svg> },
-  { id: 'launchlab', label: 'Launchlab',  color: '#FF3BB8', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#FF3BB8"><path d="M13.0475 3.0382 8 .1241 1.1791 4.062v7.8761l6.821 3.9381 6.8208-3.9381v-5.51l-.9751.563v4.3842L8 14.7503l-5.8458-3.375V4.6251L8 1.25l4.0724 2.351z"/><path d="m13.8125 3.7457.8734.5043v1.0084l-.8734.5043-.8733-.5043V4.25z"/><path fillRule="evenodd" d="M8.9622 5.1722H5.0067V4.0346h3.9555c1.4358 0 2.5998 1.164 2.5998 2.5998s-1.164 2.5998-2.5998 2.5998H6.0848v2.5471H4.9472V8.0966h4.015c.8076 0 1.4622-.6546 1.4622-1.4622s-.6547-1.4622-1.4622-1.4622" clipRule="evenodd"/><path d="M9.2253 9.9297h.0765c.343 0 .6823-.0714.9963-.2095l.8268 2.0613H9.94z"/></svg> },
-  { id: 'raydium',   label: 'Raydium',    color: '#3675F9', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#3675F9"><path d="M13.0475 3.0382 8 .1241 1.1791 4.062v7.8761l6.821 3.9381 6.8208-3.9381v-5.51l-.9751.563v4.3842L8 14.7503l-5.8458-3.375V4.6251L8 1.25l4.0724 2.351z"/><path d="m13.8125 3.7457.8734.5043v1.0084l-.8734.5043-.8733-.5043V4.25z"/><path fillRule="evenodd" d="M8.9622 5.1722H5.0067V4.0346h3.9555c1.4358 0 2.5998 1.164 2.5998 2.5998s-1.164 2.5998-2.5998 2.5998H6.0848v2.5471H4.9472V8.0966h4.015c.8076 0 1.4622-.6546 1.4622-1.4622s-.6547-1.4622-1.4622-1.4622" clipRule="evenodd"/><path d="M9.2253 9.9297h.0765c.343 0 .6823-.0714.9963-.2095l.8268 2.0613H9.94z"/></svg> },
-  { id: 'pump_amm',  label: 'Pump AMM',   color: '#9AA0AA', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#c3c3c3" d="M8.155 1.9783c1.6183-1.618 4.2422-1.6181 5.8604 0 1.618 1.6181 1.6179 4.242 0 5.8603l-2.6631 2.6621.0068-.0107L5.45 4.6824z"/><path fill="#6f7279" d="m4.639 5.5137 5.9062 5.8115-2.794 2.7949c-1.5404 1.5404-4.1025 1.4762-5.7226-.1435-1.62-1.62-1.6847-4.1821-.1445-5.7227l2.7365-2.7402z"/></svg> },
-  { id: 'orca',      label: 'Orca',       color: '#FED15C', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 17 16" fill="#FED15C"><path fill="#fed15c" fillRule="evenodd" d="M8.0615.0153c4.3571-.0166 7.906 3.4876 7.9072 7.8448l.0001.1243-.0001.109c-.001 4.3632-3.6104 7.8682-7.9737 7.8597C3.5995 15.9446 0 12.3722 0 7.9767 0 3.5995 3.5211.0334 7.8983.016z" clipRule="evenodd"/><path fill="#020101" fillRule="evenodd" d="M7.9375 3.1094Q9.7001 2.939 11 4.125a7.62 7.62 0 0 1 1.3594 1.7031q1.2989.7523 1.625 2.2188.1055.5835-.2656.1406-.3059-.2482-.6875-.1719-.1403 3.3058-3.125 4.7032-2.6706 1.021-4.9063-.75l-.6094-.5469a2.9 2.9 0 0 0-.3437-.375.154.154 0 0 1-.0156-.0938q-.6.0474-1.0938-.2968a4.29 4.29 0 0 1-.9219-1.0157.275.275 0 0 1-.0469-.1562 2.49 2.49 0 0 0 1.125-.2344q.3938-.083.7188.1406.0039-.2796.1719-.5a3.84 3.84 0 0 1 .6719-.4843 6.5 6.5 0 0 0 .375-.3907q.0538.015.078.0625.37.8644.1876 1.7813a1.575 1.575 0 0 1-.3281.6094q.836.5965 1.8437.8125 2.0038.1837 1.8281-1.8282a.3.3 0 0 0-.0468-.078Q8.0626 9.1582 7.5 9.2812a4.15 4.15 0 0 0-.5937.1562q-.122.036-.2344-.0156.1379-.7512.7656-1.2031.2157-.1344.4688-.1563-1.4887-1.0667-2.422-2.6406-.35-.6123-.3124-1.3125.0829-.2547.3281-.3594c.812-.231 1.5-.55 2.4375-.6406" clipRule="evenodd"/></svg> },
-  { id: 'america.fun',label: 'AmericaFun', color: '#B22234', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><polygon points="8,1 9.5,5.5 14.5,5.5 10.5,8.5 12,13 8,10 4,13 5.5,8.5 1.5,5.5 6.5,5.5" fill="#B22234"/></svg> },
-  { id: 'metadao',   label: 'MetaDAO',    color: '#7C3AED', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#7C3AED"><path d="M8 1L1 4.5v7L8 15l7-3.5v-7L8 1zm0 1.8L13.2 5.4l-1.7.85L8 4.6l-3.5 1.65L2.8 5.4 8 2.8zm-5.2 3.3L6.3 7.8v3.9L2.8 9.8V6.1zm1.7 5.35L8 13.2l3.5-1.75v-3.9l-3.5 1.75L4.5 7.55v3.9zm4.2-.15V7.8l3.5-1.7v3.7L8.7 11.5z"/></svg> },
-  { id: 'easya-kickstart', label: 'EasyA', color: '#0EA5E9', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#0EA5E9"><path d="M8 1L2 14h2.5L6 11h4l1.5 3H14L8 1zm0 3.5L9.5 9h-3L8 4.5z"/></svg> },
-  { id: 'printr',    label: 'Printr',     color: '#A855F7', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#A855F7"><path d="M3 1h10v4H3V1zm0 5h10v1a2 2 0 0 1 2 2v3h-2v2H3v-2H1V8a2 2 0 0 1 2-2zm1 6v-2h8v2H4zm8-5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/></svg> },
-  { id: 'cyreneai',  label: 'CyreneAI',   color: '#06B6D4', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#06B6D4"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-1 2v6l4-3-4-3z"/></svg> },
-  { id: 'daos.fun',  label: 'DaosFun',    color: '#F97316', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#F97316"><path d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 2c1.1 0 2.1.3 2.95.82L3.82 10.95A4.97 4.97 0 0 1 3 8c0-2.76 2.24-5 5-5zm0 10c-1.1 0-2.1-.3-2.95-.82l7.13-7.13A4.97 4.97 0 0 1 13 8c0 2.76-2.24 5-5 5z"/></svg> },
-  { id: 'pump.science',label: 'PumpSci',  color: '#10B981', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#10B981"><path d="M6 1v5.5L2.5 12A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-2.5L10 6.5V1H6zm1 1h2v1H7V2zm0 2h2v2.2l3.2 5.35a.5.5 0 0 1-.45.75H4.25a.5.5 0 0 1-.45-.75L7 6.2V4z"/></svg> },
-  { id: 'soar',      label: 'Soar',       color: '#38BDF8', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#38BDF8"><path d="M14.5 2L2 8.5l4 1.5 1.5 4L14.5 2zm-9.7 6.8L12 3.7l-4.4 6.5-1.1-3.2-.5-.5-.7.3z"/></svg> },
-  { id: 'coined.wtf',label: 'Nova',       color: '#F59E0B', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1 3h3l-2.5 2 1 3L8 7.5 5.5 9l1-3L4 4h3L8 1zm0 6.5L6.5 11l-3.5.5 2.5 2.5-.5 3.5L8 15l3 2.5-.5-3.5 2.5-2.5-3.5-.5L8 7.5z"/></svg> },
-  { id: 'orynth',    label: 'Orynth',     color: '#EC4899', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#EC4899"><path d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm0 1.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm0 1.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg> },
-  { id: 'revshare',  label: 'RevShare',   color: '#34D399', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="#34D399"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2c.8 0 1.5.2 2.2.5L4.5 9.2A5 5 0 0 1 8 3zm0 10c-.8 0-1.5-.2-2.2-.5l5.7-5.7A5 5 0 0 1 8 13z"/></svg> },
+  { id: 'pump',     label: 'Pumpfun',  color: '#88D693', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#e0e0e0" d="M8.1553 1.9789c1.6183-1.6182 4.242-1.6183 5.8602 0 1.6183 1.6182 1.6183 4.242 0 5.8602l-4.7412 4.7412c-1.6182 1.6182-4.242 1.6182-5.8602 0s-1.6182-4.242 0-5.8602z"/><path fill="#52d48f" d="m4.935 5.2037-3.05 3.0499C.3445 9.794.409 12.3562 2.029 13.9763s4.1822 1.6845 5.7227.144l3.05-3.0499z"/><path fill="#2d2f33" d="m4.6398 5.514.7908-.8497 5.9293 5.8263-.8019.8451z"/></svg> },
+  { id: 'letsbonk', label: 'LetsBonk', color: '#E78C19', icon: <img src="https://gmgn.ai/static/icons/icon_bonk_16px_bold_dark_s.52b90ef2.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
+  { id: 'bags',     label: 'Bags',     color: '#00D62B', icon: <img src="https://gmgn.ai/static/icons/icon_bags_16px_bold_s.a8706154.webp" width="12" height="12" style={{objectFit:'contain'}} /> },
+  { id: 'moonshot', label: 'Moonshot', color: '#FF88FE', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#e0e0e0" fillRule="evenodd" d="M12.5826 1.4433C14.6484 2.8905 16.0001 5.2886 16.0001 8c0 4.4153-3.5846 7.9999-7.9999 7.9999-2.6319 0-4.9687-1.2738-6.427-3.2379 4.9844 2.115 11.0221.5607 11.638-6.852.0019-.0225.6679.092 1.0484.159a.1439.1439 0 0 0 .1574-.1984c-.3545-.8578-1.535-3.713-1.8344-4.4272" clipRule="evenodd"/><path fill="#ff88fe" fillRule="evenodd" d="M.0005 8.0903A8 8 0 0 1 0 8c0-4.4154 3.5846-8 7.9999-8 1.6482 0 3.1808.4996 4.4542 1.3554L9.4249 5.2327a.1442.1442 0 0 0 .0938.2316c.3868.0539 1.0896.154 1.0882.1714-.544 6.6685-7.7328 6.6558-10.6064 2.4546" clipRule="evenodd"/></svg> },
+  { id: 'studio',   label: 'Studio',   color: '#69D0B2', icon: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#7ad4c9" d="M1.527 12.6033c.8 1.0841 3.072 3.2742 5.7599 3.3615-1.4618-2.2264-3.8617-3.2087-5.7598-3.3615"/><path fill="#8acdb3" d="m.9009 11.636-.6076-1.481c.836-.2488 3.1827-.4144 5.6767.8117 2.5352 1.2463 3.7574 3.7323 4.0516 4.8195-.36.2366-1.378.2469-1.6156.1737-2.4572-3.6505-6.0273-4.4037-7.505-4.3239"/><path fill="#d49dbb" d="M6.9834 10.155C3.3396 8.24 1.427 8.7239.0001 8.9542V7.8018c.8275-.5525 3.7098-1.3551 7.5989.7245 3.9345 2.1039 4.7687 5.089 4.6255 6.4559l-1.015.3968c-.5283-1.1089-1.4081-3.743-4.226-5.224"/><path fill="#e8ae87" d="M13.7115 13.844C10.8265 5.6072 3.4989 5.202.1957 6.029c0-.0613.0195-.255.0975-.5394.6346-1.1616 3.6775-1.9201 8.1127.237 3.5482 1.7257 5.3288 4.4284 5.8366 6.2939.1842.6764.0833 1.5673-.531 1.8235"/><path fill="#f9b95a" d="M15.9999 6.0296C12.6717 1.9252 7.9481.4904 6.0023.286c1.2141-.1924 2.3841-.5338 4.4317 0 .4388.1923 4.6951 1.4197 5.5659 5.7435"/><path fill="#f1a879" d="M15.7445 10.5734C12.7404 3.913 5.3649 2.4894 2.0526 2.6103c0-.073.3819-.3912 1.3754-.693 2.283-.693 4.9266.4809 7.3899 1.7433s5.7077 5.2898 4.9266 6.9128"/></svg> },
 ];
 
 function findLaunchpad(tag: string): LP | undefined {
   if (!tag) return undefined;
   const lp = tag.toLowerCase();
-  if (lp === 'pump.fun' || lp.includes('pump_agent')) return ALL_LAUNCHPADS.find(x => x.id === 'pump');
-  if (lp === 'pump_amm') return ALL_LAUNCHPADS.find(x => x.id === 'pump_amm');
-  if (lp.includes('letsbonk')) return ALL_LAUNCHPADS.find(x => x.id === 'letsbonk');
-  if (lp.includes('believe')) return ALL_LAUNCHPADS.find(x => x.id === 'believe');
-  if (lp.includes('meteora') || lp === 'met-dbc' || lp.startsWith('met-')) return ALL_LAUNCHPADS.find(x => x.id === 'meteora');
-  if (lp.includes('mayhem')) return ALL_LAUNCHPADS.find(x => x.id === 'mayhem');
-  if (lp.includes('bonker')) return ALL_LAUNCHPADS.find(x => x.id === 'bonkers');
+  if (lp === 'pump.fun' || lp === 'pump' || lp === 'pump-amm' || lp === 'pumpswap' || lp.includes('pump_agent')) return ALL_LAUNCHPADS.find(x => x.id === 'pump');
+  if (lp.includes('letsbonk') || lp === 'raydium-launchpad' || lp === 'bonk') return ALL_LAUNCHPADS.find(x => x.id === 'letsbonk');
   if (lp.includes('bag')) return ALL_LAUNCHPADS.find(x => x.id === 'bags');
-  if (lp.includes('memoo')) return ALL_LAUNCHPADS.find(x => x.id === 'memoo');
-  if (lp.includes('liquid')) return ALL_LAUNCHPADS.find(x => x.id === 'liquid');
-  if (lp.includes('bankr')) return ALL_LAUNCHPADS.find(x => x.id === 'bankr');
-  if (lp.includes('zora')) return ALL_LAUNCHPADS.find(x => x.id === 'zora');
-  if (lp.includes('surge')) return ALL_LAUNCHPADS.find(x => x.id === 'surge');
-  if (lp.includes('anon')) return ALL_LAUNCHPADS.find(x => x.id === 'anoncoin');
   if (lp.includes('moonshot')) return ALL_LAUNCHPADS.find(x => x.id === 'moonshot');
-  if (lp.includes('moonit')) return ALL_LAUNCHPADS.find(x => x.id === 'moonit');
-  if (lp.includes('wen')) return ALL_LAUNCHPADS.find(x => x.id === 'wendotdev');
-  if (lp.includes('heaven')) return ALL_LAUNCHPADS.find(x => x.id === 'heaven');
-  if (lp.includes('sugar')) return ALL_LAUNCHPADS.find(x => x.id === 'sugar');
-  if (lp.includes('token_mill')) return ALL_LAUNCHPADS.find(x => x.id === 'token_mill');
-  if (lp === 'trendsfun' || lp === 'trends100') return ALL_LAUNCHPADS.find(x => x.id === 'trends');
-  if (lp === 'trends_fun' || lp === 'trends.fun') return ALL_LAUNCHPADS.find(x => x.id === 'trends_fun');
   if (lp.includes('studio') || lp.includes('jup_studio') || lp.includes('jup-studio')) return ALL_LAUNCHPADS.find(x => x.id === 'studio');
-  if (lp.includes('boop')) return ALL_LAUNCHPADS.find(x => x.id === 'boop');
-  if (lp.includes('xstock')) return ALL_LAUNCHPADS.find(x => x.id === 'xstocks');
-  if (lp.includes('launchlab')) return ALL_LAUNCHPADS.find(x => x.id === 'launchlab');
-  if (lp.includes('ray')) return ALL_LAUNCHPADS.find(x => x.id === 'raydium');
-  if (lp.includes('orca')) return ALL_LAUNCHPADS.find(x => x.id === 'orca');
-  if (lp.includes('america')) return ALL_LAUNCHPADS.find(x => x.id === 'america.fun');
-  if (lp.includes('metadao') || lp.includes('meta-dao')) return ALL_LAUNCHPADS.find(x => x.id === 'metadao');
-  if (lp.includes('easya')) return ALL_LAUNCHPADS.find(x => x.id === 'easya-kickstart');
-  if (lp.includes('printr')) return ALL_LAUNCHPADS.find(x => x.id === 'printr');
-  if (lp.includes('cyrene')) return ALL_LAUNCHPADS.find(x => x.id === 'cyreneai');
-  if (lp.includes('daos')) return ALL_LAUNCHPADS.find(x => x.id === 'daos.fun');
-  if (lp.includes('science')) return ALL_LAUNCHPADS.find(x => x.id === 'pump.science');
-  if (lp.includes('soar')) return ALL_LAUNCHPADS.find(x => x.id === 'soar');
-  if (lp.includes('coined') || lp.includes('nova')) return ALL_LAUNCHPADS.find(x => x.id === 'coined.wtf');
-  if (lp.includes('orynth')) return ALL_LAUNCHPADS.find(x => x.id === 'orynth');
-  if (lp.includes('revshare')) return ALL_LAUNCHPADS.find(x => x.id === 'revshare');
   return undefined;
 }
 
@@ -852,46 +785,21 @@ export function TerminalView() {
 
     if (launchpadFilter.size > 0 && launchpadFilter.size < ALL_LAUNCHPADS.length && isGmgnTab && debouncedSearch.length === 0) {
       list = list.filter(t => {
+        // Primary: mint address suffix (reliable across new + migrated tabs)
+        const mintLow = (t.mint || '').toLowerCase();
+        // Fallback: pool tag / launchpad label from stream
         const lp = (t.launchpad || (Array.isArray(t.tags) && t.tags[0]) || '').toLowerCase();
-        if (launchpadFilter.has('pump') && (lp === 'pump.fun' || lp.includes('pump_agent'))) return true;
-        if (launchpadFilter.has('mayhem') && lp.includes('mayhem')) return true;
-        if (launchpadFilter.has('letsbonk') && lp.includes('letsbonk')) return true;
-        if (launchpadFilter.has('bonkers') && lp.includes('bonker')) return true;
-        if (launchpadFilter.has('bags') && lp.includes('bag')) return true;
-        if (launchpadFilter.has('memoo') && lp.includes('memoo')) return true;
-        if (launchpadFilter.has('liquid') && lp.includes('liquid')) return true;
-        if (launchpadFilter.has('bankr') && lp.includes('bankr')) return true;
-        if (launchpadFilter.has('zora') && lp.includes('zora')) return true;
-        if (launchpadFilter.has('surge') && lp.includes('surge')) return true;
-        if (launchpadFilter.has('anoncoin') && lp.includes('anon')) return true;
-        if (launchpadFilter.has('moonshot') && lp.includes('moonshot')) return true;
-        if (launchpadFilter.has('wendotdev') && lp.includes('wen')) return true;
-        if (launchpadFilter.has('heaven') && lp.includes('heaven')) return true;
-        if (launchpadFilter.has('sugar') && lp.includes('sugar')) return true;
-        if (launchpadFilter.has('token_mill') && lp.includes('token_mill')) return true;
-        if (launchpadFilter.has('believe') && lp.includes('believe')) return true;
-        if (launchpadFilter.has('trends') && (lp === 'trendsfun' || lp === 'trends100')) return true;
-        if (launchpadFilter.has('trends_fun') && (lp === 'trends_fun' || lp === 'trends.fun')) return true;
-        if (launchpadFilter.has('studio') && (lp.includes('studio') || lp.includes('jup_studio'))) return true;
-        if (launchpadFilter.has('moonit') && lp.includes('moonit')) return true;
-        if (launchpadFilter.has('boop') && lp.includes('boop')) return true;
-        if (launchpadFilter.has('xstocks') && lp.includes('xstock')) return true;
-        if (launchpadFilter.has('launchlab') && lp.includes('launchlab')) return true;
-        if (launchpadFilter.has('raydium') && lp.includes('ray')) return true;
-        if (launchpadFilter.has('meteora') && (lp.includes('meteora') || lp === 'met-dbc' || lp.includes('met-'))) return true;
-        if (launchpadFilter.has('pump_amm') && lp === 'pump_amm') return true;
-        if (launchpadFilter.has('orca') && lp.includes('orca')) return true;
-        if (launchpadFilter.has('america.fun') && (lp.includes('america') || lp === 'america.fun')) return true;
-        if (launchpadFilter.has('metadao') && (lp.includes('metadao') || lp.includes('meta-dao'))) return true;
-        if (launchpadFilter.has('easya-kickstart') && (lp.includes('easya') || lp === 'easya-kickstart')) return true;
-        if (launchpadFilter.has('printr') && lp.includes('printr')) return true;
-        if (launchpadFilter.has('cyreneai') && (lp.includes('cyrene') || lp === 'cyreneai')) return true;
-        if (launchpadFilter.has('daos.fun') && (lp.includes('daos') || lp === 'daos.fun')) return true;
-        if (launchpadFilter.has('pump.science') && (lp.includes('science') || lp === 'pump.science')) return true;
-        if (launchpadFilter.has('soar') && lp.includes('soar')) return true;
-        if (launchpadFilter.has('coined.wtf') && (lp.includes('coined') || lp.includes('nova') || lp === 'coined.wtf')) return true;
-        if (launchpadFilter.has('orynth') && lp.includes('orynth')) return true;
-        if (launchpadFilter.has('revshare') && lp.includes('revshare')) return true;
+
+        // Pump.fun — mint ends in 'pump' (covers both bonding curve and graduated tokens)
+        if (launchpadFilter.has('pump') && mintLow.endsWith('pump')) return true;
+        // LetsBonk — mint ends in 'bonk'
+        if (launchpadFilter.has('letsbonk') && (mintLow.endsWith('bonk') || lp.includes('letsbonk') || lp === 'raydium-launchpad')) return true;
+        // Bags — mint ends in 'BAGS' (case-sensitive vanity suffix)
+        if (launchpadFilter.has('bags') && (t.mint?.endsWith('BAGS') || mintLow.endsWith('bags') || lp === 'bags')) return true;
+        // Moonshot — mint ends in 'moon'
+        if (launchpadFilter.has('moonshot') && (mintLow.endsWith('moon') || lp.includes('moonshot'))) return true;
+        // Jupiter Studio — mint ends in 'jupx'
+        if (launchpadFilter.has('studio') && (mintLow.endsWith('jupx') || lp.includes('studio') || lp.includes('jup_studio'))) return true;
         return false;
       });
     }
@@ -1020,7 +928,7 @@ export function TerminalView() {
         </div>
 
         {isGmgnTab && debouncedSearch.length === 0 && (() => {
-          const FEATURED_IDS = ['pump', 'letsbonk', 'believe', 'meteora'];
+          const FEATURED_IDS = ['pump', 'letsbonk', 'bags', 'moonshot', 'studio'];
           const featured = ALL_LAUNCHPADS.filter(lp => FEATURED_IDS.includes(lp.id));
           const lpBtn = (lp: LP) => {
             const active = launchpadFilter.has(lp.id);
@@ -1136,8 +1044,15 @@ export function TerminalView() {
                 data-testid={`row-${t.mint}`}
               >
                 {(() => {
+                  // Prefer mint suffix for badge (reliable across new+migrated); fallback to tag
+                  const mintLow = (t.mint || '').toLowerCase();
                   const rawTag = t.launchpad || (Array.isArray(t.tags) && t.tags[0]) || '';
-                  const lpInfo = rawTag ? findLaunchpad(rawTag) : undefined;
+                  const lpInfo = mintLow.endsWith('pump') ? ALL_LAUNCHPADS.find(x => x.id === 'pump')
+                    : (t.mint?.endsWith('BAGS') || mintLow.endsWith('bags')) ? ALL_LAUNCHPADS.find(x => x.id === 'bags')
+                    : mintLow.endsWith('bonk') ? ALL_LAUNCHPADS.find(x => x.id === 'letsbonk')
+                    : mintLow.endsWith('moon') ? ALL_LAUNCHPADS.find(x => x.id === 'moonshot')
+                    : mintLow.endsWith('jupx') ? ALL_LAUNCHPADS.find(x => x.id === 'studio')
+                    : (rawTag ? findLaunchpad(rawTag) : undefined);
                   return (
                     <>
                       <div className="flex items-center justify-between gap-3 mb-1">
@@ -1462,28 +1377,59 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     enabled: tab === 'holders' && !!mint,
     staleTime: 60_000,
   });
-  // Live trade feed via pumpapi.io WebSocket stream
+  // Live trade feed + bonding progress + price/mcap via pumpapi.io WebSocket stream
   const [liveTrades, setLiveTrades] = useState<any[]>([]);
   const [tradesLoading, setTradesLoading] = useState(false);
+  const [liveBondPct, setLiveBondPct] = useState<number | null>(null);
+  const [liveMigrated, setLiveMigrated] = useState(false);
+  const [livePriceSol, setLivePriceSol] = useState<number | null>(null);
+  const [liveMcapSol, setLiveMcapSol] = useState<number | null>(null);
 
+  // Reset trade list when user opens the traders tab
   useEffect(() => {
-    if (tab !== 'traders' || !mint) return;
-    setLiveTrades([]);
-    setTradesLoading(true);
+    if (tab === 'traders') {
+      setLiveTrades([]);
+      setTradesLoading(true);
+    }
+  }, [tab]);
 
-    const ws = new WebSocket('wss://pumpapi.io/stream');
+  // Single WebSocket per mint — handles trades, bonding progress, price, and migrate events
+  useEffect(() => {
+    if (!mint) return;
+    setLiveBondPct(null);
+    setLiveMigrated(false);
+    setLivePriceSol(null);
+    setLiveMcapSol(null);
+
+    const ws = new WebSocket('wss://stream.pumpapi.io/');
     let alive = true;
 
-    ws.onopen = () => {
-      if (!alive) return;
-      ws.send(JSON.stringify({ action: 'subscribe', mint }));
-    };
+    ws.onopen = () => { /* stream broadcasts all events — no subscription needed */ };
 
     ws.onmessage = (event) => {
       if (!alive) return;
       try {
         const msg = JSON.parse(event.data);
+        // Filter to only events for this token
+        if (msg.mint !== mint) return;
         const txType: string = (msg.txType || msg.type || '').toLowerCase();
+
+        // Extract bonding curve progress from any event that carries it
+        const rawBond = msg.bondingCurveProgress ?? msg.bonding_curve_progress ?? null;
+        if (rawBond != null) {
+          const bPct = Number(rawBond);
+          setLiveBondPct(bPct > 1 ? bPct / 100 : bPct);
+        } else if (msg.vSolInBondingCurve != null) {
+          // pump.fun bonding curve fills at ~85 SOL
+          const sol = Number(msg.vSolInBondingCurve);
+          setLiveBondPct(Math.min(1, sol / 85));
+        }
+
+        if (txType === 'migrate' || txType === 'createpool' || txType === 'graduated' || txType === 'complete') {
+          setLiveMigrated(true);
+          return;
+        }
+
         if (txType !== 'buy' && txType !== 'sell') return;
 
         const solAmt  = Number(msg.solAmount  ?? msg.sol_amount  ?? 0);
@@ -1492,13 +1438,15 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
           ? (msg.timestamp > 1e12 ? msg.timestamp / 1000 : msg.timestamp)
           : Date.now() / 1000;
         const mcapSol = Number(msg.marketCapSol ?? msg.market_cap_sol ?? 0);
-        // Approximate price in SOL per token from market cap
-        const priceSol = (mcapSol > 0 && tokAmt > 0) ? mcapSol / 1_000_000_000 : 0;
+        // price (SOL per token) from pumpStream event — supply is 1B for most tokens
+        const priceSol = Number(msg.price ?? 0) || (mcapSol > 0 ? mcapSol / 1_000_000_000 : 0);
+        if (priceSol > 0) setLivePriceSol(priceSol);
+        if (mcapSol > 0) setLiveMcapSol(mcapSol);
 
         const trade = {
           type:          txType,
           timestamp:     tsSec,
-          usdValue:      0,          // no SOL/USD rate here; display as SOL
+          usdValue:      0,
           solAmount:     solAmt,
           price:         priceSol,
           tokenAmount:   tokAmt,
@@ -1519,7 +1467,7 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
       alive = false;
       ws.close();
     };
-  }, [tab, mint]);
+  }, [mint]);
 
   const { data: jupMarket } = useQuery<any>({
     queryKey: ['/api/terminal/jup-market', mint],
@@ -1551,15 +1499,18 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
   const pctUp = (pct24 ?? 0) >= 0;
   const totalSupply = info?.totalSupply ?? info?.circSupply ?? 0;
   const liveT: any = liveData?.live || {};
-  // Live price (3s) takes priority over full market data (30s) and GMGN fallback
+  // SOL/USD from stream data — included in each serialized pumpStream token
+  const streamSolUsd: number = (liveT as any)?.solUsd ?? 0;
+  // pumpStream WebSocket events give real-time price/mcap in SOL
+  const streamPriceUsd = livePriceSol && streamSolUsd ? livePriceSol * streamSolUsd : null;
+  const streamMcapUsd  = liveMcapSol  && streamSolUsd ? liveMcapSol  * streamSolUsd : null;
+  // Priority: live WebSocket stream → polled market data → GMGN info → SSE live
   const jupPrice = jupLivePrice?.price ?? jupMarket?.price ?? null;
-  const priceUsd = jupPrice ?? (info as any)?.usdPrice ?? liveT.priceUsd;
-  // info now includes Jupiter data (primary) merged with GMGN (social/bonding)
+  const priceUsd = streamPriceUsd ?? jupPrice ?? (info as any)?.usdPrice ?? liveT.priceUsd;
   const tokenName = info?.name || (jupMarket as any)?.name || liveT.name || '';
   const tokenSymbol = info?.symbol || (jupMarket as any)?.symbol || liveT.symbol || '';
   const tokenIcon = info?.icon || (jupMarket as any)?.icon || liveT.imageUri || '';
-  // info is primary for market stats (Jupiter data); jupMarket and liveT are fallbacks
-  const marketCap = (info as any)?.mcap ?? (jupMarket as any)?.marketCap ?? liveT.marketCapUsd ?? (priceUsd && totalSupply ? priceUsd * totalSupply : null);
+  const marketCap = streamMcapUsd ?? (info as any)?.mcap ?? (jupMarket as any)?.marketCap ?? liveT.marketCapUsd ?? (priceUsd && totalSupply ? priceUsd * totalSupply : null);
   const liquidity = (info as any)?.liquidity ?? (jupMarket as any)?.liquidity ?? liveT.liquidityUsd;
   const volume24h = s24.volume ?? (jupMarket as any)?.volume24h ?? liveT.volumeUsd;
   const holderCount = (info as any)?.holderCount ?? (jupMarket as any)?.holders;
@@ -1569,8 +1520,8 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
     symbol: tokenSymbol,
     imageUri: tokenIcon,
     priceUsd,
-    marketCapSol: liveT.marketCapSol,
-    priceSol: liveT.priceSol,
+    marketCapSol: liveMcapSol ?? liveT.marketCapSol,
+    priceSol: livePriceSol ?? liveT.priceSol,
     pool: liveT.pool,
   } as any;
   const [mobileSwapOpen, setMobileSwapOpen] = useState(false);
@@ -1771,9 +1722,9 @@ export function TokenContent({ mint, onBack }: { mint: string; onBack?: () => vo
                     symbol: t.symbol || tokenSymbol,
                     imageUri: t.imageUri || tokenIcon,
                   };
-                  const rawBondPct = t.bondingPct ?? ((info as any)?.bondingProgress ?? 0);
+                  const rawBondPct = liveBondPct ?? t.bondingPct ?? ((info as any)?.bondingProgress ?? 0);
                   const bondPct = Math.min(100, parseFloat((rawBondPct * 100).toFixed(1)));
-                  const isMigrated = !!t.migrated || rawBondPct >= 1 || !!(info as any)?.graduatedPool;
+                  const isMigrated = liveMigrated || !!t.migrated || rawBondPct >= 1 || !!(info as any)?.graduatedPool;
                   return <TokenAvatar token={tokenForAvatar} bondPct={bondPct} migrated={isMigrated} size={80} />;
                 })()}
                 <div className="min-w-0 flex-1">
