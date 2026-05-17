@@ -1010,7 +1010,7 @@ function PerpsInner() {
         </div>
 
         {/* ── Order form (right, 300px) ──────────────────────────────── */}
-        <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto bg-[#131722] border-l border-[#2a2d3e]">
+        <div className="w-[300px] shrink-0 flex flex-col overflow-hidden bg-[#131722] border-l border-[#2a2d3e]">
 
           {/* Cross / Isolated toggle */}
           <div className="px-3 py-2.5 border-b border-[#2a2d3e] shrink-0">
