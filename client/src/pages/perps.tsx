@@ -80,6 +80,28 @@ function toOBRow(r: any): [number, number] {
 
 interface FundingRate { rate: number; nextRate: number | null; }
 
+// Normalize Phoenix WS channel names (they sometimes differ from subscription names)
+const CH: Record<string, string> = {
+  l2Book: 'orderbook', l2BookUpdate: 'orderbook', l2BookDelta: 'orderbook',
+  marketStats: 'market', marketUpdate: 'market',
+  fill: 'trades', fills: 'trades', tradesFill: 'trades',
+  candleData: 'candles', candle: 'candles',
+  allMids: 'allMids',
+  fundingRate: 'fundingRate', funding: 'fundingRate',
+  traderState: 'traderState', traderStateSnapshot: 'traderState', traderStateDelta: 'traderState',
+};
+
+function parseOBData(d: any): { bids: [number,number][]; asks: [number,number][]; mid: number|null } {
+  // Phoenix may send bids/asks as [[price, size]] or [{ price, size }] or nested under levels
+  const bids = d.bids ?? d.levels?.bids ?? [];
+  const asks = d.asks ?? d.levels?.asks ?? [];
+  return {
+    bids: bids.map(toOBRow),
+    asks: asks.map(toOBRow),
+    mid:  d.mid != null ? toNum(d.mid) : null,
+  };
+}
+
 function usePhoenixWS(symbol: string, wsTimeframe: string, authority?: string) {
   const [connected,    setConnected]    = useState(false);
   const [stats,        setStats]        = useState<MarketStats | null>(null);
@@ -91,10 +113,14 @@ function usePhoenixWS(symbol: string, wsTimeframe: string, authority?: string) {
   const [liveTrader,   setLiveTrader]   = useState<any>(null);
   const wsRef   = useRef<WebSocket | null>(null);
   const deadRef = useRef(false);
+  // stripPerp only for allMids key lookup; all subscriptions use full symbol
   const sym = stripPerp(symbol);
 
   useEffect(() => {
     deadRef.current = false;
+    // Reset state when market changes
+    setStats(null); setOb({ bids: [], asks: [], mid: null });
+    setTrades([]); setLiveCandle(null); setFundingRate(null);
 
     function connect() {
       if (deadRef.current) return;
@@ -104,66 +130,75 @@ function usePhoenixWS(symbol: string, wsTimeframe: string, authority?: string) {
       ws.onopen = () => {
         if (deadRef.current) { ws.close(); return; }
         setConnected(true);
+        // Phoenix WS uses full symbol (e.g. "SOL-PERP"), not stripped
         const subs: object[] = [
           { channel: 'allMids' },
-          { channel: 'market',       symbol: sym },
-          { channel: 'orderbook',    symbol: sym },
-          { channel: 'trades',       symbol: sym },
-          { channel: 'candles',      symbol: sym, timeframe: wsTimeframe },
-          { channel: 'fundingRate',  symbol: sym },
+          { channel: 'market',      symbol },
+          { channel: 'orderbook',   symbol },
+          { channel: 'trades',      symbol },
+          { channel: 'candles',     symbol, timeframe: wsTimeframe },
+          { channel: 'fundingRate', symbol },
         ];
-        // Subscribe to real-time trader state if wallet connected
-        if (authority) {
-          subs.push({ channel: 'traderState', authority, traderPdaIndex: 0 });
-        }
+        if (authority) subs.push({ channel: 'traderState', authority, traderPdaIndex: 0 });
         subs.forEach(sub => ws.send(JSON.stringify({ type: 'subscribe', subscription: sub })));
       };
 
       ws.onmessage = ({ data: raw }) => {
         try {
           const msg = JSON.parse(raw as string);
-          const ch = msg.channel ?? msg.type;
-          const d  = msg.data;
-          if (!d) return;
+          const rawCh: string = msg.channel ?? msg.type ?? '';
+
+          // Log subscription errors for debugging
+          if (rawCh === 'subscriptionError' || rawCh === 'error') {
+            console.warn('[PhoenixWS] error:', msg);
+            return;
+          }
+          if (rawCh === 'subscriptionConfirmed') return;
+
+          const ch = CH[rawCh] ?? rawCh;
+          // Data can be at msg.data OR directly in msg (some Phoenix messages don't wrap)
+          const d: any = msg.data !== undefined ? msg.data : msg;
+
           if (ch === 'allMids') {
+            const src = d.mids ?? d; // allMids might be { mids: { SOL: "..." } } or { SOL: "..." }
             const parsed: Record<string, number> = {};
-            for (const [k, v] of Object.entries(d)) parsed[k] = toNum(v);
-            setAllMids(parsed);
+            for (const [k, v] of Object.entries(src)) {
+              if (typeof v === 'string' || typeof v === 'number') parsed[k] = toNum(v);
+            }
+            if (Object.keys(parsed).length > 0) setAllMids(parsed);
           } else if (ch === 'market') {
+            const s = d.stats ?? d;
             setStats({
-              markPx:       toNum(d.markPx  ?? d.mark_px),
-              midPx:        toNum(d.midPx   ?? d.mid_px),
-              oraclePx:     toNum(d.oraclePx ?? d.oracle_px),
-              prevDayPx:    toNum(d.prevDayPx ?? d.prev_day_px),
-              dayNtlVlm:    toNum(d.dayNtlVlm ?? d.day_ntl_vlm),
-              openInterest: toNum(d.openInterest ?? d.open_interest),
-              funding:      toNum(d.funding),
+              markPx:       toNum(s.markPx  ?? s.mark_px  ?? s.markPrice),
+              midPx:        toNum(s.midPx   ?? s.mid_px   ?? s.midPrice),
+              oraclePx:     toNum(s.oraclePx ?? s.oracle_px ?? s.indexPrice ?? s.oraclePrice),
+              prevDayPx:    toNum(s.prevDayPx ?? s.prev_day_px ?? s.open24h),
+              dayNtlVlm:    toNum(s.dayNtlVlm ?? s.day_ntl_vlm ?? s.volume24h ?? s.volume),
+              openInterest: toNum(s.openInterest ?? s.open_interest ?? s.oi),
+              funding:      toNum(s.funding ?? s.fundingRate ?? s.funding1h),
             });
           } else if (ch === 'orderbook') {
-            setOb({
-              bids: (d.bids ?? []).map(toOBRow),
-              asks: (d.asks ?? []).map(toOBRow),
-              mid:  d.mid != null ? toNum(d.mid) : null,
-            });
+            setOb(parseOBData(d));
           } else if (ch === 'trades') {
-            const arr: any[] = Array.isArray(d) ? d : [d];
-            setTrades(prev => [...arr, ...prev].slice(0, 60));
-          } else if (ch === 'candle' || ch === 'candles') {
-            setLiveCandle(d);
+            const arr: any[] = Array.isArray(d) ? d : (d.fills ?? d.trades ?? [d]);
+            if (arr.length) setTrades(prev => [...arr, ...prev].slice(0, 60));
+          } else if (ch === 'candles') {
+            const c = Array.isArray(d) ? d[d.length - 1] : d;
+            if (c) setLiveCandle(c);
           } else if (ch === 'fundingRate') {
             setFundingRate({
-              rate:     toNum(d.fundingRate ?? d.rate ?? d.current),
+              rate:     toNum(d.fundingRate ?? d.rate ?? d.current ?? d.funding),
               nextRate: d.nextFundingRate != null ? toNum(d.nextFundingRate ?? d.next) : null,
             });
           } else if (ch === 'traderState') {
-            // Snapshot: replace; delta: merge
-            if (d.type === 'snapshot' || !d.type) {
-              setLiveTrader(d.snapshot ?? d);
-            } else if (d.type === 'delta') {
-              setLiveTrader((prev: any) => prev ? { ...prev, ...d.delta } : d.delta);
+            const payload = d.snapshot ?? d.data ?? d;
+            if (d.type === 'delta') {
+              setLiveTrader((prev: any) => prev ? { ...prev, ...(d.delta ?? payload) } : payload);
+            } else {
+              setLiveTrader(payload);
             }
           }
-        } catch { /* ignore */ }
+        } catch (e) { /* ignore malformed */ }
       };
 
       ws.onclose = () => {
@@ -175,7 +210,7 @@ function usePhoenixWS(symbol: string, wsTimeframe: string, authority?: string) {
 
     connect();
     return () => { deadRef.current = true; wsRef.current?.close(); };
-  }, [sym, wsTimeframe, authority]);
+  }, [symbol, wsTimeframe, authority]);
 
   return { connected, stats, ob, trades, liveCandle, allMids, fundingRate, liveTrader };
 }

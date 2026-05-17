@@ -12950,30 +12950,52 @@ Claimer: ${walletAddress}`;
   });
 
   app.get('/api/perps/candles/:symbol', async (req, res) => {
-    const sym = String(req.params.symbol || 'SOL-PERP');
-    const tfSecs = Number(req.query.timeframe) || 3600;
-    const limit  = Number(req.query.limit) || 120;
+    const sym     = String(req.params.symbol || 'SOL-PERP');
+    const symBase = sym.replace(/-PERP$/i, '');            // "SOL"
+    const tfSecs  = Number(req.query.timeframe) || 3600;
+    const limit   = Number(req.query.limit) || 120;
     const tfMap: Record<number, string> = {
       60: '1m', 300: '5m', 900: '15m', 1800: '30m', 3600: '1h', 14400: '4h', 86400: '1d',
     };
     const interval = tfMap[tfSecs] ?? '1h';
-    try {
-      // Primary: Phoenix REST GET /candles
-      const url = `${PHOENIX_API}/candles?symbol=${encodeURIComponent(sym)}&timeframe=${interval}&limit=${limit}`;
-      const r = await fetch(url);
-      if (!r.ok) throw new Error(`Phoenix ${r.status}`);
-      const data = await r.json() as any[];
-      // Normalize timestamps: Phoenix returns ms, convert to seconds
-      const candles = (Array.isArray(data) ? data : []).map((c: any) => ({
+
+    function normalizeCandles(data: any): any[] {
+      const arr: any[] = Array.isArray(data) ? data : (data?.candles ?? []);
+      return arr.map((c: any) => ({
         ...c,
-        time: c.time > 1e12 ? Math.floor(c.time / 1000) : c.time,
+        time: c.time > 1e12 ? Math.floor(c.time / 1000) : (c.time ?? c.t),
+        close: c.close ?? c.c, open: c.open ?? c.o,
+        high: c.high ?? c.h, low: c.low ?? c.l,
+        volume: c.volume ?? c.v ?? 0,
       }));
-      res.json(candles);
-    } catch {
+    }
+
+    // Try 4 sources in order
+    const attempts = [
+      // 1. Phoenix /candles with full symbol "SOL-PERP"
+      () => fetch(`${PHOENIX_API}/candles?symbol=${encodeURIComponent(sym)}&timeframe=${interval}&limit=${limit}`),
+      // 2. Phoenix /candles with base symbol "SOL"
+      () => fetch(`${PHOENIX_API}/candles?symbol=${encodeURIComponent(symBase)}&timeframe=${interval}&limit=${limit}`),
+      // 3. Phoenix /v1/candles (older path)
+      () => fetch(`${PHOENIX_API}/v1/candles?symbol=${encodeURIComponent(sym)}&timeframe=${interval}&limit=${limit}`),
+    ];
+
+    for (const attempt of attempts) {
       try {
-        const data = await vulcanMarketCandles(sym, interval, limit);
-        res.json(Array.isArray(data) ? data : (data as any)?.candles ?? data);
-      } catch (e: any) { res.status(500).json({ error: e.message }); }
+        const r = await attempt();
+        if (!r.ok) continue;
+        const data = await r.json();
+        const candles = normalizeCandles(data);
+        if (candles.length > 0) return res.json(candles);
+      } catch { /* try next */ }
+    }
+
+    // 4. Vulcan CLI fallback
+    try {
+      const data = await vulcanMarketCandles(sym, interval, limit);
+      return res.json(normalizeCandles(data));
+    } catch (e: any) {
+      return res.status(500).json({ error: `All candle sources failed: ${e.message}` });
     }
   });
 
