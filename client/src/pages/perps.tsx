@@ -328,14 +328,28 @@ export default function PerpsPage() {
   const [orderSize,    setOrderSize]    = useState('0.1');
   const [txSig,        setTxSig]        = useState<string | null>(null);
   const [bottomTab,    setBottomTab]    = useState<'positions' | 'orders' | 'trades'>('positions');
-  const [mktPanel,   setMktPanel]   = useState(false);
-  const [mktSearch,  setMktSearch]  = useState('');
-  const [mktCat,     setMktCat]     = useState<'all' | 'crypto' | 'commodities'>('all');
-  const [sortCol,    setSortCol]    = useState<'market' | 'price' | 'change' | 'volume' | 'oi' | 'funding'>('market');
-  const [sortDir,    setSortDir]    = useState<'asc' | 'desc'>('asc');
+  const [mktPanel,         setMktPanel]         = useState(false);
+  const [mktSearch,        setMktSearch]        = useState('');
+  const [mktCat,           setMktCat]           = useState<'all' | 'crypto' | 'commodities'>('all');
+  const [sortCol,          setSortCol]          = useState<'market' | 'price' | 'change' | 'volume' | 'oi' | 'funding'>('market');
+  const [sortDir,          setSortDir]          = useState<'asc' | 'desc'>('asc');
+  const [fundingCountdown, setFundingCountdown] = useState('');
 
   const wsTimeframe = TIMEFRAMES.find(t => t.s === tf)?.ws ?? '1h';
   const wsAuthority = publicKey?.toString();
+
+  // Funding countdown — ticks every second to next top-of-the-hour
+  useEffect(() => {
+    function tick() {
+      const secsLeft = 3600 - (Date.now() / 1000 % 3600);
+      const m = Math.floor(secsLeft / 60);
+      const s = Math.floor(secsLeft % 60);
+      setFundingCountdown(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // SDK streams — typed async iterators for all live data
   const { connected, stats, ob, trades, liveCandle, allMids, fundingRate: wsFunding, liveTrader } =
@@ -602,107 +616,99 @@ export default function PerpsPage() {
         </div>
       </nav>
 
-      {/* ── Market / Stats bar ───────────────────────────────────────────── */}
-      <div className="flex items-center gap-0 border-b border-white/[0.07] shrink-0 h-11">
+      {/* ── Market card ──────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-3 py-2 border-b border-white/[0.07] shrink-0 bg-[#0b0b12] overflow-x-auto scrollbar-none">
 
-        {/* Market selector button */}
-        <div className="border-r border-white/[0.07] h-full shrink-0">
-          <button
-            onClick={() => { setMktPanel(v => !v); setMktSearch(''); }}
-            className={`flex items-center gap-2 px-4 h-full transition ${mktPanel ? 'bg-white/[0.05]' : 'hover:bg-white/[0.04]'}`}
-          >
-            <span className="font-bold text-white text-sm tracking-tight">{marketBase}</span>
+        {/* Market selector — Phoenix combobox style */}
+        <button
+          onClick={() => { setMktPanel(v => !v); setMktSearch(''); }}
+          className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition shrink-0 ${
+            mktPanel ? 'bg-white/[0.07]' : 'bg-white/[0.04] hover:bg-white/[0.07]'
+          }`}
+        >
+          <TokenAvatar symbol={marketBase} />
+          <span className="text-xl font-medium text-white flex items-center gap-2">
+            {marketBase}
             {maxLev && (
-              <span className="text-[10px] font-semibold bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded px-1.5 py-0.5">
+              <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium bg-white/[0.07] text-white/55">
                 {maxLev}×
               </span>
             )}
-            <ChevronDown className={`h-3.5 w-3.5 text-white/40 transition-transform duration-200 ${mktPanel ? 'rotate-180' : ''}`} />
-          </button>
-        </div>
+            <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-200 ${mktPanel ? 'rotate-180' : ''}`} />
+          </span>
+        </button>
 
-        {/* Stats bar — scrollable */}
-        <div className="flex items-center gap-5 overflow-x-auto px-4 h-full flex-1 scrollbar-none">
-          {markPrice != null && (
-            <div className="shrink-0 flex items-baseline gap-1.5">
-              <span className={`text-base font-bold font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-                {fp(markPrice)}
-              </span>
-              {priceChange != null && (
-                <span className={`text-[11px] font-medium ${isUp ? 'text-green-400/70' : 'text-red-400/70'}`}>
-                  {priceChange >= 0 ? '+' : ''}{(priceChange * 100).toFixed(2)}%
-                </span>
-              )}
-            </div>
-          )}
+        {/* Stats row */}
+        <div className="flex items-center gap-4 md:gap-8 font-medium overflow-x-auto scrollbar-none">
+
+          {/* Mark */}
+          <div className="flex flex-col gap-1 shrink-0">
+            <span className="text-xs text-white/40 whitespace-nowrap">Mark</span>
+            <span className="text-xs whitespace-nowrap tabular-nums text-white">
+              {markPrice != null ? fp(markPrice) : '—'}
+            </span>
+          </div>
+
+          {/* Index */}
           {indexPrice != null && (
-            <div className="shrink-0">
-              <div className="text-[9px] text-white/30 uppercase tracking-wider">Index</div>
-              <div className="text-[11px] font-mono text-white/65">{fp(indexPrice)}</div>
+            <div className="flex flex-col gap-1 shrink-0">
+              <span className="text-xs text-white/40 whitespace-nowrap">Index</span>
+              <span className="text-xs whitespace-nowrap tabular-nums text-white/75">{fp(indexPrice)}</span>
             </div>
           )}
+
+          {/* 24h Change */}
+          {markPrice != null && stats?.prevDayPx != null && stats.prevDayPx > 0 && (
+            <div className="flex flex-col gap-1 shrink-0">
+              <span className="text-xs text-white/40 whitespace-nowrap">24h Change</span>
+              <span className={`text-xs whitespace-nowrap tabular-nums flex items-center gap-1 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                {isUp ? '+' : ''}{fUSD(markPrice - stats.prevDayPx)} ({isUp ? '+' : ''}{((priceChange ?? 0) * 100).toFixed(2)}%)
+                <svg width="12" height="7" viewBox="0 0 12 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {isUp
+                    ? <path d="M11.47 5.68741L5.73388 0.422607L0 5.69273L1.26021 7L2.17799 6.14435C4.1578 4.29858 7.24693 4.3634 9.14756 6.29061L9.84717 7L11.47 5.68741Z" fill="currentColor"/>
+                    : <path d="M11.47 1.31259L5.73388 6.57739L0 1.30727L1.26021 0L2.17799 0.855648C4.1578 2.70142 7.24693 2.6366 9.14756 0.709392L9.84717 0L11.47 1.31259Z" fill="currentColor"/>
+                  }
+                </svg>
+              </span>
+            </div>
+          )}
+
+          {/* 24h Volume */}
           {dayNtlVlm != null && dayNtlVlm > 0 && (
-            <div className="shrink-0">
-              <div className="text-[9px] text-white/30 uppercase tracking-wider">24h Vol</div>
-              <div className="text-[11px] text-white/65">{fUSD(dayNtlVlm)}</div>
+            <div className="flex flex-col gap-1 shrink-0">
+              <span className="text-xs text-white/40 whitespace-nowrap">24h Volume</span>
+              <span className="text-xs whitespace-nowrap tabular-nums text-white/75">{fUSD(dayNtlVlm)}</span>
             </div>
           )}
+
+          {/* Open Interest */}
           {openInterest != null && openInterest > 0 && (
-            <div className="shrink-0">
-              <div className="text-[9px] text-white/30 uppercase tracking-wider">OI</div>
-              <div className="text-[11px] text-white/65">{fUSD(openInterest)}</div>
+            <div className="flex flex-col gap-1 shrink-0">
+              <span className="text-xs text-white/40 whitespace-nowrap">Open Interest</span>
+              <span className="text-xs whitespace-nowrap tabular-nums text-white/75">{fUSD(openInterest)}</span>
             </div>
           )}
+
+          {/* 1h Funding */}
           {fundingRate != null && (
-            <div className="shrink-0">
-              <div className="text-[9px] text-white/30 uppercase tracking-wider">1h Funding</div>
-              <div className="flex items-baseline gap-1.5">
-                <span className={`text-[11px] font-mono ${fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <div className="flex flex-col gap-1 shrink-0">
+              <span className="text-xs text-white/40 whitespace-nowrap">1h Funding</span>
+              <span className="text-xs whitespace-nowrap tabular-nums flex gap-2">
+                <span className={fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}>
                   {fundingRate >= 0 ? '+' : ''}{(fundingRate * 100).toFixed(4)}%
                 </span>
-                {nextFunding != null && (
-                  <span className={`text-[9px] font-mono opacity-50 ${nextFunding >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    → {nextFunding >= 0 ? '+' : ''}{(nextFunding * 100).toFixed(4)}%
-                  </span>
-                )}
-              </div>
+                {fundingCountdown && <span className="text-white/45">{fundingCountdown}</span>}
+              </span>
             </div>
           )}
-          {takerFee != null && (
-            <div className="shrink-0">
-              <div className="text-[9px] text-white/30 uppercase tracking-wider">Taker</div>
-              <div className="text-[11px] text-white/65">{(takerFee * 100).toFixed(3)}%</div>
-            </div>
-          )}
-          {makerFee != null && (
-            <div className="shrink-0">
-              <div className="text-[9px] text-white/30 uppercase tracking-wider">Maker</div>
-              <div className="text-[11px] text-white/65">{(makerFee * 100).toFixed(3)}%</div>
-            </div>
-          )}
-          {rsi != null && (
-            <div className="shrink-0">
-              <div className="text-[9px] text-white/30 uppercase tracking-wider">RSI</div>
-              <div className={`text-[11px] ${Number(rsi) < 30 ? 'text-green-400' : Number(rsi) > 70 ? 'text-red-400' : 'text-white/65'}`}>
-                {Number(rsi).toFixed(1)}
-              </div>
-            </div>
-          )}
-          {adx != null && (
-            <div className="shrink-0">
-              <div className="text-[9px] text-white/30 uppercase tracking-wider">ADX</div>
-              <div className="text-[11px] text-white/65">{Number(adx).toFixed(1)}</div>
-            </div>
-          )}
-        </div>
 
-        {/* Live badge */}
-        <div className="flex items-center px-3 shrink-0 border-l border-white/[0.07] h-full">
-          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-            connected ? 'text-green-400/70 border-green-500/25 bg-green-500/5' : 'text-white/20 border-white/8'
+          {/* Live badge */}
+          <span className={`shrink-0 text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+            connected ? 'text-green-400/70 border-green-500/25 bg-green-500/5' : 'text-white/20 border-white/10'
           }`}>
             {connected ? '● LIVE' : '○ …'}
           </span>
+
         </div>
       </div>
 
