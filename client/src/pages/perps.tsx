@@ -15,7 +15,7 @@ import {
   ComposedChart, Area, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from 'recharts';
-import logoImage from '@/assets/logo.png';
+const logoImage = '/logo.png';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
