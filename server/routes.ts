@@ -13032,6 +13032,39 @@ Claimer: ${walletAddress}`;
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  // ── Phoenix REST — Exchange config, Trader state, Registration ───────────
+
+  app.get('/api/perps/exchange', async (_req, res) => {
+    try {
+      const r = await fetch(`${PHOENIX_API}/exchange`);
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/perps/trader/:authority', async (req, res) => {
+    try {
+      const { authority } = req.params;
+      const pdaIndex = String(req.query.pdaIndex || '0');
+      const r = await fetch(
+        `${PHOENIX_API}/trader/${encodeURIComponent(authority)}/state?pdaIndex=${pdaIndex}`
+      );
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/perps/register', async (req, res) => {
+    try {
+      const { authority, code } = req.body || {};
+      const r = await fetch(`${PHOENIX_API}/v1/invite/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authority, code }),
+      });
+      const data = await r.json();
+      res.status(r.status).json(data);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
