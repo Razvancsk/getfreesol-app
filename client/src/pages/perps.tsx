@@ -9,7 +9,7 @@ import { Transaction } from '@solana/web3.js';
 import { Side, createPhoenixClient } from '@ellipsis-labs/rise';
 import { Link } from 'wouter';
 import {
-  ArrowLeft, ExternalLink, Activity, TrendingUp, TrendingDown,
+  ArrowLeft, Activity, TrendingUp, TrendingDown,
   RefreshCw, Key, User, ChevronDown, Search, X,
 } from 'lucide-react';
 import {
@@ -331,7 +331,9 @@ export default function PerpsPage() {
 
 function PerpsInner() {
   const qc = useQueryClient();
-  const { publicKey, signTransaction, connection } = useWalletAdapter();
+  const { publicKey, signTransaction, connection, disconnect } = useWalletAdapter();
+  const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const disconnectWallet = async () => { try { await disconnect(); } catch (e) { console.error(e); } };
   const { client: riseClient, ready: riseReady } = useRiseClient();
 
   const [market,       setMarket]       = useState('SOL-PERP');
@@ -609,25 +611,31 @@ function PerpsInner() {
           </span>
         </div>
 
-        {/* Right: wallet + bell + phoenix link */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Wallet pill */}
-          <div className="hidden md:flex items-center gap-2 bg-white/[0.06] border border-white/[0.09] rounded-lg px-3 py-2 text-xs font-semibold text-white/75">
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-400/80" />
-            {publicKey?.toString().slice(0, 4)}…{publicKey?.toString().slice(-4)}
+        {/* Right: wallet button (same as all other pages) */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setWalletMenuOpen(o => !o)}
+              className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 outline-none"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              {publicKey?.toBase58().slice(0, 6)}...{publicKey?.toBase58().slice(-6)}
+            </button>
+            {walletMenuOpen && (
+              <div className="fixed inset-0 z-40" onClick={() => setWalletMenuOpen(false)} />
+            )}
+            {walletMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg overflow-hidden min-w-[120px]">
+                <div
+                  onClick={() => { disconnectWallet(); setWalletMenuOpen(false); }}
+                  className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm text-center"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                >
+                  Disconnect
+                </div>
+              </div>
+            )}
           </div>
-          {/* Bell */}
-          <button className="flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.07] transition text-white/40 hover:text-white/70">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
-              <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
-            </svg>
-          </button>
-          {/* Phoenix external link */}
-          <a href="https://phoenix.trade" target="_blank" rel="noopener noreferrer"
-            className="hidden md:flex items-center gap-1 text-[11px] text-white/25 hover:text-white/55 transition">
-            Phoenix <ExternalLink className="h-3 w-3" />
-          </a>
         </div>
       </nav>
 
