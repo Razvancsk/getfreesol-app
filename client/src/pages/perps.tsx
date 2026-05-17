@@ -835,7 +835,7 @@ function PerpsInner() {
       </div>
 
       {/* ── Middle: chart (left) + order form (right) ───────────────────── */}
-      <div className="flex-1 flex overflow-hidden min-h-0 relative">
+      <div className="flex-1 flex min-h-0 relative overflow-hidden">
 
         {/* ── Market list panel overlay ─────────────────────────────────── */}
         {mktPanel && (
@@ -1010,12 +1010,12 @@ function PerpsInner() {
         </div>
 
         {/* ── Order form (right, 300px) ──────────────────────────────── */}
-        <div className="w-[300px] shrink-0 flex flex-col overflow-hidden bg-[#131722] border-l border-[#2a2d3e]">
+        <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto bg-[#131722] border-l border-[#2a2d3e] justify-start">
 
-          {/* Cross / Isolated toggle */}
-          <div className="px-3 py-2.5 border-b border-[#2a2d3e] shrink-0">
-            <button className="flex items-center gap-1.5 bg-[#1e2130] border border-[#2a2d3e] rounded-md px-3 py-1.5 text-sm text-white/70 hover:bg-[#252840] transition">
-              Cross <ChevronDown className="w-3.5 h-3.5 text-white/40" />
+          {/* Cross — full-width header button like Phoenix */}
+          <div className="px-3 pt-3 pb-2 shrink-0">
+            <button className="w-full flex items-center justify-between bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#252840] transition">
+              Cross <ChevronDown className="w-4 h-4 text-white/40" />
             </button>
           </div>
 
