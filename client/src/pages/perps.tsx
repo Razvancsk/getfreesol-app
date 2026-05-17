@@ -309,16 +309,21 @@ function AccessGate() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+// Wrapper: only calls useWallet so hook count is always stable.
+// Renders AccessGate or the real component based on wallet.
 export default function PerpsPage() {
+  const { publicKey } = useWallet();
+  if (!publicKey || publicKey.toString() !== ALLOWED_WALLET) {
+    return <AccessGate />;
+  }
+  return <PerpsInner />;
+}
+
+function PerpsInner() {
   const qc = useQueryClient();
   const { publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
   const { client: riseClient, ready: riseReady } = useRiseClient();
-
-  // Block anyone except the allowed wallet
-  if (!publicKey || publicKey.toString() !== ALLOWED_WALLET) {
-    return <AccessGate />;
-  }
 
   const [market,       setMarket]       = useState('SOL-PERP');
   const [tf,           setTf]           = useState('3600');
