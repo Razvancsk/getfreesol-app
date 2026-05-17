@@ -304,18 +304,19 @@ function useRiseStreams(
       if (Object.keys(out).length) setAllMids(out);
     });
 
-    // Market stats (try both method names)
+    // Market stats — SDK delivers { symbol, stats: { markPrice, oraclePrice, prevDayMarkPrice, dayVolumeUsd, openInterest, currentFundingRate } }
     consume(
-      () => s.marketStats?.(symbol) ?? s.market?.(symbol),
+      () => s.marketStats?.(symbol),
       (u: any) => {
+        const d = u.stats ?? u; // nested under .stats
         setStats({
-          markPx:       toNum(u.markPx  ?? u.mark_px  ?? u.markPrice),
-          midPx:        toNum(u.midPx   ?? u.mid_px),
-          oraclePx:     toNum(u.oraclePx ?? u.oracle_px ?? u.indexPrice),
-          prevDayPx:    toNum(u.prevDayPx ?? u.prev_day_px ?? u.open24h),
-          dayNtlVlm:    toNum(u.dayNtlVlm ?? u.day_ntl_vlm ?? u.volume24h),
-          openInterest: toNum(u.openInterest ?? u.open_interest ?? u.oi),
-          funding:      toNum(u.funding ?? u.fundingRate ?? u.funding1h),
+          markPx:       toNum(d.markPrice),
+          midPx:        toNum(d.midPrice  ?? d.midPx),
+          oraclePx:     toNum(d.oraclePrice),
+          prevDayPx:    toNum(d.prevDayMarkPrice),
+          dayNtlVlm:    toNum(d.dayVolumeUsd),
+          openInterest: toNum(d.openInterest),
+          funding:      toNum(d.currentFundingRate),
         });
       },
     );
@@ -326,11 +327,11 @@ function useRiseStreams(
       setTrades(prev => [...arr, ...prev].slice(0, 60));
     });
 
-    // Funding rate (current + next)
+    // Funding rate — SDK delivers { symbol, funding: number }
     consume(() => s.fundingRate?.(symbol), (u: any) => {
       setFundingRate({
-        rate:     toNum(u.fundingRate ?? u.rate ?? u.current),
-        nextRate: u.nextFundingRate != null ? toNum(u.nextFundingRate) : null,
+        rate:     toNum(u.funding),
+        nextRate: null,
       });
     });
 
@@ -621,8 +622,8 @@ function PerpsInner() {
     : [{ symbol: 'SOL-PERP' }, { symbol: 'BTC-PERP' }, { symbol: 'ETH-PERP' }];
 
   const restPrice    = restPriceRaw ? pf(restPriceRaw.close ?? restPriceRaw.c) : null;
+
   const indexPrice   = stats?.oraclePx ?? null;
-  // Prefer dedicated fundingRate WS channel; fall back to market stats
   const fundingRate  = wsFunding?.rate ?? stats?.funding ?? null;
   const nextFunding  = wsFunding?.nextRate ?? null;
   const dayNtlVlm    = stats?.dayNtlVlm ?? null;
@@ -633,8 +634,9 @@ function PerpsInner() {
   const liveMidSelected = allMids[marketBase] ?? allMids[market] ?? null;
   const markPrice       = stats?.markPx ?? liveMidSelected ?? restPrice ?? null;
 
-  const priceChange  = (markPrice && stats?.prevDayPx && stats.prevDayPx > 0)
-    ? (markPrice - stats.prevDayPx) / stats.prevDayPx : null;
+  const prevDayPx    = stats?.prevDayPx ?? null;
+  const priceChange  = (markPrice && prevDayPx && prevDayPx > 0)
+    ? (markPrice - prevDayPx) / prevDayPx : null;
   const isUp = priceChange == null ? true : priceChange >= 0;
 
   const midPrice    = ob.mid ?? markPrice;
@@ -765,11 +767,11 @@ function PerpsInner() {
               <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fp(indexPrice)}</span>
             </div>
           )}
-          {markPrice != null && stats?.prevDayPx != null && stats.prevDayPx > 0 && (
+          {markPrice != null && prevDayPx != null && prevDayPx > 0 && (
             <div className="flex flex-col gap-0.5 shrink-0">
               <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Change</span>
               <span className={`text-sm font-mono flex items-center gap-1 whitespace-nowrap ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-                {isUp ? '+' : ''}{fUSD(markPrice - stats.prevDayPx)} ({isUp ? '+' : ''}{((priceChange ?? 0) * 100).toFixed(2)}%)
+                {isUp ? '+' : ''}{fUSD(markPrice - prevDayPx)} ({isUp ? '+' : ''}{((priceChange ?? 0) * 100).toFixed(2)}%)
                 <svg width="10" height="6" viewBox="0 0 12 7" fill="none">
                   {isUp
                     ? <path d="M11.47 5.68741L5.73388 0.422607L0 5.69273L1.26021 7L2.17799 6.14435C4.1578 4.29858 7.24693 4.3634 9.14756 6.29061L9.84717 7L11.47 5.68741Z" fill="currentColor"/>
