@@ -831,11 +831,6 @@ function PerpsInner() {
               </span>
             ) : <span className="text-sm font-mono text-white/30">—</span>}
           </div>
-          <span className={`shrink-0 text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-            connected ? 'text-green-400/70 border-green-500/25 bg-green-500/5' : 'text-white/20 border-white/10'
-          }`}>
-            {connected ? '● LIVE' : '○ …'}
-          </span>
         </div>
       </div>
 
