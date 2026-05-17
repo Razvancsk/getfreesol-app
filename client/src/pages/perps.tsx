@@ -501,6 +501,14 @@ function PerpsInner() {
     refetchInterval: 120_000,
   });
 
+  // 24h candles — always 1h timeframe, 25 bars to cover full day; derives change + volume
+  const { data: candles24hRaw } = useQuery<any>({
+    queryKey: ['/api/perps/candles24h', market],
+    queryFn: () => fetch(`/api/perps/candles/${encodeURIComponent(market)}?timeframe=3600&limit=25`).then(r => r.json()),
+    refetchInterval: 60_000,
+    staleTime: 50_000,
+  });
+
   // Phoenix /v1/market/{symbol}/stats — polls every 10s; used to seed stats before WS fires
   const { data: tickerRaw } = useQuery<any>({
     queryKey: ['/api/perps/ticker', market],
@@ -631,28 +639,36 @@ function PerpsInner() {
 
   const restPrice    = restPriceRaw ? pf(restPriceRaw.close ?? restPriceRaw.c) : null;
 
-  // Ticker REST: Phoenix /v1/market/{symbol}/stats field names
+  // Derive 24h stats from candles (guaranteed to work — same source as chart)
+  const c24arr: any[] = Array.isArray(candles24hRaw) ? candles24hRaw
+    : (candles24hRaw?.candles ?? candles24hRaw?.data ?? []);
+  const c24open   = c24arr.length ? pf(c24arr[0].open ?? c24arr[0].o) : null;
+  const c24volume = c24arr.length
+    ? c24arr.reduce((sum: number, c: any) => sum + pf(c.volume ?? c.v ?? 0), 0)
+    : null;
+
+  // Ticker REST (Phoenix /v1/market/{symbol}/stats) — optional enrichment
   const tk = tickerRaw && !tickerRaw.error ? tickerRaw : null;
-  const tkMark   = tk ? pf(tk.markPrice   ?? tk.mark_price)  : null;
   const tkIndex  = tk ? pf(tk.oraclePrice ?? tk.oracle_price ?? tk.indexPrice ?? tk.spot_price) : null;
-  const tkPrev   = tk ? pf(tk.prevDayMarkPrice ?? tk.prev_day_mark_price ?? tk.open24h) : null;
-  const tkVolume = tk ? pf(tk.dayVolumeUsd ?? tk.day_volume_usd ?? tk.volume24h) : null;
   const tkOI     = tk ? pf(tk.openInterest ?? tk.open_interest) : null;
   const tkFund   = tk ? pf(tk.currentFundingRate ?? tk.current_funding_rate ?? tk.fundingRate) : null;
 
   const indexPrice   = stats?.oraclePx   ?? tkIndex  ?? null;
   const fundingRate  = wsFunding?.rate   ?? stats?.funding  ?? tkFund   ?? null;
   const nextFunding  = wsFunding?.nextRate ?? null;
-  const dayNtlVlm    = stats?.dayNtlVlm  ?? tkVolume ?? null;
   const openInterest = stats?.openInterest ?? tkOI   ?? null;
 
   // markPrice derivation must come before priceChange / midPrice
   const marketBase      = stripPerp(market);
   const liveMidSelected = allMids[marketBase] ?? allMids[market] ?? null;
-  const markPrice       = stats?.markPx ?? liveMidSelected ?? tkMark ?? restPrice ?? null;
+  const markPrice       = stats?.markPx ?? liveMidSelected ?? restPrice ?? null;
 
-  const prevDayPx    = stats?.prevDayPx ?? tkPrev ?? null;
-  const priceChange  = (markPrice && prevDayPx && prevDayPx > 0)
+  // 24h volume: from WebSocket stats, or sum of 1h candles volumes
+  const dayNtlVlm = stats?.dayNtlVlm ?? (c24volume && c24volume > 0 ? c24volume : null);
+
+  // 24h change: from WebSocket stats prevDayPx, or from first 1h candle open
+  const prevDayPx = stats?.prevDayPx ?? c24open ?? null;
+  const priceChange = (markPrice && prevDayPx && prevDayPx > 0)
     ? (markPrice - prevDayPx) / prevDayPx : null;
   const isUp = priceChange == null ? true : priceChange >= 0;
 
@@ -778,15 +794,13 @@ function PerpsInner() {
             <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Mark</span>
             <span className="text-sm font-mono text-white whitespace-nowrap">{markPrice != null ? fp(markPrice) : '—'}</span>
           </div>
-          {indexPrice != null && (
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Index</span>
-              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fp(indexPrice)}</span>
-            </div>
-          )}
-          {markPrice != null && prevDayPx != null && prevDayPx > 0 && (
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Change</span>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Index</span>
+            <span className="text-sm font-mono text-white/70 whitespace-nowrap">{indexPrice != null ? fp(indexPrice) : '—'}</span>
+          </div>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Change</span>
+            {markPrice != null && prevDayPx != null && prevDayPx > 0 ? (
               <span className={`text-sm font-mono flex items-center gap-1 whitespace-nowrap ${isUp ? 'text-green-400' : 'text-red-400'}`}>
                 {isUp ? '+' : ''}{fUSD(markPrice - prevDayPx)} ({isUp ? '+' : ''}{((priceChange ?? 0) * 100).toFixed(2)}%)
                 <svg width="10" height="6" viewBox="0 0 12 7" fill="none">
@@ -796,31 +810,27 @@ function PerpsInner() {
                   }
                 </svg>
               </span>
-            </div>
-          )}
-          {dayNtlVlm != null && dayNtlVlm > 0 && (
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Volume</span>
-              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fUSD(dayNtlVlm)}</span>
-            </div>
-          )}
-          {openInterest != null && openInterest > 0 && (
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Open Interest</span>
-              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fUSD(openInterest)}</span>
-            </div>
-          )}
-          {fundingRate != null && (
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">1h Funding</span>
+            ) : <span className="text-sm font-mono text-white/30">—</span>}
+          </div>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Volume</span>
+            <span className="text-sm font-mono text-white/70 whitespace-nowrap">{dayNtlVlm != null && dayNtlVlm > 0 ? fUSD(dayNtlVlm) : '—'}</span>
+          </div>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Open Interest</span>
+            <span className="text-sm font-mono text-white/70 whitespace-nowrap">{openInterest != null && openInterest > 0 ? fUSD(openInterest) : '—'}</span>
+          </div>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">1h Funding</span>
+            {fundingRate != null ? (
               <span className="text-sm font-mono flex gap-2 whitespace-nowrap">
                 <span className={fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}>
                   {fundingRate >= 0 ? '+' : ''}{(fundingRate * 100).toFixed(4)}%
                 </span>
                 {fundingCountdown && <span className="text-white/45">{fundingCountdown}</span>}
               </span>
-            </div>
-          )}
+            ) : <span className="text-sm font-mono text-white/30">—</span>}
+          </div>
           <span className={`shrink-0 text-[9px] font-mono px-1.5 py-0.5 rounded border ${
             connected ? 'text-green-400/70 border-green-500/25 bg-green-500/5' : 'text-white/20 border-white/10'
           }`}>
