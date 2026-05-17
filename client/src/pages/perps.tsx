@@ -1,6 +1,6 @@
 /**
  * Phoenix Perpetuals — real-time data via Phoenix WS + Rise SDK trading
- * https://perp-api.phoenix.trade  |  https://github.com/Ellipsis-Labs/vulcan-cli
+ * https://perp-api.phoenix.trade  |  @ellipsis-labs/rise
  */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,15 +10,15 @@ import { Side, createPhoenixClient } from '@ellipsis-labs/rise';
 import { Link } from 'wouter';
 import {
   ArrowLeft, ExternalLink, Activity, TrendingUp, TrendingDown,
-  RefreshCw, Key, User,
+  RefreshCw, Key, User, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import {
   ComposedChart, Area, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 
-const logoImage = '/logo.png';
-const PHOENIX_WS    = 'wss://perp-api.phoenix.trade/v1/ws';
+const logoImage       = '/logo.png';
+const PHOENIX_WS      = 'wss://perp-api.phoenix.trade/v1/ws';
 const PHOENIX_API_URL = 'https://perp-api.phoenix.trade';
 const BUILDER_AUTHORITY = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 
@@ -65,16 +65,7 @@ function fTime(ts: number, tfSecs: string): string {
     : d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-function StatBox({ label, value, cls = '' }: { label: string; value: React.ReactNode; cls?: string }) {
-  return (
-    <div className="shrink-0">
-      <div className="text-[10px] text-white/35 uppercase tracking-wider mb-0.5">{label}</div>
-      <div className={`text-sm font-semibold ${cls}`}>{value}</div>
-    </div>
-  );
-}
-
-// ── Phoenix WebSocket (market stats + orderbook + trades + candles + allMids) ─
+// ── Phoenix WebSocket ─────────────────────────────────────────────────────────
 
 interface MarketStats {
   markPx: number; midPx: number; oraclePx: number;
@@ -125,7 +116,6 @@ function usePhoenixWS(symbol: string, wsTimeframe: string) {
           const d  = msg.data;
           if (!d) return;
           if (ch === 'allMids') {
-            // { SOL: "135.87", BTC: "65000", ... }
             const parsed: Record<string, number> = {};
             for (const [k, v] of Object.entries(d)) parsed[k] = toNum(v);
             setAllMids(parsed);
@@ -151,7 +141,7 @@ function usePhoenixWS(symbol: string, wsTimeframe: string) {
           } else if (ch === 'candle' || ch === 'candles') {
             setLiveCandle(d);
           }
-        } catch { /* ignore malformed */ }
+        } catch { /* ignore */ }
       };
 
       ws.onclose = () => {
@@ -162,10 +152,7 @@ function usePhoenixWS(symbol: string, wsTimeframe: string) {
     }
 
     connect();
-    return () => {
-      deadRef.current = true;
-      wsRef.current?.close();
-    };
+    return () => { deadRef.current = true; wsRef.current?.close(); };
   }, [sym, wsTimeframe]);
 
   return { connected, stats, ob, trades, liveCandle, allMids };
@@ -201,6 +188,31 @@ function useRiseClient() {
   return { client: clientRef.current as any, ready };
 }
 
+// ── Orderbook side ────────────────────────────────────────────────────────────
+
+function OBSide({ rows, side }: { rows: [number, number][]; side: 'ask' | 'bid' }) {
+  const maxS = rows.length ? Math.max(...rows.map(([, s]) => s)) : 1;
+  return (
+    <>
+      {rows.map(([price, size], i) => {
+        const pct = maxS > 0 ? (size / maxS) * 60 : 0;
+        return (
+          <div key={i} className="relative flex items-center justify-between px-3 py-[3px] text-[11px] hover:bg-white/[0.04] cursor-pointer">
+            <div
+              className={`absolute inset-y-0 right-0 ${side === 'ask' ? 'bg-red-500/[0.1]' : 'bg-green-500/[0.1]'}`}
+              style={{ width: `${pct}%` }}
+            />
+            <span className={`font-mono relative z-10 ${side === 'ask' ? 'text-red-400' : 'text-green-400'}`}>
+              {fn(price)}
+            </span>
+            <span className="font-mono relative z-10 text-white/50">{size.toFixed(3)}</span>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function PerpsPage() {
@@ -209,16 +221,28 @@ export default function PerpsPage() {
   const { connection } = useConnection();
   const { client: riseClient, ready: riseReady } = useRiseClient();
 
-  const [market,     setMarket]     = useState('SOL-PERP');
-  const [tf,         setTf]         = useState('3600');
-  const [inviteCode, setInviteCode] = useState('');
-  const [orderType,  setOrderType]  = useState<'market' | 'limit'>('market');
-  const [orderPrice, setOrderPrice] = useState('');
-  const [orderSize,  setOrderSize]  = useState('0.1');
-  const [txSig,      setTxSig]      = useState<string | null>(null);
+  const [market,       setMarket]       = useState('SOL-PERP');
+  const [tf,           setTf]           = useState('3600');
+  const [inviteCode,   setInviteCode]   = useState('');
+  const [orderType,    setOrderType]    = useState<'market' | 'limit'>('market');
+  const [orderPrice,   setOrderPrice]   = useState('');
+  const [orderSize,    setOrderSize]    = useState('0.1');
+  const [txSig,        setTxSig]        = useState<string | null>(null);
+  const [bottomTab,    setBottomTab]    = useState<'positions' | 'orders' | 'trades'>('positions');
+  const [mktDropdown,  setMktDropdown]  = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
 
   const wsTimeframe = TIMEFRAMES.find(t => t.s === tf)?.ws ?? '1h';
   const { connected, stats, ob, trades, liveCandle, allMids } = usePhoenixWS(market, wsTimeframe);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function h(e: MouseEvent) {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setMktDropdown(false);
+    }
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
 
   // ── Queries ───────────────────────────────────────────────────────────────
 
@@ -337,8 +361,8 @@ export default function PerpsPage() {
   const isUp = priceChange == null ? true : priceChange >= 0;
 
   const midPrice    = ob.mid ?? markPrice;
-  const displayAsks = [...ob.asks].slice(0, 14).reverse();
-  const displayBids = ob.bids.slice(0, 14);
+  const displayAsks = [...ob.asks].slice(0, 12).reverse();
+  const displayBids = ob.bids.slice(0, 12);
 
   const rawCandles: any[] = Array.isArray(candlesRaw)
     ? candlesRaw : (candlesRaw as any)?.candles ?? [];
@@ -360,16 +384,16 @@ export default function PerpsPage() {
   const minP = prices.length ? Math.min(...prices) * 0.9995 : ('auto' as const);
   const maxP = prices.length ? Math.max(...prices) * 1.0005 : ('auto' as const);
 
-  const ta: any    = taRaw ?? {};
-  const rsi        = ta.rsi?.value ?? ta.rsi;
-  const macdHist   = ta.macd?.histogram ?? ta.macd?.hist;
-  const adx        = ta.adx?.value ?? ta.adx;
+  const ta: any  = taRaw ?? {};
+  const rsi      = ta.rsi?.value ?? ta.rsi;
+  const macdHist = ta.macd?.histogram ?? ta.macd?.hist;
+  const adx      = ta.adx?.value ?? ta.adx;
 
-  const mktCfg    = ((exchangeRaw as any)?.markets ?? []).find(
+  const mktCfg   = ((exchangeRaw as any)?.markets ?? []).find(
     (m: any) => m.symbol === market || m.symbol === stripPerp(market));
-  const maxLev    = mktCfg?.leverageTiers?.[0]?.maxLeverage ?? null;
-  const takerFee  = mktCfg?.takerFee ?? null;
-  const makerFee  = mktCfg?.makerFee ?? null;
+  const maxLev   = mktCfg?.leverageTiers?.[0]?.maxLeverage ?? null;
+  const takerFee = mktCfg?.takerFee ?? null;
+  const makerFee = mktCfg?.makerFee ?? null;
 
   const trader: any    = traderRaw;
   const traderArr      = trader?.traders ?? (trader && !trader.error ? [trader] : []);
@@ -378,378 +402,501 @@ export default function PerpsPage() {
   const traderPositions: any[] = td?.positions ?? [];
   const traderOrders: any[]    = Object.values(td?.limitOrders ?? {}).flat() as any[];
 
+  const marketBase = stripPerp(market);
+  const liveMidSelected = allMids[marketBase] ?? allMids[market] ?? null;
+
   return (
-    <div className="min-h-screen bg-[#0d0d14] text-white flex flex-col">
+    <div className="h-screen bg-[#0b0b12] text-white flex flex-col overflow-hidden">
 
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
-        <div className="flex items-center gap-3">
-          <Link href="/"><a className="text-white/50 hover:text-white transition"><ArrowLeft className="h-5 w-5" /></a></Link>
-          <img src={logoImage} alt="logo" className="h-7 w-auto" />
-          <span className="font-bold text-purple-300 tracking-tight">Perps</span>
-          <span className={`text-[9px] border rounded px-1.5 py-0.5 font-mono ${
-            connected ? 'text-green-400/80 border-green-500/30' : 'text-white/25 border-white/10'
-          }`}>
-            {connected ? '● LIVE' : '○ connecting'}
-          </span>
+      {/* ── Top bar ──────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-0 border-b border-white/[0.07] shrink-0 h-12">
+
+        {/* Logo / back */}
+        <div className="flex items-center gap-2 px-3 border-r border-white/[0.07] h-full shrink-0">
+          <Link href="/"><a className="text-white/40 hover:text-white transition"><ArrowLeft className="h-4 w-4" /></a></Link>
+          <img src={logoImage} alt="logo" className="h-6 w-auto" />
         </div>
-        <a href="https://phoenix.trade" target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 border border-purple-500/30 rounded-lg px-3 py-1.5 transition">
-          Phoenix <ExternalLink className="h-3 w-3" />
-        </a>
-      </div>
 
-      {/* ── Market tabs — all markets with live prices ──────────────────── */}
-      <div className="flex overflow-x-auto border-b border-white/10 shrink-0 scrollbar-none bg-white/[0.01]">
-        {displayMarkets.map((m: any) => {
-          const sym    = addPerp(m.symbol ?? m);
-          const base   = stripPerp(sym);
-          const liveMid = allMids[base] ?? allMids[sym] ?? null;
-          const isSelected = market === sym;
-          return (
-            <button key={sym} onClick={() => setMarket(sym)}
-              className={`flex flex-col items-start px-4 py-2 shrink-0 border-b-2 transition-all ${
-                isSelected
-                  ? 'border-purple-500 bg-purple-500/8'
-                  : 'border-transparent hover:bg-white/5'
-              }`}>
-              <span className={`text-xs font-semibold ${isSelected ? 'text-white' : 'text-white/50'}`}>
-                {sym}
+        {/* Market selector dropdown */}
+        <div className="relative border-r border-white/[0.07] h-full shrink-0" ref={dropRef}>
+          <button
+            onClick={() => setMktDropdown(v => !v)}
+            className="flex items-center gap-2 px-4 h-full hover:bg-white/[0.04] transition"
+          >
+            <span className="font-bold text-white text-sm tracking-tight">{marketBase}</span>
+            {maxLev && (
+              <span className="text-[10px] font-semibold bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded px-1.5 py-0.5">
+                {maxLev}×
               </span>
-              {liveMid ? (
-                <span className="text-[10px] text-white/40 font-mono">{fp(liveMid)}</span>
-              ) : (
-                <span className="text-[10px] text-white/15">—</span>
+            )}
+            {mktDropdown
+              ? <ChevronUp className="h-3.5 w-3.5 text-white/40" />
+              : <ChevronDown className="h-3.5 w-3.5 text-white/40" />
+            }
+          </button>
+
+          {mktDropdown && (
+            <div className="absolute top-full left-0 z-50 bg-[#111118] border border-white/10 rounded-xl shadow-2xl w-56 py-1 mt-1 max-h-80 overflow-y-auto">
+              {displayMarkets.map((m: any) => {
+                const sym     = addPerp(m.symbol ?? m);
+                const base    = stripPerp(sym);
+                const liveMid = allMids[base] ?? allMids[sym] ?? null;
+                const isSel   = market === sym;
+                return (
+                  <button key={sym}
+                    onClick={() => { setMarket(sym); setMktDropdown(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs transition hover:bg-purple-500/10 ${isSel ? 'bg-purple-500/15 text-purple-300' : 'text-white/70'}`}
+                  >
+                    <span className="font-semibold">{base}</span>
+                    <span className={`font-mono text-[11px] ${isSel ? 'text-purple-300' : 'text-white/35'}`}>
+                      {liveMid ? fp(liveMid) : '—'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Stats bar — scrollable */}
+        <div className="flex items-center gap-5 overflow-x-auto px-4 h-full flex-1 scrollbar-none">
+          {/* Mark price prominent */}
+          {markPrice != null && (
+            <div className="shrink-0 flex items-baseline gap-1.5">
+              <span className={`text-base font-bold font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                {fp(markPrice)}
+              </span>
+              {priceChange != null && (
+                <span className={`text-[11px] font-medium ${isUp ? 'text-green-400/70' : 'text-red-400/70'}`}>
+                  {priceChange >= 0 ? '+' : ''}{(priceChange * 100).toFixed(2)}%
+                </span>
               )}
-            </button>
-          );
-        })}
+            </div>
+          )}
+          {indexPrice != null && (
+            <div className="shrink-0">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider">Index</div>
+              <div className="text-[11px] font-mono text-white/65">{fp(indexPrice)}</div>
+            </div>
+          )}
+          {dayNtlVlm != null && dayNtlVlm > 0 && (
+            <div className="shrink-0">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider">24h Vol</div>
+              <div className="text-[11px] text-white/65">{fUSD(dayNtlVlm)}</div>
+            </div>
+          )}
+          {openInterest != null && openInterest > 0 && (
+            <div className="shrink-0">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider">OI</div>
+              <div className="text-[11px] text-white/65">{fUSD(openInterest)}</div>
+            </div>
+          )}
+          {fundingRate != null && (
+            <div className="shrink-0">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider">1h Funding</div>
+              <div className={`text-[11px] font-mono ${fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {fundingRate >= 0 ? '+' : ''}{(fundingRate * 100).toFixed(4)}%
+              </div>
+            </div>
+          )}
+          {takerFee != null && (
+            <div className="shrink-0">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider">Taker</div>
+              <div className="text-[11px] text-white/65">{(takerFee * 100).toFixed(3)}%</div>
+            </div>
+          )}
+          {makerFee != null && (
+            <div className="shrink-0">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider">Maker</div>
+              <div className="text-[11px] text-white/65">{(makerFee * 100).toFixed(3)}%</div>
+            </div>
+          )}
+          {rsi != null && (
+            <div className="shrink-0">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider">RSI</div>
+              <div className={`text-[11px] ${Number(rsi) < 30 ? 'text-green-400' : Number(rsi) > 70 ? 'text-red-400' : 'text-white/65'}`}>
+                {Number(rsi).toFixed(1)}
+              </div>
+            </div>
+          )}
+          {adx != null && (
+            <div className="shrink-0">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider">ADX</div>
+              <div className="text-[11px] text-white/65">{Number(adx).toFixed(1)}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Right side of header */}
+        <div className="flex items-center gap-2 px-3 shrink-0 border-l border-white/[0.07] h-full">
+          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+            connected ? 'text-green-400/70 border-green-500/25 bg-green-500/5' : 'text-white/20 border-white/8'
+          }`}>
+            {connected ? '● LIVE' : '○ …'}
+          </span>
+          <a href="https://phoenix.trade" target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[11px] text-white/35 hover:text-white/70 transition">
+            Phoenix <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
       </div>
 
-      {/* ── Stats bar ──────────────────────────────────────────────────── */}
-      <div className="flex gap-6 overflow-x-auto px-4 py-2.5 border-b border-white/10 bg-white/[0.02] shrink-0 scrollbar-none">
-        <StatBox label="Mark" value={<span className={`text-base font-bold ${isUp ? 'text-green-400' : 'text-red-400'}`}>{fp(markPrice)}</span>} />
-        <StatBox
-          label="24h Change"
-          value={priceChange != null ? (priceChange >= 0 ? '+' : '') + (priceChange * 100).toFixed(2) + '%' : '—'}
-          cls={isUp ? 'text-green-400' : 'text-red-400'}
-        />
-        {indexPrice  != null && <StatBox label="Oracle"  value={fp(indexPrice)} />}
-        {fundingRate != null && (
-          <StatBox label="Funding /1h"
-            value={(fundingRate >= 0 ? '+' : '') + (fundingRate * 100).toFixed(4) + '%'}
-            cls={fundingRate >= 0 ? 'text-green-400' : 'text-red-400'} />
-        )}
-        {openInterest != null && openInterest > 0 && <StatBox label="OI"        value={fUSD(openInterest)} />}
-        {dayNtlVlm    != null && dayNtlVlm    > 0 && <StatBox label="24h Vol"   value={fUSD(dayNtlVlm)} />}
-        {maxLev  != null && <StatBox label="Max Lev"   value={`${maxLev}×`} />}
-        {takerFee!= null && <StatBox label="Taker"     value={(takerFee * 100).toFixed(3) + '%'} />}
-        {makerFee!= null && <StatBox label="Maker"     value={(makerFee * 100).toFixed(3) + '%'} />}
-        {rsi     != null && (
-          <StatBox label="RSI(14)" value={Number(rsi).toFixed(1)}
-            cls={Number(rsi) < 30 ? 'text-green-400' : Number(rsi) > 70 ? 'text-red-400' : 'text-white/70'} />
-        )}
-        {macdHist != null && (
-          <StatBox label="MACD"
-            value={(Number(macdHist) >= 0 ? '+' : '') + Number(macdHist).toFixed(2)}
-            cls={Number(macdHist) >= 0 ? 'text-green-400' : 'text-red-400'} />
-        )}
-        {adx != null && <StatBox label="ADX" value={Number(adx).toFixed(1)} />}
-      </div>
+      {/* ── Main grid ────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
 
-      {/* ── Main grid ──────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-
-        {/* Left — Chart + Trades */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-white/10">
+        {/* ── Left column: chart + bottom tabs ─────────────────────────── */}
+        <div className="flex-1 flex flex-col min-w-0 border-r border-white/[0.07] overflow-hidden">
 
           {/* Chart */}
-          <div className="p-4 border-b border-white/10">
-            <div className="flex items-center gap-1 mb-3">
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            {/* Timeframe tabs */}
+            <div className="flex items-center gap-0.5 px-3 py-2 border-b border-white/[0.07] shrink-0">
               {TIMEFRAMES.map(t => (
                 <button key={t.s} onClick={() => setTf(t.s)}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                    tf === t.s ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+                  className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
+                    tf === t.s
+                      ? 'bg-purple-600/80 text-white'
+                      : 'text-white/35 hover:bg-white/5 hover:text-white/70'
                   }`}>
                   {t.label}
                 </button>
               ))}
+              {macdHist != null && (
+                <span className={`ml-auto text-[10px] font-mono px-2 py-0.5 rounded ${Number(macdHist) >= 0 ? 'text-green-400/60' : 'text-red-400/60'}`}>
+                  MACD {Number(macdHist) >= 0 ? '+' : ''}{Number(macdHist).toFixed(2)}
+                </span>
+              )}
             </div>
-            <div className="h-60 md:h-80">
+
+            {/* Chart area */}
+            <div className="flex-1 min-h-0 p-3">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                     <defs>
                       <linearGradient id="perpG" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#a855f7" stopOpacity={0.22} />
+                        <stop offset="5%"  stopColor="#a855f7" stopOpacity={0.2} />
                         <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.04)" />
+                    <CartesianGrid strokeDasharray="2 6" stroke="rgba(255,255,255,0.03)" />
                     <XAxis dataKey="time" tickFormatter={v => fTime(Number(v), tf)}
-                      tick={{ fill: 'rgba(255,255,255,0.28)', fontSize: 10 }}
-                      tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.08)' }} minTickGap={60} />
+                      tick={{ fill: 'rgba(255,255,255,0.22)', fontSize: 10 }}
+                      tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} minTickGap={60} />
                     <YAxis yAxisId="p" domain={[minP, maxP]}
-                      tick={{ fill: 'rgba(255,255,255,0.28)', fontSize: 10 }}
-                      tickLine={false} axisLine={false} tickFormatter={fn} width={60} />
+                      tick={{ fill: 'rgba(255,255,255,0.22)', fontSize: 10 }}
+                      tickLine={false} axisLine={false} tickFormatter={fn} width={64} />
                     <YAxis yAxisId="v" orientation="right" hide />
                     <Tooltip
-                      contentStyle={{ background: '#1a1228', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8, fontSize: 11 }}
+                      contentStyle={{ background: '#16121f', border: '1px solid rgba(168,85,247,0.25)', borderRadius: 8, fontSize: 11 }}
                       labelFormatter={v => fTime(Number(v), tf)}
                       formatter={(v: unknown, name: string) =>
                         name === 'price' ? [fp(Number(v)), 'Price'] : [Number(v).toFixed(2), 'Volume']
                       }
                     />
-                    <Bar  yAxisId="v" dataKey="volume" fill="rgba(168,85,247,0.12)" radius={[1,1,0,0]} maxBarSize={8} />
+                    <Bar  yAxisId="v" dataKey="volume" fill="rgba(168,85,247,0.1)" radius={[1,1,0,0]} maxBarSize={6} />
                     <Area yAxisId="p" type="monotone" dataKey="price" stroke="#a855f7" strokeWidth={1.5}
                       fill="url(#perpG)" dot={false} activeDot={{ r: 3, fill: '#a855f7', strokeWidth: 0 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-white/20 gap-2">
-                  <Activity className="h-7 w-7" />
-                  <span className="text-sm">Loading chart…</span>
+                <div className="h-full flex flex-col items-center justify-center text-white/15 gap-2">
+                  <Activity className="h-6 w-6" />
+                  <span className="text-xs">Loading chart…</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Recent Trades */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <div className="px-4 py-2 text-[10px] font-semibold text-white/35 uppercase tracking-wider border-b border-white/5 flex items-center gap-2">
-              Recent Trades
-              {connected && <span className="text-green-400/50">● live</span>}
-            </div>
-            <div className="px-4 py-1">
-              <div className="grid grid-cols-3 text-[10px] text-white/22 pb-1.5">
-                <span>Price</span><span className="text-right">Size</span><span className="text-right">Time</span>
-              </div>
-              <div className="overflow-y-auto max-h-52">
-                {trades.length > 0 ? trades.slice(0, 30).map((f: any, i: number) => {
-                  const price = pf(f.price ?? f.px ?? f.p);
-                  const size  = pf(f.baseLots ?? f.size ?? f.qty ?? f.q);
-                  const isBuy = f.side === 'buy' || f.side === 'bid' || f.isBuy === true;
-                  const ts    = f.timestamp
-                    ? new Date(f.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-                    : '—';
-                  return (
-                    <div key={i} className="grid grid-cols-3 py-[3px] text-xs">
-                      <span className={isBuy ? 'text-green-400' : 'text-red-400'}>{fp(price)}</span>
-                      <span className="text-right text-white/55 font-mono">{size.toFixed(3)}</span>
-                      <span className="text-right text-white/28">{ts}</span>
-                    </div>
-                  );
-                }) : (
-                  <div className="text-white/20 text-xs py-6 text-center">
-                    {connected ? 'Waiting for trades…' : 'Connecting…'}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right — Orderbook + Trading */}
-        <div className="w-full lg:w-[300px] flex flex-col shrink-0 border-t lg:border-t-0 border-white/10">
-
-          {/* Orderbook */}
-          <div className="px-4 py-2 text-[10px] font-semibold text-white/35 uppercase tracking-wider border-b border-white/10 flex items-center justify-between">
-            <span>Order Book</span>
-            {connected && <span className="text-green-400/40 text-[9px]">● live</span>}
-          </div>
-          <div className="grid grid-cols-2 px-4 py-1 text-[10px] text-white/22 border-b border-white/5">
-            <span>Price</span><span className="text-right">Size</span>
-          </div>
-          <div className="overflow-hidden">
-            {displayAsks.length > 0 ? displayAsks.map(([price, size], i) => {
-              const maxS = Math.max(...displayAsks.map(([, s]) => s));
-              const pct  = maxS > 0 ? (size / maxS) * 55 : 0;
-              return (
-                <div key={i} className="relative grid grid-cols-2 px-4 py-[3px] text-xs hover:bg-white/[0.03]">
-                  <div className="absolute inset-y-0 right-0 bg-red-500/[0.08]" style={{ width: `${pct}%` }} />
-                  <span className="text-red-400 relative z-10 font-mono">{fn(price)}</span>
-                  <span className="text-right text-white/55 relative z-10 font-mono">{size.toFixed(3)}</span>
-                </div>
-              );
-            }) : <div className="px-4 py-3 text-xs text-white/20 text-center">{connected ? 'Waiting…' : 'Connecting…'}</div>}
-          </div>
-          <div className="px-4 py-2 border-y border-white/10 bg-white/[0.025] flex items-center justify-between">
-            <span className={`text-sm font-bold font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>{fp(midPrice)}</span>
-            <span className="text-[10px] text-white/22">mid</span>
-          </div>
-          <div className="overflow-hidden">
-            {displayBids.length > 0 ? displayBids.map(([price, size], i) => {
-              const maxS = Math.max(...displayBids.map(([, s]) => s));
-              const pct  = maxS > 0 ? (size / maxS) * 55 : 0;
-              return (
-                <div key={i} className="relative grid grid-cols-2 px-4 py-[3px] text-xs hover:bg-white/[0.03]">
-                  <div className="absolute inset-y-0 right-0 bg-green-500/[0.08]" style={{ width: `${pct}%` }} />
-                  <span className="text-green-400 relative z-10 font-mono">{fn(price)}</span>
-                  <span className="text-right text-white/55 relative z-10 font-mono">{size.toFixed(3)}</span>
-                </div>
-              );
-            }) : <div className="px-4 py-3 text-xs text-white/20 text-center">{connected ? 'Waiting…' : 'Connecting…'}</div>}
-          </div>
-
-          {/* Trading panel */}
-          <div className="mt-auto border-t border-white/10 p-4 flex flex-col gap-3 overflow-y-auto">
-            {!publicKey ? (
-              <div className="text-center py-6 flex flex-col items-center gap-2">
-                <User className="h-8 w-8 text-white/15" />
-                <p className="text-xs text-white/40">Connect your wallet to trade</p>
-              </div>
-            ) : !isRegistered ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <Key className="h-3.5 w-3.5 text-purple-400" />
-                  <span className="text-xs font-semibold text-white/70">Activate Phoenix Account</span>
-                </div>
-                <p className="text-[10px] text-white/30 leading-relaxed">
-                  Enter your Phoenix invite code to start trading perps on-chain.
-                </p>
-                <input value={inviteCode} onChange={e => setInviteCode(e.target.value)}
-                  placeholder="Invite code…"
-                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-purple-500/50 transition" />
-                <button onClick={() => registerMut.mutate()}
-                  disabled={!inviteCode.trim() || registerMut.isPending}
-                  className="w-full py-2 bg-purple-700/50 hover:bg-purple-600/60 border border-purple-500/30 rounded-lg text-xs font-medium text-white/80 transition disabled:opacity-40">
-                  {registerMut.isPending ? 'Activating…' : 'Activate Account'}
+          {/* ── Bottom tabs: Positions / Orders / Trades ───────────────── */}
+          <div className="border-t border-white/[0.07] shrink-0 flex flex-col" style={{ height: '180px' }}>
+            {/* Tab headers */}
+            <div className="flex items-center border-b border-white/[0.07] shrink-0">
+              {(['positions', 'orders', 'trades'] as const).map(tab => (
+                <button key={tab} onClick={() => setBottomTab(tab)}
+                  className={`px-4 py-2.5 text-[11px] font-medium transition border-b-2 -mb-px ${
+                    bottomTab === tab
+                      ? 'border-purple-500 text-white'
+                      : 'border-transparent text-white/35 hover:text-white/60'
+                  }`}>
+                  {tab === 'positions' ? `Positions${traderPositions.length ? ` (${traderPositions.length})` : ''}` :
+                   tab === 'orders'    ? `Open Orders${traderOrders.length ? ` (${traderOrders.length})` : ''}` :
+                   'Recent Trades'}
                 </button>
-                {registerMut.isError   && <p className="text-red-400   text-[10px]">Failed — check your code.</p>}
-                {registerMut.isSuccess && <p className="text-green-400 text-[10px]">Activated! Refreshing…</p>}
-              </div>
-            ) : (
-              <>
-                {/* Account summary */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-white/5 rounded-lg px-3 py-2">
-                    <div className="text-[10px] text-white/30 mb-0.5">Collateral</div>
-                    <div className="font-semibold">{fUSD(pf(td?.collateralBalance))}</div>
-                  </div>
-                  <div className="bg-white/5 rounded-lg px-3 py-2">
-                    <div className="text-[10px] text-white/30 mb-0.5">Unreal PnL</div>
-                    <div className={`font-semibold ${pf(td?.unrealizedPnl) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {pf(td?.unrealizedPnl) >= 0 ? '+' : ''}{fUSD(pf(td?.unrealizedPnl))}
-                    </div>
-                  </div>
-                </div>
+              ))}
+              {connected && bottomTab === 'trades' && (
+                <span className="ml-auto pr-3 text-[9px] text-green-400/40">● live</span>
+              )}
+              {publicKey && (
+                <button onClick={() => refetchTrader()} className="ml-auto pr-3 text-white/20 hover:text-white/50 transition">
+                  <RefreshCw className="h-3 w-3" />
+                </button>
+              )}
+            </div>
 
-                {/* Positions */}
-                {traderPositions.length > 0 && (
-                  <div>
-                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5">Positions</div>
+            {/* Tab content */}
+            <div className="flex-1 overflow-y-auto">
+              {bottomTab === 'positions' && (
+                !publicKey ? (
+                  <div className="flex items-center justify-center h-full text-white/20 text-xs gap-2">
+                    <User className="h-4 w-4" /> Connect wallet to view positions
+                  </div>
+                ) : !isRegistered ? (
+                  <div className="flex items-center justify-center h-full text-white/20 text-xs">
+                    Activate Phoenix account to trade
+                  </div>
+                ) : traderPositions.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-white/20 text-xs">No open positions</div>
+                ) : (
+                  <div className="px-3 py-2">
+                    <div className="grid grid-cols-5 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
+                      <span>Market</span><span>Side</span><span className="text-right">Size</span>
+                      <span className="text-right">Entry</span><span className="text-right">PnL</span>
+                    </div>
                     {traderPositions.map((p: any, i: number) => {
                       const pnl  = pf(p.unrealizedPnl);
                       const size = pf(p.positionSize);
                       const side = size >= 0 ? 'LONG' : 'SHORT';
                       return (
-                        <div key={i} className="bg-white/[0.03] rounded-lg px-3 py-2 mb-1.5 border border-white/5">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className={`text-xs font-semibold ${side === 'LONG' ? 'text-green-400' : 'text-red-400'}`}>
-                              {p.symbol} {side}
-                            </span>
-                            <span className={`text-xs font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {pnl >= 0 ? '+' : ''}{fUSD(pnl)}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-x-2 text-[10px] text-white/30">
-                            <span>Entry {fp(pf(p.entryPrice))}</span>
-                            <span>Liq {fp(pf(p.liquidationPrice))}</span>
-                          </div>
+                        <div key={i} className="grid grid-cols-5 py-1.5 text-xs border-b border-white/[0.04] last:border-0">
+                          <span className="text-white/70">{stripPerp(p.symbol ?? market)}</span>
+                          <span className={side === 'LONG' ? 'text-green-400' : 'text-red-400'}>{side}</span>
+                          <span className="text-right font-mono text-white/60">{Math.abs(size).toFixed(3)}</span>
+                          <span className="text-right font-mono text-white/60">{fp(pf(p.entryPrice))}</span>
+                          <span className={`text-right font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {pnl >= 0 ? '+' : ''}{fUSD(pnl)}
+                          </span>
                         </div>
                       );
                     })}
                   </div>
-                )}
+                )
+              )}
 
-                {/* Open orders */}
-                {traderOrders.length > 0 && (
-                  <div>
-                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-1">Open Orders</div>
-                    {traderOrders.slice(0, 5).map((o: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-white/5 last:border-0">
+              {bottomTab === 'orders' && (
+                !publicKey ? (
+                  <div className="flex items-center justify-center h-full text-white/20 text-xs gap-2">
+                    <User className="h-4 w-4" /> Connect wallet to view orders
+                  </div>
+                ) : traderOrders.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-white/20 text-xs">No open orders</div>
+                ) : (
+                  <div className="px-3 py-2">
+                    <div className="grid grid-cols-4 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
+                      <span>Side</span><span className="text-right">Price</span>
+                      <span className="text-right">Size</span><span className="text-right">Remaining</span>
+                    </div>
+                    {traderOrders.slice(0, 20).map((o: any, i: number) => (
+                      <div key={i} className="grid grid-cols-4 py-1.5 text-xs border-b border-white/[0.04] last:border-0">
                         <span className={o.side === 'bid' ? 'text-green-400' : 'text-red-400'}>
-                          {o.side === 'bid' ? 'BUY' : 'SELL'} @ {fp(pf(o.price))}
+                          {o.side === 'bid' ? 'BUY' : 'SELL'}
                         </span>
-                        <span className="text-white/35 font-mono">{pf(o.tradeSizeRemaining).toFixed(3)}</span>
+                        <span className="text-right font-mono text-white/60">{fp(pf(o.price))}</span>
+                        <span className="text-right font-mono text-white/60">{pf(o.tradeSize).toFixed(3)}</span>
+                        <span className="text-right font-mono text-white/40">{pf(o.tradeSizeRemaining).toFixed(3)}</span>
                       </div>
                     ))}
                   </div>
+                )
+              )}
+
+              {bottomTab === 'trades' && (
+                <div className="px-3 py-2">
+                  {trades.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-white/20 text-xs py-6">
+                      {connected ? 'Waiting for trades…' : 'Connecting…'}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-3 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
+                        <span>Price</span><span className="text-right">Size</span><span className="text-right">Time</span>
+                      </div>
+                      {trades.slice(0, 30).map((f: any, i: number) => {
+                        const price = pf(f.price ?? f.px ?? f.p);
+                        const size  = pf(f.baseLots ?? f.size ?? f.qty ?? f.q);
+                        const isBuy = f.side === 'buy' || f.side === 'bid' || f.isBuy === true;
+                        const ts    = f.timestamp
+                          ? new Date(f.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+                          : '—';
+                        return (
+                          <div key={i} className="grid grid-cols-3 py-1 text-[11px]">
+                            <span className={isBuy ? 'text-green-400' : 'text-red-400'}>{fp(price)}</span>
+                            <span className="text-right text-white/45 font-mono">{size.toFixed(3)}</span>
+                            <span className="text-right text-white/25">{ts}</span>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Right column: 350px orderbook + order form ────────────────── */}
+        <div className="w-[350px] shrink-0 flex flex-col overflow-hidden">
+
+          {/* Orderbook header */}
+          <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.07] shrink-0">
+            <span className="text-[10px] font-semibold text-white/35 uppercase tracking-wider">Order Book</span>
+            <div className="flex items-center gap-2">
+              {connected && <span className="text-[9px] text-green-400/40">● live</span>}
+            </div>
+          </div>
+
+          {/* Orderbook col headers */}
+          <div className="flex items-center justify-between px-3 py-1 border-b border-white/[0.04] shrink-0">
+            <span className="text-[10px] text-white/22">Price</span>
+            <span className="text-[10px] text-white/22">Size</span>
+          </div>
+
+          {/* Asks */}
+          <div className="flex flex-col overflow-hidden" style={{ flex: '1 1 0', minHeight: 0 }}>
+            <div className="flex-1 overflow-y-auto flex flex-col justify-end">
+              {displayAsks.length > 0
+                ? <OBSide rows={displayAsks} side="ask" />
+                : <div className="text-center text-white/15 text-xs py-3">{connected ? 'Waiting…' : '…'}</div>
+              }
+            </div>
+
+            {/* Mid price */}
+            <div className="flex items-center justify-between px-3 py-2 bg-white/[0.03] border-y border-white/[0.08] shrink-0">
+              <span className={`text-sm font-bold font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                {fp(midPrice)}
+              </span>
+              <span className="text-[10px] text-white/20">
+                {isUp ? '▲' : '▼'} mid
+              </span>
+            </div>
+
+            {/* Bids */}
+            <div className="flex-1 overflow-y-auto">
+              {displayBids.length > 0
+                ? <OBSide rows={displayBids} side="bid" />
+                : <div className="text-center text-white/15 text-xs py-3">{connected ? 'Waiting…' : '…'}</div>
+              }
+            </div>
+          </div>
+
+          {/* ── Order form ─────────────────────────────────────────────── */}
+          <div className="border-t border-white/[0.07] p-4 flex flex-col gap-3 overflow-y-auto shrink-0">
+
+            {!publicKey ? (
+              <div className="text-center py-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center">
+                  <User className="h-5 w-5 text-white/20" />
+                </div>
+                <p className="text-xs text-white/30">Connect wallet to trade</p>
+              </div>
+
+            ) : !isRegistered ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-1.5">
+                  <Key className="h-3.5 w-3.5 text-purple-400/70" />
+                  <span className="text-xs font-semibold text-white/60">Activate Phoenix Account</span>
+                </div>
+                <p className="text-[10px] text-white/25 leading-relaxed">
+                  Enter your Phoenix invite code to trade perps on-chain.
+                </p>
+                <input value={inviteCode} onChange={e => setInviteCode(e.target.value)}
+                  placeholder="Invite code…"
+                  className="bg-white/[0.04] border border-white/[0.09] rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-purple-500/40 transition" />
+                <button onClick={() => registerMut.mutate()}
+                  disabled={!inviteCode.trim() || registerMut.isPending}
+                  className="w-full py-2 bg-purple-700/50 hover:bg-purple-600/60 border border-purple-500/25 rounded-lg text-xs font-medium text-white/80 transition disabled:opacity-40">
+                  {registerMut.isPending ? 'Activating…' : 'Activate Account'}
+                </button>
+                {registerMut.isError   && <p className="text-red-400   text-[10px]">Failed — check your code.</p>}
+                {registerMut.isSuccess && <p className="text-green-400 text-[10px]">Activated! Refreshing…</p>}
+              </div>
+
+            ) : (
+              <>
+                {/* Account summary */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06]">
+                    <div className="text-[9px] text-white/25 uppercase tracking-wider mb-0.5">Collateral</div>
+                    <div className="text-xs font-semibold">{fUSD(pf(td?.collateralBalance))}</div>
+                  </div>
+                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06]">
+                    <div className="text-[9px] text-white/25 uppercase tracking-wider mb-0.5">Unreal PnL</div>
+                    <div className={`text-xs font-semibold ${pf(td?.unrealizedPnl) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {pf(td?.unrealizedPnl) >= 0 ? '+' : ''}{fUSD(pf(td?.unrealizedPnl))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order type tabs */}
+                <div className="flex bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06]">
+                  {(['market', 'limit'] as const).map(t => (
+                    <button key={t} onClick={() => setOrderType(t)}
+                      className={`flex-1 py-1.5 rounded-md text-[11px] font-medium transition ${
+                        orderType === t ? 'bg-purple-600/90 text-white shadow-sm' : 'text-white/35 hover:text-white/60'
+                      }`}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Price input (limit only) */}
+                {orderType === 'limit' && (
+                  <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.09] rounded-lg px-3 py-2">
+                    <span className="text-[10px] text-white/30 shrink-0">Price $</span>
+                    <input type="number" value={orderPrice} onChange={e => setOrderPrice(e.target.value)}
+                      placeholder={markPrice ? markPrice.toFixed(2) : '0.00'}
+                      className="flex-1 bg-transparent text-xs text-white outline-none min-w-0" />
+                  </div>
                 )}
 
-                {/* Order form */}
-                <div className="border-t border-white/10 pt-3 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-white/35 uppercase tracking-wider">Place Order</span>
-                    <div className="flex bg-white/5 rounded-md p-0.5">
-                      {(['market', 'limit'] as const).map(t => (
-                        <button key={t} onClick={() => setOrderType(t)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-medium transition ${
-                            orderType === t ? 'bg-purple-600 text-white' : 'text-white/35 hover:text-white/60'
-                          }`}>
-                          {t.charAt(0).toUpperCase() + t.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                {/* Size input */}
+                <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.09] rounded-lg px-3 py-2">
+                  <span className="text-[10px] text-white/30 shrink-0">Size</span>
+                  <input type="number" value={orderSize} onChange={e => setOrderSize(e.target.value)}
+                    placeholder="0.1"
+                    className="flex-1 bg-transparent text-xs text-white outline-none min-w-0" />
+                  <span className="text-[10px] text-white/20 shrink-0">{marketBase}</span>
+                </div>
 
-                  {orderType === 'limit' && (
-                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
-                      <span className="text-white/30 text-[10px]">Price $</span>
-                      <input type="number" value={orderPrice} onChange={e => setOrderPrice(e.target.value)}
-                        placeholder={markPrice ? markPrice.toFixed(2) : '0.00'}
-                        className="flex-1 bg-transparent text-xs text-white outline-none w-0 min-w-0" />
-                    </div>
-                  )}
+                {orderType === 'market' && markPrice && (
+                  <p className="text-[10px] text-white/20">
+                    ≈ {fUSD(pf(orderSize) * markPrice)} · 5% slippage
+                  </p>
+                )}
 
-                  <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
-                    <span className="text-white/30 text-[10px]">Size</span>
-                    <input type="number" value={orderSize} onChange={e => setOrderSize(e.target.value)}
-                      placeholder="0.1"
-                      className="flex-1 bg-transparent text-xs text-white outline-none w-0 min-w-0" />
-                    <span className="text-white/25 text-[10px]">{stripPerp(market)}</span>
-                  </div>
+                {/* Long / Short buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => placeMut.mutate({ side: 'buy' })}
+                    disabled={placeMut.isPending || !riseReady}
+                    className="flex items-center justify-center gap-1.5 py-3 bg-green-600/80 hover:bg-green-500/80 active:bg-green-700 rounded-xl text-sm font-bold transition disabled:opacity-40 shadow-sm">
+                    <TrendingUp className="h-4 w-4" />
+                    {placeMut.isPending ? '…' : 'Long'}
+                  </button>
+                  <button onClick={() => placeMut.mutate({ side: 'sell' })}
+                    disabled={placeMut.isPending || !riseReady}
+                    className="flex items-center justify-center gap-1.5 py-3 bg-red-600/80 hover:bg-red-500/80 active:bg-red-700 rounded-xl text-sm font-bold transition disabled:opacity-40 shadow-sm">
+                    <TrendingDown className="h-4 w-4" />
+                    {placeMut.isPending ? '…' : 'Short'}
+                  </button>
+                </div>
 
-                  {orderType === 'market' && markPrice && (
-                    <p className="text-[10px] text-white/20">
-                      ≈ {fUSD(pf(orderSize) * markPrice)} · 5% slippage tolerance
-                    </p>
-                  )}
+                {!riseReady && (
+                  <p className="text-[10px] text-white/20 text-center">Initializing engine…</p>
+                )}
+                {placeMut.isError && (
+                  <p className="text-red-400 text-[10px] break-all">
+                    {(placeMut.error as any)?.message ?? 'Order failed'}
+                  </p>
+                )}
+                {txSig && (
+                  <a href={`https://solscan.io/tx/${txSig}`} target="_blank" rel="noopener noreferrer"
+                    className="text-green-400 text-[10px] truncate hover:underline">
+                    ✓ {txSig.slice(0, 22)}… ↗
+                  </a>
+                )}
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => placeMut.mutate({ side: 'buy' })}
-                      disabled={placeMut.isPending || !riseReady}
-                      className="flex items-center justify-center gap-1 py-2.5 bg-green-600/80 hover:bg-green-500/80 rounded-lg text-xs font-semibold transition disabled:opacity-40">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      {placeMut.isPending ? '…' : 'Long'}
-                    </button>
-                    <button onClick={() => placeMut.mutate({ side: 'sell' })}
-                      disabled={placeMut.isPending || !riseReady}
-                      className="flex items-center justify-center gap-1 py-2.5 bg-red-600/80 hover:bg-red-500/80 rounded-lg text-xs font-semibold transition disabled:opacity-40">
-                      <TrendingDown className="h-3.5 w-3.5" />
-                      {placeMut.isPending ? '…' : 'Short'}
-                    </button>
-                  </div>
-
-                  {!riseReady && <p className="text-[10px] text-white/25 text-center">Initializing engine…</p>}
-                  {placeMut.isError && (
-                    <p className="text-red-400 text-[10px] break-all">
-                      {(placeMut.error as any)?.message ?? 'Order failed'}
-                    </p>
-                  )}
-                  {txSig && (
-                    <a href={`https://solscan.io/tx/${txSig}`} target="_blank" rel="noopener noreferrer"
-                      className="text-green-400 text-[10px] truncate hover:underline">
-                      ✓ {txSig.slice(0, 20)}… ↗
-                    </a>
-                  )}
-
-                  <div className="flex items-center justify-between text-[10px] text-white/15 pt-1 border-t border-white/5">
-                    <span>Flight fee routing · {BUILDER_AUTHORITY.slice(0, 8)}…</span>
-                    <button onClick={() => refetchTrader()} className="hover:text-white/40 transition">
-                      <RefreshCw className="h-3 w-3" />
-                    </button>
-                  </div>
+                <div className="text-[9px] text-white/12 text-center pt-0.5">
+                  Flight fee routing · {BUILDER_AUTHORITY.slice(0, 8)}…
                 </div>
               </>
             )}
