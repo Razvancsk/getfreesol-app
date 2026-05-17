@@ -4,7 +4,19 @@
       "Bash(dir \"c:\\\\Users\\\\razva\\\\Downloads\\\\CodeCollaborate\\\\CodeCollaborate\" /a:h)",
       "PowerShell(node --version)",
       "PowerShell(npm --version)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(npx skills *)",
+      "Bash(npm view *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s \"https://raw.githubusercontent.com/GMGNAI/gmgn-skills/main/src/client/OpenApiClient.ts\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/GMGNAI/gmgn-skills/main/src/commands/track.ts\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/GMGNAI/gmgn-skills/main/src/commands/market.ts\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/GMGNAI/gmgn-skills/main/src/commands/token.ts\")",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

@@ -17,7 +17,6 @@ import AdminMigrate from "@/pages/admin-migrate";
 import VaultAdmin from "@/pages/vault-admin";
 import ProfilePage from "@/pages/profile";
 import SwapPage from "@/pages/swap";
-import TerminalPage, { TokenPage } from "@/pages/terminal";
 import TradingLeaderboard from "@/pages/trading-leaderboard";
 import DesignPreview from "@/pages/design-preview";
 import PrivacyPolicy from "@/pages/privacy-policy";
@@ -43,9 +42,7 @@ function Router() {
       <Route path="/api-docs" component={ApiDocs} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/swap" component={SwapPage} />
-      <Route path="/terminal" component={TerminalPage} />
       <Route path="/leaderboard" component={TradingLeaderboard} />
-      <Route path="/terminal/token/:mint" component={TokenPage} />
       <Route path="/design" component={DesignPreview} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsConditions} />

@@ -47,7 +47,7 @@ export default function TradingLeaderboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
       <div className="container mx-auto max-w-2xl px-4 pt-6 pb-12">
         <div className="flex items-center gap-3 mb-6">
-          <Link href="/terminal">
+          <Link href="/">
             <a className="text-white/50 hover:text-white transition">
               <ArrowLeft className="h-5 w-5" />
             </a>
