@@ -2,7 +2,7 @@
  * Phoenix Perpetuals — Rise SDK streams + HTTP client
  * https://perp-api.phoenix.trade  |  @ellipsis-labs/rise
  */
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Transaction } from '@solana/web3.js';
@@ -10,7 +10,7 @@ import { Side, createPhoenixClient } from '@ellipsis-labs/rise';
 import { Link } from 'wouter';
 import {
   ArrowLeft, ExternalLink, Activity, TrendingUp, TrendingDown,
-  RefreshCw, Key, User, ChevronDown, ChevronUp,
+  RefreshCw, Key, User, ChevronDown, Search, X,
 } from 'lucide-react';
 import {
   ComposedChart, Area, Bar, XAxis, YAxis, Tooltip,
@@ -76,6 +76,29 @@ interface FundingRate { rate: number; nextRate: number | null; }
 function toOBRow(r: any): [number, number] {
   if (Array.isArray(r)) return [toNum(r[0]), toNum(r[1])];
   return [toNum(r.price ?? r.px), toNum(r.size ?? r.qty)];
+}
+
+// ── Market list helpers ───────────────────────────────────────────────────────
+
+const COMMODITY_SYMS = new Set(['GOLD', 'SILVER', 'WTIOIL', 'BRENT', 'NG', 'COPPER']);
+
+function TokenAvatar({ symbol }: { symbol: string }) {
+  const COLOR_MAP: Record<string, string> = {
+    BTC: '#f7931a', SOL: '#9945ff', ETH: '#627eea', HYPE: '#6366f1',
+    GOLD: '#d4af37', SILVER: '#9ca3af', WTIOIL: '#2b5f48', XRP: '#346aa9',
+    FARTCOIN: '#22c55e', JUP: '#a3e635', VVV: '#8b5cf6', DOGE: '#c2952e',
+    ZEC: '#e8b86d', SUI: '#4da2ff', AVAX: '#e84142', LINK: '#2a5ada',
+    ONDO: '#3b82f6', PENGU: '#60a5fa', TRUMP: '#ef4444', WIF: '#f59e0b',
+  };
+  const bg = COLOR_MAP[symbol] ?? '#6b7280';
+  return (
+    <div
+      className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold shrink-0 border border-white/10"
+      style={{ background: bg, fontSize: symbol.length > 3 ? '7px' : '8px' }}
+    >
+      {symbol.slice(0, 3)}
+    </div>
+  );
 }
 
 // ── Rise SDK client — ws: eager mode enables client.streams ──────────────────
@@ -305,8 +328,11 @@ export default function PerpsPage() {
   const [orderSize,    setOrderSize]    = useState('0.1');
   const [txSig,        setTxSig]        = useState<string | null>(null);
   const [bottomTab,    setBottomTab]    = useState<'positions' | 'orders' | 'trades'>('positions');
-  const [mktDropdown,  setMktDropdown]  = useState(false);
-  const dropRef = useRef<HTMLDivElement>(null);
+  const [mktPanel,   setMktPanel]   = useState(false);
+  const [mktSearch,  setMktSearch]  = useState('');
+  const [mktCat,     setMktCat]     = useState<'all' | 'crypto' | 'commodities'>('all');
+  const [sortCol,    setSortCol]    = useState<'market' | 'price' | 'change' | 'volume' | 'oi' | 'funding'>('market');
+  const [sortDir,    setSortDir]    = useState<'asc' | 'desc'>('asc');
 
   const wsTimeframe = TIMEFRAMES.find(t => t.s === tf)?.ws ?? '1h';
   const wsAuthority = publicKey?.toString();
@@ -315,14 +341,6 @@ export default function PerpsPage() {
   const { connected, stats, ob, trades, liveCandle, allMids, fundingRate: wsFunding, liveTrader } =
     useRiseStreams(riseClient, market, wsTimeframe, wsAuthority);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function h(e: MouseEvent) {
-      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setMktDropdown(false);
-    }
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
 
   // ── Queries ───────────────────────────────────────────────────────────────
 
@@ -518,6 +536,26 @@ export default function PerpsPage() {
   const marketBase = stripPerp(market);
   const liveMidSelected = allMids[marketBase] ?? allMids[market] ?? null;
 
+  const sortedMarkets = useMemo(() => {
+    const filtered = displayMarkets.filter((m: any) => {
+      const base = stripPerp(addPerp(m.symbol ?? m));
+      if (mktSearch && !base.toLowerCase().includes(mktSearch.toLowerCase())) return false;
+      if (mktCat === 'commodities') return COMMODITY_SYMS.has(base);
+      if (mktCat === 'crypto') return !COMMODITY_SYMS.has(base);
+      return true;
+    });
+    return [...filtered].sort((a: any, b: any) => {
+      const baseA = stripPerp(addPerp(a.symbol ?? a));
+      const baseB = stripPerp(addPerp(b.symbol ?? b));
+      if (sortCol === 'price') {
+        const pA = allMids[baseA] ?? 0;
+        const pB = allMids[baseB] ?? 0;
+        return sortDir === 'asc' ? pA - pB : pB - pA;
+      }
+      return sortDir === 'asc' ? baseA.localeCompare(baseB) : baseB.localeCompare(baseA);
+    });
+  }, [displayMarkets, mktSearch, mktCat, sortCol, sortDir, allMids]);
+
   return (
     <div className="h-screen bg-[#0b0b12] text-white flex flex-col overflow-hidden">
 
@@ -530,11 +568,11 @@ export default function PerpsPage() {
           <img src={logoImage} alt="logo" className="h-6 w-auto" />
         </div>
 
-        {/* Market selector dropdown */}
-        <div className="relative border-r border-white/[0.07] h-full shrink-0" ref={dropRef}>
+        {/* Market selector button */}
+        <div className="border-r border-white/[0.07] h-full shrink-0">
           <button
-            onClick={() => setMktDropdown(v => !v)}
-            className="flex items-center gap-2 px-4 h-full hover:bg-white/[0.04] transition"
+            onClick={() => { setMktPanel(v => !v); setMktSearch(''); }}
+            className={`flex items-center gap-2 px-4 h-full transition ${mktPanel ? 'bg-white/[0.05]' : 'hover:bg-white/[0.04]'}`}
           >
             <span className="font-bold text-white text-sm tracking-tight">{marketBase}</span>
             {maxLev && (
@@ -542,33 +580,8 @@ export default function PerpsPage() {
                 {maxLev}×
               </span>
             )}
-            {mktDropdown
-              ? <ChevronUp className="h-3.5 w-3.5 text-white/40" />
-              : <ChevronDown className="h-3.5 w-3.5 text-white/40" />
-            }
+            <ChevronDown className={`h-3.5 w-3.5 text-white/40 transition-transform duration-200 ${mktPanel ? 'rotate-180' : ''}`} />
           </button>
-
-          {mktDropdown && (
-            <div className="absolute top-full left-0 z-50 bg-[#111118] border border-white/10 rounded-xl shadow-2xl w-56 py-1 mt-1 max-h-80 overflow-y-auto">
-              {displayMarkets.map((m: any) => {
-                const sym     = addPerp(m.symbol ?? m);
-                const base    = stripPerp(sym);
-                const liveMid = allMids[base] ?? allMids[sym] ?? null;
-                const isSel   = market === sym;
-                return (
-                  <button key={sym}
-                    onClick={() => { setMarket(sym); setMktDropdown(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs transition hover:bg-purple-500/10 ${isSel ? 'bg-purple-500/15 text-purple-300' : 'text-white/70'}`}
-                  >
-                    <span className="font-semibold">{base}</span>
-                    <span className={`font-mono text-[11px] ${isSel ? 'text-purple-300' : 'text-white/35'}`}>
-                      {liveMid ? fp(liveMid) : '—'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* Stats bar — scrollable */}
@@ -661,8 +674,157 @@ export default function PerpsPage() {
         </div>
       </div>
 
-      {/* ── Main grid ────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      {/* ── Main content ─────────────────────────────────────────────────── */}
+      <div className="flex-1 flex overflow-hidden min-h-0 relative">
+
+        {/* ── Market list panel overlay ─────────────────────────────────── */}
+        {mktPanel && (
+          <div className="absolute inset-0 z-40 flex">
+            {/* Panel */}
+            <div className="w-[560px] bg-[#0e0e18] border-r border-white/[0.1] flex flex-col shadow-2xl overflow-hidden">
+              {/* Search */}
+              <div className="p-3 border-b border-white/[0.07]">
+                <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2">
+                  <Search className="h-3.5 w-3.5 text-white/30 shrink-0" />
+                  <input
+                    autoFocus
+                    value={mktSearch}
+                    onChange={e => setMktSearch(e.target.value)}
+                    placeholder="Search markets…"
+                    className="flex-1 bg-transparent text-xs text-white placeholder-white/25 outline-none"
+                  />
+                  {mktSearch && (
+                    <button onClick={() => setMktSearch('')} className="text-white/30 hover:text-white/60 transition">
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Category tabs */}
+              <div className="flex gap-1 px-3 py-2 border-b border-white/[0.07]">
+                {(['all', 'crypto', 'commodities'] as const).map(cat => (
+                  <button key={cat} onClick={() => setMktCat(cat)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                      mktCat === cat
+                        ? 'bg-purple-600/30 text-purple-300'
+                        : 'text-white/35 hover:text-white/60'
+                    }`}>
+                    {cat === 'all' ? 'All' : cat === 'crypto' ? 'Crypto' : 'Commodities'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Column headers */}
+              <div className="grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] px-3 py-2 border-b border-white/[0.07]">
+                {(['market', 'price', 'change', 'volume', 'oi', 'funding'] as const).map(col => {
+                  const labels: Record<string, string> = {
+                    market: 'Market', price: 'Price', change: '24h %',
+                    volume: '24h Vol', oi: 'Open Int', funding: '1h Fund',
+                  };
+                  const active = sortCol === col;
+                  return (
+                    <button key={col}
+                      onClick={() => {
+                        if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                        else { setSortCol(col as any); setSortDir('asc'); }
+                      }}
+                      className={`flex items-center gap-0.5 text-[10px] transition ${
+                        col === 'market' ? '' : 'justify-end'
+                      } ${active ? 'text-white/60' : 'text-white/30 hover:text-white/55'}`}>
+                      {labels[col]}
+                      <svg className="h-2 w-2 shrink-0" viewBox="0 0 8 8" fill="currentColor" style={{ opacity: active ? 1 : 0.3 }}>
+                        {active && sortDir === 'desc'
+                          ? <path d="M4 6L1 2h6z"/>
+                          : <path d="M4 2L7 6H1z"/>
+                        }
+                      </svg>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Market rows */}
+              <div className="flex-1 overflow-y-auto">
+                {sortedMarkets.length === 0 && (
+                  <div className="flex items-center justify-center py-12 text-white/20 text-xs">
+                    No markets found
+                  </div>
+                )}
+                {sortedMarkets.map((m: any) => {
+                  const sym    = addPerp(m.symbol ?? m);
+                  const base   = stripPerp(sym);
+                  const isSel  = market === sym;
+                  const price  = allMids[base] ?? allMids[sym] ?? null;
+                  const mLev   = m.leverageTiers?.[0]?.maxLeverage ?? null;
+                  const isComm = COMMODITY_SYMS.has(base);
+                  const mChg   = (isSel && stats && stats.prevDayPx > 0)
+                    ? ((stats.markPx - stats.prevDayPx) / stats.prevDayPx) * 100 : null;
+                  const mVol   = isSel ? (stats?.dayNtlVlm ?? null) : null;
+                  const mOI    = isSel ? (stats?.openInterest ?? null) : null;
+                  const mFund  = isSel ? fundingRate : null;
+                  return (
+                    <button key={sym}
+                      onClick={() => { setMarket(sym); setMktPanel(false); }}
+                      className={`w-full grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] items-center px-3 py-2.5 text-xs transition hover:bg-white/[0.04] border-l-2 ${
+                        isSel ? 'border-purple-500 bg-purple-500/[0.06]' : 'border-transparent'
+                      }`}>
+                      {/* Market col */}
+                      <div className="flex items-center gap-2">
+                        <TokenAvatar symbol={base} />
+                        <span className={`font-semibold ${isSel ? 'text-white' : 'text-white/75'}`}>{base}</span>
+                        {mLev != null && (
+                          <span className="text-[9px] bg-white/[0.06] text-white/40 border border-white/[0.08] rounded px-1 py-0.5 leading-none">
+                            {mLev}×
+                          </span>
+                        )}
+                        {isComm && (
+                          <svg className="h-2.5 w-2.5 text-orange-400/50 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.66 11.2c-.23-.3-.51-.56-.77-.82-.67-.6-1.43-1.03-2.07-1.66C13.33 7.26 13 4.85 13.95 3c-.95.23-1.78.75-2.49 1.32-2.59 2.08-3.61 5.75-2.39 8.9.04.1.08.2.08.33 0 .22-.15.42-.35.5-.23.1-.47.04-.66-.12a.58.58 0 01-.14-.17c-1.13-1.43-1.31-3.48-.55-5.12C5.78 10 4.87 12.3 5 14.47c.06.5.12 1 .29 1.5.14.6.41 1.2.71 1.73 1.08 1.73 2.95 2.97 4.96 3.22 2.14.27 4.43-.12 6.07-1.6 1.83-1.66 2.47-4.32 1.53-6.6l-.13-.26c-.21-.46-.77-1.26-.77-1.26m-3.16 6.3c-.28.24-.74.5-1.1.6-1.12.4-2.24-.16-2.9-.82 1.19-.28 1.9-1.16 2.11-2.05.17-.8-.15-1.46-.28-2.23-.12-.74-.1-1.37.17-2.06.19.38.39.76.63 1.06.77 1 1.98 1.44 2.24 2.8.04.14.06.28.06.43.03.82-.32 1.72-.93 2.27z"/>
+                          </svg>
+                        )}
+                      </div>
+                      {/* Price */}
+                      <span className={`text-right font-mono ${isSel ? 'text-white' : 'text-white/60'}`}>
+                        {price != null ? fp(price) : '—'}
+                      </span>
+                      {/* 24h Change */}
+                      <div className={`flex items-center justify-end gap-0.5 font-mono ${
+                        mChg == null ? 'text-white/25' : mChg >= 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {mChg == null ? '—' : (
+                          <>
+                            <svg className="h-2.5 w-2.5 shrink-0" viewBox="0 0 10 10" fill="currentColor">
+                              {mChg >= 0 ? <path d="M5 1L9 7H1z"/> : <path d="M5 9L1 3h8z"/>}
+                            </svg>
+                            {Math.abs(mChg).toFixed(2)}%
+                          </>
+                        )}
+                      </div>
+                      {/* 24h Volume */}
+                      <span className={`text-right ${mVol == null ? 'text-white/25' : 'text-white/60'}`}>
+                        {mVol != null ? fUSD(mVol) : '—'}
+                      </span>
+                      {/* Open Interest */}
+                      <span className={`text-right ${mOI == null ? 'text-white/25' : 'text-white/60'}`}>
+                        {mOI != null ? fUSD(mOI) : '—'}
+                      </span>
+                      {/* 1h Funding */}
+                      <span className={`text-right font-mono text-[11px] ${
+                        mFund == null ? 'text-white/25' : mFund >= 0 ? 'text-green-400/80' : 'text-red-400/80'
+                      }`}>
+                        {mFund == null ? '—' : `${mFund >= 0 ? '+' : ''}${(mFund * 100).toFixed(4)}%`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Backdrop — click to close */}
+            <div className="flex-1 bg-black/40 cursor-pointer" onClick={() => setMktPanel(false)} />
+          </div>
+        )}
 
         {/* ── Left column: chart + bottom tabs ─────────────────────────── */}
         <div className="flex-1 flex flex-col min-w-0 border-r border-white/[0.07] overflow-hidden">
