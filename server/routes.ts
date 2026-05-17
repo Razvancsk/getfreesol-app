@@ -12928,11 +12928,18 @@ Claimer: ${walletAddress}`;
   });
 
   app.get('/api/perps/ticker/:symbol', async (req, res) => {
+    const sym = String(req.params.symbol || 'SOL-PERP');
     try {
-      const sym = String(req.params.symbol || 'SOL-PERP');
-      const data = await vulcanMarketTicker(sym);
-      res.json(data);
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+      // Direct Phoenix API — /v1/market/{symbol}/stats is the real-time stats endpoint
+      const r = await fetch(`${PHOENIX_API}/v1/market/${encodeURIComponent(sym)}/stats`);
+      if (!r.ok) throw new Error(`Phoenix ${r.status}`);
+      res.json(await r.json());
+    } catch {
+      try {
+        const data = await vulcanMarketTicker(sym);
+        res.json(data);
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    }
   });
 
   app.get('/api/perps/orderbook/:symbol', async (req, res) => {

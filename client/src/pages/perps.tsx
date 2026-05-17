@@ -501,6 +501,14 @@ function PerpsInner() {
     refetchInterval: 120_000,
   });
 
+  // Phoenix /v1/market/{symbol}/stats — polls every 10s; used to seed stats before WS fires
+  const { data: tickerRaw } = useQuery<any>({
+    queryKey: ['/api/perps/ticker', market],
+    queryFn: () => fetch(`/api/perps/ticker/${encodeURIComponent(market)}`).then(r => r.json()),
+    refetchInterval: 10_000,
+    staleTime: 8_000,
+  });
+
   // REST price fallback — polls 1-min candles every 10s when streams are down
   const { data: restPriceRaw } = useQuery<any>({
     queryKey: ['/api/perps/rest-price', market],
@@ -623,18 +631,27 @@ function PerpsInner() {
 
   const restPrice    = restPriceRaw ? pf(restPriceRaw.close ?? restPriceRaw.c) : null;
 
-  const indexPrice   = stats?.oraclePx ?? null;
-  const fundingRate  = wsFunding?.rate ?? stats?.funding ?? null;
+  // Ticker REST: Phoenix /v1/market/{symbol}/stats field names
+  const tk = tickerRaw && !tickerRaw.error ? tickerRaw : null;
+  const tkMark   = tk ? pf(tk.markPrice   ?? tk.mark_price)  : null;
+  const tkIndex  = tk ? pf(tk.oraclePrice ?? tk.oracle_price ?? tk.indexPrice ?? tk.spot_price) : null;
+  const tkPrev   = tk ? pf(tk.prevDayMarkPrice ?? tk.prev_day_mark_price ?? tk.open24h) : null;
+  const tkVolume = tk ? pf(tk.dayVolumeUsd ?? tk.day_volume_usd ?? tk.volume24h) : null;
+  const tkOI     = tk ? pf(tk.openInterest ?? tk.open_interest) : null;
+  const tkFund   = tk ? pf(tk.currentFundingRate ?? tk.current_funding_rate ?? tk.fundingRate) : null;
+
+  const indexPrice   = stats?.oraclePx   ?? tkIndex  ?? null;
+  const fundingRate  = wsFunding?.rate   ?? stats?.funding  ?? tkFund   ?? null;
   const nextFunding  = wsFunding?.nextRate ?? null;
-  const dayNtlVlm    = stats?.dayNtlVlm ?? null;
-  const openInterest = stats?.openInterest ?? null;
+  const dayNtlVlm    = stats?.dayNtlVlm  ?? tkVolume ?? null;
+  const openInterest = stats?.openInterest ?? tkOI   ?? null;
 
   // markPrice derivation must come before priceChange / midPrice
   const marketBase      = stripPerp(market);
   const liveMidSelected = allMids[marketBase] ?? allMids[market] ?? null;
-  const markPrice       = stats?.markPx ?? liveMidSelected ?? restPrice ?? null;
+  const markPrice       = stats?.markPx ?? liveMidSelected ?? tkMark ?? restPrice ?? null;
 
-  const prevDayPx    = stats?.prevDayPx ?? null;
+  const prevDayPx    = stats?.prevDayPx ?? tkPrev ?? null;
   const priceChange  = (markPrice && prevDayPx && prevDayPx > 0)
     ? (markPrice - prevDayPx) / prevDayPx : null;
   const isUp = priceChange == null ? true : priceChange >= 0;
