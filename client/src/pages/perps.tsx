@@ -82,20 +82,44 @@ function toOBRow(r: any): [number, number] {
 
 const COMMODITY_SYMS = new Set(['GOLD', 'SILVER', 'WTIOIL', 'BRENT', 'NG', 'COPPER']);
 
-function TokenAvatar({ symbol }: { symbol: string }) {
+function TokenAvatar({ symbol, size = 24 }: { symbol: string; size?: number }) {
+  // Inline SVGs for main Phoenix perps tokens
+  if (symbol === 'SOL') return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 rounded-full">
+      <path d="M18.4126 7.90343C18.3001 8.00469 18.1539 8.06656 18.002 8.06656H3.57988C3.06801 8.06656 2.80928 7.48159 3.16364 7.13847L5.5317 4.85478C5.6442 4.7479 5.79045 4.68604 5.94231 4.68604H20.4207C20.9382 4.68604 21.1913 5.27664 20.8313 5.61975L18.4126 7.90343Z" fill="url(#solG0)"/>
+      <path d="M18.4126 19.1565C18.3001 19.2576 18.1539 19.314 18.002 19.314H3.57988C3.06801 19.314 2.80928 18.7345 3.16364 18.3914L5.5317 16.102C5.6442 15.9952 5.79045 15.939 5.94231 15.939H20.4207C20.9382 15.939 21.1913 16.5239 20.8313 16.8671L18.4126 19.1565Z" fill="url(#solG1)"/>
+      <path d="M18.4126 10.4715C18.3001 10.3703 18.1539 10.314 18.002 10.314H3.57988C3.06801 10.314 2.80928 10.8933 3.16364 11.2365L5.5317 13.5259C5.6442 13.627 5.79045 13.6889 5.94231 13.6889H20.4207C20.9382 13.6889 21.1913 13.1039 20.8313 12.7608L18.4126 10.4715Z" fill="url(#solG2)"/>
+      <defs>
+        <linearGradient id="solG0" x1="3" y1="16.3" x2="21.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop stopColor="#599DB0"/><stop offset="1" stopColor="#47F8C3"/></linearGradient>
+        <linearGradient id="solG1" x1="3" y1="17" x2="21.3" y2="16.4" gradientUnits="userSpaceOnUse"><stop stopColor="#C44FE2"/><stop offset="1" stopColor="#73B0D0"/></linearGradient>
+        <linearGradient id="solG2" x1="4" y1="12" x2="20.3" y2="12" gradientUnits="userSpaceOnUse"><stop stopColor="#778CBF"/><stop offset="1" stopColor="#5DCDC9"/></linearGradient>
+      </defs>
+    </svg>
+  );
+  if (symbol === 'BTC') return (
+    <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="shrink-0 rounded-full">
+      <circle cx="12" cy="12" r="12" fill="#f7931a"/>
+      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="sans-serif">₿</text>
+    </svg>
+  );
+  if (symbol === 'ETH') return (
+    <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="shrink-0 rounded-full">
+      <circle cx="12" cy="12" r="12" fill="#627eea"/>
+      <polygon points="12,5 7,12 12,14.5 17,12" fill="white" opacity="0.9"/>
+      <polygon points="12,14.5 7,12 12,19" fill="white" opacity="0.6"/>
+    </svg>
+  );
+  // Fallback: colored circle with symbol text
   const COLOR_MAP: Record<string, string> = {
-    BTC: '#f7931a', SOL: '#9945ff', ETH: '#627eea', HYPE: '#6366f1',
-    GOLD: '#d4af37', SILVER: '#9ca3af', WTIOIL: '#2b5f48', XRP: '#346aa9',
-    FARTCOIN: '#22c55e', JUP: '#a3e635', VVV: '#8b5cf6', DOGE: '#c2952e',
-    ZEC: '#e8b86d', SUI: '#4da2ff', AVAX: '#e84142', LINK: '#2a5ada',
-    ONDO: '#3b82f6', PENGU: '#60a5fa', TRUMP: '#ef4444', WIF: '#f59e0b',
+    HYPE: '#6366f1', GOLD: '#d4af37', SILVER: '#9ca3af', WTIOIL: '#2b5f48',
+    XRP: '#346aa9', FARTCOIN: '#22c55e', JUP: '#a3e635', VVV: '#8b5cf6',
+    DOGE: '#c2952e', ZEC: '#e8b86d', SUI: '#4da2ff', AVAX: '#e84142',
+    LINK: '#2a5ada', ONDO: '#3b82f6', PENGU: '#60a5fa', TRUMP: '#ef4444', WIF: '#f59e0b',
   };
   const bg = COLOR_MAP[symbol] ?? '#6b7280';
   return (
-    <div
-      className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold shrink-0 border border-white/10"
-      style={{ background: bg, fontSize: symbol.length > 3 ? '7px' : '8px' }}
-    >
+    <div className="shrink-0 rounded-full flex items-center justify-center text-white font-bold border border-white/10"
+      style={{ width: size, height: size, background: bg, fontSize: symbol.length > 3 ? '7px' : '8px' }}>
       {symbol.slice(0, 3)}
     </div>
   );
@@ -108,32 +132,37 @@ function useRiseClient() {
   const [ready,  setReady]  = useState(false);
 
   useEffect(() => {
-    const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
     let cancelled = false;
-    let c: any;
-    try {
-      c = createPhoenixClient({
-        apiUrl: PHOENIX_API_URL,
-        rpcUrl,
-        ws: { connectMode: 'eager' },     // enables client.streams.*
-        flight: {
-          builderAuthority: BUILDER_AUTHORITY,
-          builderPdaIndex: 0,
-          builderSubaccountIndex: 0,
-        },
-      } as any);
-    } catch { return; }
 
-    if (!cancelled) setClient(c);
+    function initClient(rpcUrl: string) {
+      let c: any;
+      try {
+        c = createPhoenixClient({
+          apiUrl: PHOENIX_API_URL,
+          rpcUrl,
+          ws: { connectMode: 'eager' },
+          flight: {
+            builderAuthority: BUILDER_AUTHORITY,
+            builderPdaIndex: 0,
+            builderSubaccountIndex: 0,
+          },
+        } as any);
+      } catch { return; }
+      if (!cancelled) setClient(c);
+      const timer = setTimeout(() => { if (!cancelled) setReady(true); }, 8000);
+      c.exchange?.ready?.()
+        ?.then(() => { clearTimeout(timer); if (!cancelled) setReady(true); })
+        ?.catch(() => { clearTimeout(timer); if (!cancelled) setReady(true); });
+    }
 
-    // exchange.ready() loads market metadata needed for order building
-    // timeout after 8s so streams start even if metadata fetch is slow
-    const timer = setTimeout(() => { if (!cancelled) setReady(true); }, 8000);
-    c.exchange?.ready?.()
-      ?.then(() => { clearTimeout(timer); if (!cancelled) setReady(true); })
-      ?.catch(() => { clearTimeout(timer); if (!cancelled) setReady(true); });
+    // Fetch RPC URL from server (same pattern as useReownWallet) — avoids
+    // embedding VITE_HELIUS_API_KEY client-side which may be unset on Render.
+    fetch('/api/client-config')
+      .then(r => r.json())
+      .then(d => { if (!cancelled) initClient(d.rpcUrl ?? 'https://api.mainnet-beta.solana.com'); })
+      .catch(() => { if (!cancelled) initClient('https://api.mainnet-beta.solana.com'); });
 
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => { cancelled = true; };
   }, []);
 
   return { client, ready };
@@ -402,6 +431,19 @@ function PerpsInner() {
     refetchInterval: 120_000,
   });
 
+  // REST price fallback — polls 1-min candles every 10s when streams are down
+  const { data: restPriceRaw } = useQuery<any>({
+    queryKey: ['/api/perps/rest-price', market],
+    queryFn: async () => {
+      const r = await fetch(`/api/perps/candles/${encodeURIComponent(market)}?timeframe=60&limit=2`);
+      const d = await r.json();
+      const arr: any[] = Array.isArray(d) ? d : (d?.candles ?? []);
+      return arr.length ? arr[arr.length - 1] : null;
+    },
+    refetchInterval: 10_000,
+    staleTime: 8_000,
+  });
+
   const { data: taRaw } = useQuery<unknown>({
     queryKey: ['/api/perps/ta', market],
     queryFn: async () =>
@@ -509,13 +551,19 @@ function PerpsInner() {
     ? rawMarkets
     : [{ symbol: 'SOL-PERP' }, { symbol: 'BTC-PERP' }, { symbol: 'ETH-PERP' }];
 
-  const markPrice    = stats?.markPx ?? null;
+  const restPrice    = restPriceRaw ? pf(restPriceRaw.close ?? restPriceRaw.c) : null;
   const indexPrice   = stats?.oraclePx ?? null;
   // Prefer dedicated fundingRate WS channel; fall back to market stats
   const fundingRate  = wsFunding?.rate ?? stats?.funding ?? null;
   const nextFunding  = wsFunding?.nextRate ?? null;
   const dayNtlVlm    = stats?.dayNtlVlm ?? null;
   const openInterest = stats?.openInterest ?? null;
+
+  // markPrice derivation must come before priceChange / midPrice
+  const marketBase      = stripPerp(market);
+  const liveMidSelected = allMids[marketBase] ?? allMids[market] ?? null;
+  const markPrice       = stats?.markPx ?? liveMidSelected ?? restPrice ?? null;
+
   const priceChange  = (markPrice && stats?.prevDayPx && stats.prevDayPx > 0)
     ? (markPrice - stats.prevDayPx) / stats.prevDayPx : null;
   const isUp = priceChange == null ? true : priceChange >= 0;
@@ -564,9 +612,6 @@ function PerpsInner() {
   const traderPositions: any[] = td?.positions ?? [];
   const traderOrders: any[]    = Object.values(td?.limitOrders ?? {}).flat() as any[];
 
-  const marketBase = stripPerp(market);
-  const liveMidSelected = allMids[marketBase] ?? allMids[market] ?? null;
-
   const sortedMarkets = useMemo(() => {
     const filtered = displayMarkets.filter((m: any) => {
       const base = stripPerp(addPerp(m.symbol ?? m));
@@ -588,49 +633,34 @@ function PerpsInner() {
   }, [displayMarkets, mktSearch, mktCat, sortCol, sortDir, allMids]);
 
   return (
-    <div className="h-screen bg-[#0b0b12] text-white flex flex-col overflow-hidden">
+    <div className="h-screen bg-[#131722] text-white flex flex-col overflow-hidden">
 
       {/* ── Nav bar ──────────────────────────────────────────────────────── */}
-      <nav className="flex items-center justify-between px-4 md:px-6 py-3 gap-8 border-b border-white/[0.07] bg-[#0e0e18] shrink-0">
+      <nav className="h-[52px] flex items-center justify-between px-4 md:px-6 border-b border-[#2a2d3e] bg-[#131722] shrink-0">
 
-        {/* Logo */}
-        <Link href="/"><a className="shrink-0">
-          <img src={logoImage} alt="logo" className="h-5 w-auto" />
-        </a></Link>
-
-        {/* Nav links */}
-        <div className="hidden md:flex flex-1 items-center justify-start gap-0.5">
-          <span className="flex items-center gap-1.5 px-2 py-2.5 text-sm font-semibold text-white">
-            Trade
-          </span>
-          <span className="flex items-center gap-1.5 px-2 py-2.5 text-sm font-semibold text-white/30 opacity-50 cursor-not-allowed select-none">
-            Portfolio
-          </span>
-          <span className="flex items-center gap-1.5 px-2 py-2.5 text-sm font-semibold text-white/30 opacity-50 cursor-not-allowed select-none">
-            Rewards
-          </span>
+        <div className="flex items-center gap-6">
+          <Link href="/"><a className="shrink-0">
+            <img src={logoImage} alt="logo" className="h-5 w-auto" />
+          </a></Link>
+          <div className="hidden md:flex items-center gap-0">
+            <span className="px-3 py-2 text-sm font-semibold text-white">Trade</span>
+            <span className="px-3 py-2 text-sm text-white/35 cursor-not-allowed select-none">Portfolio</span>
+            <span className="px-3 py-2 text-sm text-white/35 cursor-not-allowed select-none">Rewards</span>
+          </div>
         </div>
-
-        {/* Right: wallet button (same as all other pages) */}
         <div className="flex items-center gap-2">
           <div className="relative">
             <button
               onClick={() => setWalletMenuOpen(o => !o)}
-              className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 outline-none"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
+              className="bg-[#F37B28] hover:bg-[#e06b1a] text-black font-semibold text-sm px-4 py-2 rounded-lg transition"
             >
               {publicKey?.toBase58().slice(0, 6)}...{publicKey?.toBase58().slice(-6)}
             </button>
+            {walletMenuOpen && <div className="fixed inset-0 z-40" onClick={() => setWalletMenuOpen(false)} />}
             {walletMenuOpen && (
-              <div className="fixed inset-0 z-40" onClick={() => setWalletMenuOpen(false)} />
-            )}
-            {walletMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg overflow-hidden min-w-[120px]">
-                <div
-                  onClick={() => { disconnectWallet(); setWalletMenuOpen(false); }}
-                  className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm text-center"
-                  style={{ WebkitTapHighlightColor: 'transparent' }}
-                >
+              <div className="absolute right-0 top-full mt-1 z-50 bg-[#1e2130] border border-[#2a2d3e] rounded-md shadow-lg overflow-hidden min-w-[120px]">
+                <div onClick={() => { disconnectWallet(); setWalletMenuOpen(false); }}
+                  className="px-3 py-2 text-white hover:bg-white/10 cursor-pointer text-sm text-center">
                   Disconnect
                 </div>
               </div>
@@ -640,51 +670,42 @@ function PerpsInner() {
       </nav>
 
       {/* ── Market card ──────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-3 py-2 border-b border-white/[0.07] shrink-0 bg-[#0b0b12] overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#2a2d3e] bg-[#131722] shrink-0 overflow-x-auto scrollbar-none">
 
-        {/* Market selector — Phoenix combobox style */}
+        {/* Market combobox */}
         <button
           onClick={() => { setMktPanel(v => !v); setMktSearch(''); }}
-          className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition shrink-0 ${
-            mktPanel ? 'bg-white/[0.07]' : 'bg-white/[0.04] hover:bg-white/[0.07]'
-          }`}
+          className="flex items-center gap-2 shrink-0 pr-3 border-r border-[#2a2d3e]"
         >
-          <TokenAvatar symbol={marketBase} />
-          <span className="text-xl font-medium text-white flex items-center gap-2">
-            {marketBase}
-            {maxLev && (
-              <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium bg-white/[0.07] text-white/55">
-                {maxLev}×
-              </span>
-            )}
-            <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-200 ${mktPanel ? 'rotate-180' : ''}`} />
-          </span>
+          <TokenAvatar symbol={marketBase} size={28} />
+          <span className="text-xl font-bold text-white leading-none">{marketBase}</span>
+          {maxLev && (
+            <span className="inline-flex items-center text-xs bg-[#1e2130] border border-[#3a3d4e] text-white/55 rounded px-1.5 py-0.5 font-medium">
+              {maxLev}x
+            </span>
+          )}
+          <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-200 ${mktPanel ? 'rotate-180' : ''}`} />
         </button>
 
-        {/* Stats row */}
-        <div className="flex items-center gap-4 md:gap-8 font-medium overflow-x-auto scrollbar-none">
+        {/* Stats */}
+        <div className="flex items-center gap-6 overflow-x-auto scrollbar-none">
 
-          {/* Mark */}
-          <div className="flex flex-col gap-1 shrink-0">
-            <span className="text-xs text-white/40 whitespace-nowrap">Mark</span>
-            <span className="text-xs whitespace-nowrap tabular-nums text-white">
-              {markPrice != null ? fp(markPrice) : '—'}
-            </span>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Mark</span>
+            <span className="text-sm font-mono text-white whitespace-nowrap">{markPrice != null ? fp(markPrice) : '—'}</span>
           </div>
 
-          {/* Index */}
           {indexPrice != null && (
-            <div className="flex flex-col gap-1 shrink-0">
-              <span className="text-xs text-white/40 whitespace-nowrap">Index</span>
-              <span className="text-xs whitespace-nowrap tabular-nums text-white/75">{fp(indexPrice)}</span>
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Index</span>
+              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fp(indexPrice)}</span>
             </div>
           )}
 
-          {/* 24h Change */}
           {markPrice != null && stats?.prevDayPx != null && stats.prevDayPx > 0 && (
-            <div className="flex flex-col gap-1 shrink-0">
-              <span className="text-xs text-white/40 whitespace-nowrap">24h Change</span>
-              <span className={`text-xs whitespace-nowrap tabular-nums flex items-center gap-1 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Change</span>
+              <span className={`text-sm font-mono flex items-center gap-1 whitespace-nowrap ${isUp ? 'text-green-400' : 'text-red-400'}`}>
                 {isUp ? '+' : ''}{fUSD(markPrice - stats.prevDayPx)} ({isUp ? '+' : ''}{((priceChange ?? 0) * 100).toFixed(2)}%)
                 <svg width="12" height="7" viewBox="0 0 12 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                   {isUp
@@ -696,27 +717,24 @@ function PerpsInner() {
             </div>
           )}
 
-          {/* 24h Volume */}
           {dayNtlVlm != null && dayNtlVlm > 0 && (
-            <div className="flex flex-col gap-1 shrink-0">
-              <span className="text-xs text-white/40 whitespace-nowrap">24h Volume</span>
-              <span className="text-xs whitespace-nowrap tabular-nums text-white/75">{fUSD(dayNtlVlm)}</span>
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Volume</span>
+              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fUSD(dayNtlVlm)}</span>
             </div>
           )}
 
-          {/* Open Interest */}
           {openInterest != null && openInterest > 0 && (
-            <div className="flex flex-col gap-1 shrink-0">
-              <span className="text-xs text-white/40 whitespace-nowrap">Open Interest</span>
-              <span className="text-xs whitespace-nowrap tabular-nums text-white/75">{fUSD(openInterest)}</span>
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Open Interest</span>
+              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fUSD(openInterest)}</span>
             </div>
           )}
 
-          {/* 1h Funding */}
           {fundingRate != null && (
-            <div className="flex flex-col gap-1 shrink-0">
-              <span className="text-xs text-white/40 whitespace-nowrap">1h Funding</span>
-              <span className="text-xs whitespace-nowrap tabular-nums flex gap-2">
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">1h Funding</span>
+              <span className="text-sm font-mono flex gap-2 whitespace-nowrap">
                 <span className={fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}>
                   {fundingRate >= 0 ? '+' : ''}{(fundingRate * 100).toFixed(4)}%
                 </span>
@@ -725,13 +743,11 @@ function PerpsInner() {
             </div>
           )}
 
-          {/* Live badge */}
           <span className={`shrink-0 text-[9px] font-mono px-1.5 py-0.5 rounded border ${
             connected ? 'text-green-400/70 border-green-500/25 bg-green-500/5' : 'text-white/20 border-white/10'
           }`}>
             {connected ? '● LIVE' : '○ …'}
           </span>
-
         </div>
       </div>
 
@@ -742,10 +758,10 @@ function PerpsInner() {
         {mktPanel && (
           <div className="absolute inset-0 z-40 flex">
             {/* Panel */}
-            <div className="w-[560px] bg-[#0e0e18] border-r border-white/[0.1] flex flex-col shadow-2xl overflow-hidden">
+            <div className="w-[560px] bg-[#131722] border-r border-[#2a2d3e] flex flex-col shadow-2xl overflow-hidden">
               {/* Search */}
-              <div className="p-3 border-b border-white/[0.07]">
-                <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2">
+              <div className="p-3 border-b border-[#2a2d3e]">
+                <div className="flex items-center gap-2 bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2">
                   <Search className="h-3.5 w-3.5 text-white/30 shrink-0" />
                   <input
                     autoFocus
@@ -763,12 +779,12 @@ function PerpsInner() {
               </div>
 
               {/* Category tabs */}
-              <div className="flex gap-1 px-3 py-2 border-b border-white/[0.07]">
+              <div className="flex gap-1 px-3 py-2 border-b border-[#2a2d3e]">
                 {(['all', 'crypto', 'commodities'] as const).map(cat => (
                   <button key={cat} onClick={() => setMktCat(cat)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
                       mktCat === cat
-                        ? 'bg-purple-600/30 text-purple-300'
+                        ? 'bg-[#F37B28]/20 text-[#F37B28]'
                         : 'text-white/35 hover:text-white/60'
                     }`}>
                     {cat === 'all' ? 'All' : cat === 'crypto' ? 'Crypto' : 'Commodities'}
@@ -777,7 +793,7 @@ function PerpsInner() {
               </div>
 
               {/* Column headers */}
-              <div className="grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] px-3 py-2 border-b border-white/[0.07]">
+              <div className="grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] px-3 py-2 border-b border-[#2a2d3e]">
                 {(['market', 'price', 'change', 'volume', 'oi', 'funding'] as const).map(col => {
                   const labels: Record<string, string> = {
                     market: 'Market', price: 'Price', change: '24h %',
@@ -792,7 +808,7 @@ function PerpsInner() {
                       }}
                       className={`flex items-center gap-0.5 text-[10px] transition ${
                         col === 'market' ? '' : 'justify-end'
-                      } ${active ? 'text-white/60' : 'text-white/30 hover:text-white/55'}`}>
+                      } ${active ? 'text-[#F37B28]' : 'text-white/30 hover:text-white/55'}`}>
                       {labels[col]}
                       <svg className="h-2 w-2 shrink-0" viewBox="0 0 8 8" fill="currentColor" style={{ opacity: active ? 1 : 0.3 }}>
                         {active && sortDir === 'desc'
@@ -828,14 +844,14 @@ function PerpsInner() {
                     <button key={sym}
                       onClick={() => { setMarket(sym); setMktPanel(false); }}
                       className={`w-full grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] items-center px-3 py-2.5 text-xs transition hover:bg-white/[0.04] border-l-2 ${
-                        isSel ? 'border-purple-500 bg-purple-500/[0.06]' : 'border-transparent'
+                        isSel ? 'border-[#F37B28] bg-[#F37B28]/[0.06]' : 'border-transparent'
                       }`}>
                       {/* Market col */}
                       <div className="flex items-center gap-2">
                         <TokenAvatar symbol={base} />
                         <span className={`font-semibold ${isSel ? 'text-white' : 'text-white/75'}`}>{base}</span>
                         {mLev != null && (
-                          <span className="text-[9px] bg-white/[0.06] text-white/40 border border-white/[0.08] rounded px-1 py-0.5 leading-none">
+                          <span className="text-[9px] bg-[#1e2130] text-white/40 border border-[#2a2d3e] rounded px-1 py-0.5 leading-none">
                             {mLev}×
                           </span>
                         )}
@@ -888,17 +904,17 @@ function PerpsInner() {
         )}
 
         {/* ── Left column: chart + bottom tabs ─────────────────────────── */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-white/[0.07] overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 border-r border-[#2a2d3e] overflow-hidden">
 
           {/* Chart */}
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             {/* Timeframe tabs */}
-            <div className="flex items-center gap-0.5 px-3 py-2 border-b border-white/[0.07] shrink-0">
+            <div className="flex items-center gap-0.5 px-3 py-2 border-b border-[#2a2d3e] shrink-0">
               {TIMEFRAMES.map(t => (
                 <button key={t.s} onClick={() => setTf(t.s)}
                   className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
                     tf === t.s
-                      ? 'bg-purple-600/80 text-white'
+                      ? 'text-[#F37B28] bg-[#F37B28]/10'
                       : 'text-white/35 hover:bg-white/5 hover:text-white/70'
                   }`}>
                   {t.label}
@@ -918,8 +934,8 @@ function PerpsInner() {
                   <ComposedChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                     <defs>
                       <linearGradient id="perpG" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#a855f7" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                        <stop offset="5%"  stopColor="#F37B28" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#F37B28" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="2 6" stroke="rgba(255,255,255,0.03)" />
@@ -931,15 +947,15 @@ function PerpsInner() {
                       tickLine={false} axisLine={false} tickFormatter={fn} width={64} />
                     <YAxis yAxisId="v" orientation="right" hide />
                     <Tooltip
-                      contentStyle={{ background: '#16121f', border: '1px solid rgba(168,85,247,0.25)', borderRadius: 8, fontSize: 11 }}
+                      contentStyle={{ background: '#1e2130', border: '1px solid #2a2d3e', borderRadius: 8, fontSize: 11 }}
                       labelFormatter={v => fTime(Number(v), tf)}
                       formatter={(v: unknown, name: string) =>
                         name === 'price' ? [fp(Number(v)), 'Price'] : [Number(v).toFixed(2), 'Volume']
                       }
                     />
-                    <Bar  yAxisId="v" dataKey="volume" fill="rgba(168,85,247,0.1)" radius={[1,1,0,0]} maxBarSize={6} />
-                    <Area yAxisId="p" type="monotone" dataKey="price" stroke="#a855f7" strokeWidth={1.5}
-                      fill="url(#perpG)" dot={false} activeDot={{ r: 3, fill: '#a855f7', strokeWidth: 0 }} />
+                    <Bar  yAxisId="v" dataKey="volume" fill="rgba(243,123,40,0.12)" radius={[1,1,0,0]} maxBarSize={6} />
+                    <Area yAxisId="p" type="monotone" dataKey="price" stroke="#F37B28" strokeWidth={1.5}
+                      fill="url(#perpG)" dot={false} activeDot={{ r: 3, fill: '#F37B28', strokeWidth: 0 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
@@ -952,24 +968,21 @@ function PerpsInner() {
           </div>
 
           {/* ── Bottom tabs: Positions / Orders / Trades ───────────────── */}
-          <div className="border-t border-white/[0.07] shrink-0 flex flex-col" style={{ height: '180px' }}>
+          <div className="border-t border-[#2a2d3e] shrink-0 flex flex-col" style={{ height: '180px' }}>
             {/* Tab headers */}
-            <div className="flex items-center border-b border-white/[0.07] shrink-0">
+            <div className="flex items-center border-b border-[#2a2d3e] shrink-0 overflow-x-auto scrollbar-none">
               {(['positions', 'orders', 'trades'] as const).map(tab => (
                 <button key={tab} onClick={() => setBottomTab(tab)}
-                  className={`px-4 py-2.5 text-[11px] font-medium transition border-b-2 -mb-px ${
+                  className={`px-4 py-2.5 text-[11px] font-medium transition border-b-2 -mb-px whitespace-nowrap ${
                     bottomTab === tab
-                      ? 'border-purple-500 text-white'
+                      ? 'border-[#F37B28] text-white'
                       : 'border-transparent text-white/35 hover:text-white/60'
                   }`}>
-                  {tab === 'positions' ? `Positions${traderPositions.length ? ` (${traderPositions.length})` : ''}` :
-                   tab === 'orders'    ? `Open Orders${traderOrders.length ? ` (${traderOrders.length})` : ''}` :
-                   'Recent Trades'}
+                  {tab === 'positions' ? `Positions (${traderPositions.length})` :
+                   tab === 'orders'    ? `Open Orders (${traderOrders.length})` :
+                   'Trade History'}
                 </button>
               ))}
-              {connected && bottomTab === 'trades' && (
-                <span className="ml-auto pr-3 text-[9px] text-green-400/40">● live</span>
-              )}
               {publicKey && (
                 <button onClick={() => refetchTrader()} className="ml-auto pr-3 text-white/20 hover:text-white/50 transition">
                   <RefreshCw className="h-3 w-3" />
@@ -1077,66 +1090,29 @@ function PerpsInner() {
           </div>
         </div>
 
-        {/* ── Right column: 350px orderbook + order form ────────────────── */}
-        <div className="w-[350px] shrink-0 flex flex-col overflow-hidden">
-
-          {/* Orderbook header */}
-          <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.07] shrink-0">
-            <span className="text-[10px] font-semibold text-white/35 uppercase tracking-wider">Order Book</span>
-            <div className="flex items-center gap-2">
-              {connected && <span className="text-[9px] text-green-400/40">● live</span>}
-            </div>
-          </div>
-
-          {/* Orderbook col headers */}
-          <div className="flex items-center justify-between px-3 py-1 border-b border-white/[0.04] shrink-0">
-            <span className="text-[10px] text-white/22">Price</span>
-            <span className="text-[10px] text-white/22">Size</span>
-          </div>
-
-          {/* Asks */}
-          <div className="flex flex-col overflow-hidden" style={{ flex: '1 1 0', minHeight: 0 }}>
-            <div className="flex-1 overflow-y-auto flex flex-col justify-end">
-              {displayAsks.length > 0
-                ? <OBSide rows={displayAsks} side="ask" />
-                : <div className="text-center text-white/15 text-xs py-3">{connected ? 'Waiting…' : '…'}</div>
-              }
-            </div>
-
-            {/* Mid price */}
-            <div className="flex items-center justify-between px-3 py-2 bg-white/[0.03] border-y border-white/[0.08] shrink-0">
-              <span className={`text-sm font-bold font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-                {fp(midPrice)}
-              </span>
-              <span className="text-[10px] text-white/20">
-                {isUp ? '▲' : '▼'} mid
-              </span>
-            </div>
-
-            {/* Bids */}
-            <div className="flex-1 overflow-y-auto">
-              {displayBids.length > 0
-                ? <OBSide rows={displayBids} side="bid" />
-                : <div className="text-center text-white/15 text-xs py-3">{connected ? 'Waiting…' : '…'}</div>
-              }
-            </div>
-          </div>
+        {/* ── Right panel: order form (top) + orderbook (bottom) ───────── */}
+        <div className="w-[350px] shrink-0 flex flex-col overflow-hidden bg-[#131722]">
 
           {/* ── Order form ─────────────────────────────────────────────── */}
-          <div className="border-t border-white/[0.07] p-4 flex flex-col gap-3 overflow-y-auto shrink-0">
+          <div className="flex flex-col shrink-0 border-b border-[#2a2d3e]">
+
+            {/* Cross / Isolated toggle */}
+            <div className="px-3 py-2 border-b border-[#2a2d3e]">
+              <button className="flex items-center gap-1.5 bg-[#1e2130] border border-[#2a2d3e] rounded-md px-3 py-1.5 text-sm text-white/70 hover:bg-[#252840] transition">
+                Cross <ChevronDown className="w-3.5 h-3.5 text-white/40" />
+              </button>
+            </div>
 
             {!publicKey ? (
-              <div className="text-center py-4 flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center">
-                  <User className="h-5 w-5 text-white/20" />
-                </div>
-                <p className="text-xs text-white/30">Connect wallet to trade</p>
+              <div className="p-6 flex flex-col items-center gap-3">
+                <User className="h-8 w-8 text-white/10" />
+                <p className="text-sm text-white/30">Connect wallet to trade</p>
               </div>
 
             ) : !isRegistered ? (
-              <div className="flex flex-col gap-3">
+              <div className="p-4 flex flex-col gap-3">
                 <div className="flex items-center gap-1.5">
-                  <Key className="h-3.5 w-3.5 text-purple-400/70" />
+                  <Key className="h-3.5 w-3.5 text-[#F37B28]/70" />
                   <span className="text-xs font-semibold text-white/60">Activate Phoenix Account</span>
                 </div>
                 <p className="text-[10px] text-white/25 leading-relaxed">
@@ -1144,10 +1120,10 @@ function PerpsInner() {
                 </p>
                 <input value={inviteCode} onChange={e => setInviteCode(e.target.value)}
                   placeholder="Invite code…"
-                  className="bg-white/[0.04] border border-white/[0.09] rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-purple-500/40 transition" />
+                  className="bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-[#F37B28]/40 transition" />
                 <button onClick={() => registerMut.mutate()}
                   disabled={!inviteCode.trim() || registerMut.isPending}
-                  className="w-full py-2 bg-purple-700/50 hover:bg-purple-600/60 border border-purple-500/25 rounded-lg text-xs font-medium text-white/80 transition disabled:opacity-40">
+                  className="w-full py-2.5 bg-[#F37B28] hover:bg-[#e06b1a] rounded-lg text-sm font-semibold text-black transition disabled:opacity-40">
                   {registerMut.isPending ? 'Activating…' : 'Activate Account'}
                 </button>
                 {registerMut.isError   && <p className="text-red-400   text-[10px]">Failed — check your code.</p>}
@@ -1156,93 +1132,187 @@ function PerpsInner() {
 
             ) : (
               <>
-                {/* Account summary */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06]">
-                    <div className="text-[9px] text-white/25 uppercase tracking-wider mb-0.5">Collateral</div>
-                    <div className="text-xs font-semibold">{fUSD(pf(td?.collateralBalance))}</div>
-                  </div>
-                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06]">
-                    <div className="text-[9px] text-white/25 uppercase tracking-wider mb-0.5">Unreal PnL</div>
-                    <div className={`text-xs font-semibold ${pf(td?.unrealizedPnl) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {pf(td?.unrealizedPnl) >= 0 ? '+' : ''}{fUSD(pf(td?.unrealizedPnl))}
-                    </div>
-                  </div>
+                {/* Long/Buy — Short/Sell */}
+                <div className="grid grid-cols-2 p-3 gap-1.5">
+                  <button
+                    onClick={() => placeMut.mutate({ side: 'buy' })}
+                    disabled={placeMut.isPending || !riseReady}
+                    className="py-3 rounded-lg text-sm font-bold bg-[#22c55e] hover:bg-[#16a34a] text-black transition disabled:opacity-40 flex items-center justify-center gap-1.5">
+                    <TrendingUp className="h-4 w-4" />
+                    {placeMut.isPending ? '…' : 'Long/Buy'}
+                  </button>
+                  <button
+                    onClick={() => placeMut.mutate({ side: 'sell' })}
+                    disabled={placeMut.isPending || !riseReady}
+                    className="py-3 rounded-lg text-sm font-semibold bg-[#1e2130] hover:bg-[#ef4444]/80 text-white/60 hover:text-white transition disabled:opacity-40 flex items-center justify-center gap-1.5">
+                    <TrendingDown className="h-4 w-4" />
+                    {placeMut.isPending ? '…' : 'Short/Sell'}
+                  </button>
                 </div>
 
-                {/* Order type tabs */}
-                <div className="flex bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06]">
+                {/* Market / Limit tabs */}
+                <div className="flex items-center px-3 pb-2 gap-3 border-b border-[#2a2d3e]">
                   {(['market', 'limit'] as const).map(t => (
                     <button key={t} onClick={() => setOrderType(t)}
-                      className={`flex-1 py-1.5 rounded-md text-[11px] font-medium transition ${
-                        orderType === t ? 'bg-purple-600/90 text-white shadow-sm' : 'text-white/35 hover:text-white/60'
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
+                        orderType === t
+                          ? 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/30'
+                          : 'text-white/40 hover:text-white/60'
                       }`}>
                       {t.charAt(0).toUpperCase() + t.slice(1)}
                     </button>
                   ))}
+                  {markPrice && (
+                    <span className="ml-auto text-xs font-mono text-white/35">{fp(markPrice)} MID</span>
+                  )}
                 </div>
 
-                {/* Price input (limit only) */}
-                {orderType === 'limit' && (
-                  <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.09] rounded-lg px-3 py-2">
-                    <span className="text-[10px] text-white/30 shrink-0">Price $</span>
-                    <input type="number" value={orderPrice} onChange={e => setOrderPrice(e.target.value)}
-                      placeholder={markPrice ? markPrice.toFixed(2) : '0.00'}
-                      className="flex-1 bg-transparent text-xs text-white outline-none min-w-0" />
+                {/* Form fields */}
+                <div className="p-3 flex flex-col gap-3">
+
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/40">Available to Trade</span>
+                    <span className="font-mono text-white/70">{fUSD(pf(td?.collateralBalance))}</span>
                   </div>
-                )}
 
-                {/* Size input */}
-                <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.09] rounded-lg px-3 py-2">
-                  <span className="text-[10px] text-white/30 shrink-0">Size</span>
-                  <input type="number" value={orderSize} onChange={e => setOrderSize(e.target.value)}
-                    placeholder="0.1"
-                    className="flex-1 bg-transparent text-xs text-white outline-none min-w-0" />
-                  <span className="text-[10px] text-white/20 shrink-0">{marketBase}</span>
-                </div>
+                  {/* Price input (limit only) */}
+                  {orderType === 'limit' && (
+                    <div>
+                      <div className="text-[10px] text-white/40 mb-1">Price USDC</div>
+                      <div className="flex items-center bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2">
+                        <input type="number" value={orderPrice} onChange={e => setOrderPrice(e.target.value)}
+                          placeholder={markPrice ? markPrice.toFixed(4) : '0.00'}
+                          className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0" />
+                      </div>
+                    </div>
+                  )}
 
-                {orderType === 'market' && markPrice && (
-                  <p className="text-[10px] text-white/20">
-                    ≈ {fUSD(pf(orderSize) * markPrice)} · 5% slippage
-                  </p>
-                )}
+                  {/* Order size */}
+                  <div>
+                    <div className="text-[10px] text-white/40 mb-1">Order Size</div>
+                    <div className="flex items-center bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2 gap-2">
+                      <input type="number" value={orderSize} onChange={e => setOrderSize(e.target.value)}
+                        placeholder="0"
+                        className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0" />
+                      <button className="shrink-0 bg-[#131722] border border-[#2a2d3e] rounded px-2 py-0.5 text-xs text-white/60 flex items-center gap-1 hover:bg-[#1e2130] transition">
+                        {marketBase} <span className="opacity-40">⇄</span>
+                      </button>
+                    </div>
+                    {orderType === 'market' && markPrice && orderSize && (
+                      <div className="text-[10px] text-white/30 mt-1 text-right">{fUSD(pf(orderSize) * markPrice)}</div>
+                    )}
+                  </div>
 
-                {/* Long / Short buttons */}
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => placeMut.mutate({ side: 'buy' })}
-                    disabled={placeMut.isPending || !riseReady}
-                    className="flex items-center justify-center gap-1.5 py-3 bg-green-600/80 hover:bg-green-500/80 active:bg-green-700 rounded-xl text-sm font-bold transition disabled:opacity-40 shadow-sm">
-                    <TrendingUp className="h-4 w-4" />
-                    {placeMut.isPending ? '…' : 'Long'}
-                  </button>
-                  <button onClick={() => placeMut.mutate({ side: 'sell' })}
-                    disabled={placeMut.isPending || !riseReady}
-                    className="flex items-center justify-center gap-1.5 py-3 bg-red-600/80 hover:bg-red-500/80 active:bg-red-700 rounded-xl text-sm font-bold transition disabled:opacity-40 shadow-sm">
-                    <TrendingDown className="h-4 w-4" />
-                    {placeMut.isPending ? '…' : 'Short'}
-                  </button>
-                </div>
+                  {!riseReady && (
+                    <p className="text-[10px] text-white/20 text-center">Initializing engine…</p>
+                  )}
+                  {placeMut.isError && (
+                    <p className="text-red-400 text-[10px] break-all">
+                      {(placeMut.error as any)?.message ?? 'Order failed'}
+                    </p>
+                  )}
+                  {txSig && (
+                    <a href={`https://solscan.io/tx/${txSig}`} target="_blank" rel="noopener noreferrer"
+                      className="text-green-400 text-[10px] truncate hover:underline">
+                      ✓ {txSig.slice(0, 22)}… ↗
+                    </a>
+                  )}
 
-                {!riseReady && (
-                  <p className="text-[10px] text-white/20 text-center">Initializing engine…</p>
-                )}
-                {placeMut.isError && (
-                  <p className="text-red-400 text-[10px] break-all">
-                    {(placeMut.error as any)?.message ?? 'Order failed'}
-                  </p>
-                )}
-                {txSig && (
-                  <a href={`https://solscan.io/tx/${txSig}`} target="_blank" rel="noopener noreferrer"
-                    className="text-green-400 text-[10px] truncate hover:underline">
-                    ✓ {txSig.slice(0, 22)}… ↗
-                  </a>
-                )}
-
-                <div className="text-[9px] text-white/12 text-center pt-0.5">
-                  Flight fee routing · {BUILDER_AUTHORITY.slice(0, 8)}…
+                  {/* Order details */}
+                  <div className="border-t border-[#2a2d3e] pt-3 flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-white/40">Expected Price</span>
+                      <span className="font-mono text-white/70">{markPrice ? fp(markPrice) : '—'}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-white/40">Est. Liquidation Price</span>
+                      <span className="text-white/40">—</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-white/40">Order Value</span>
+                      <span className="font-mono text-white/70">
+                        {markPrice && orderSize ? fUSD(pf(orderSize) * markPrice) : '$0.00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-white/40">Margin Required</span>
+                      <span className="text-white/40">$0.00</span>
+                    </div>
+                    {takerFee != null && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-white/40">Fees</span>
+                        <span className="font-mono text-white/70">{(takerFee * 100).toFixed(3)}%</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             )}
+          </div>
+
+          {/* ── Orderbook ──────────────────────────────────────────────── */}
+          <div className="flex flex-col overflow-hidden" style={{ flex: '1 1 0', minHeight: 0 }}>
+
+            {/* Tabs */}
+            <div className="flex items-center border-b border-[#2a2d3e] shrink-0">
+              <button className="px-4 py-2.5 text-xs font-semibold text-white border-b-2 border-[#F37B28] -mb-px">
+                Order Book
+              </button>
+              <button className="px-4 py-2.5 text-xs text-white/35 hover:text-white/60 transition">
+                Trades
+              </button>
+              {connected && <span className="ml-auto pr-3 text-[9px] text-green-400/40">● live</span>}
+            </div>
+
+            {/* Column headers */}
+            <div className="grid grid-cols-3 px-3 py-1.5 border-b border-[#2a2d3e] shrink-0">
+              <span className="text-[10px] text-white/30">Price USDC</span>
+              <span className="text-[10px] text-white/30 text-right">Size USDC</span>
+              <span className="text-[10px] text-white/30 text-right">Total USDC</span>
+            </div>
+
+            {/* Asks */}
+            <div className="flex flex-col overflow-hidden" style={{ flex: '1 1 0', minHeight: 0 }}>
+              <div className="flex-1 overflow-y-auto flex flex-col justify-end">
+                {displayAsks.length > 0
+                  ? <OBSide rows={displayAsks} side="ask" />
+                  : <div className="text-center text-white/15 text-xs py-3">{connected ? 'Waiting…' : '…'}</div>
+                }
+              </div>
+
+              {/* Spread row */}
+              <div className="flex items-center justify-between px-3 py-1.5 bg-[#1a1d2e] border-y border-[#2a2d3e] shrink-0">
+                {ob.asks.length > 0 && ob.bids.length > 0 ? (
+                  <>
+                    <span className="text-[10px] font-mono text-white/55">
+                      {Math.abs((ob.asks[ob.asks.length - 1]?.[0] ?? 0) - (ob.bids[0]?.[0] ?? 0)).toFixed(5)}
+                    </span>
+                    <span className="text-[10px] text-white/35">Spread</span>
+                    <span className="text-[10px] font-mono text-white/55">
+                      {ob.asks[ob.asks.length - 1]?.[0] > 0
+                        ? ((Math.abs((ob.asks[ob.asks.length - 1]?.[0] ?? 0) - (ob.bids[0]?.[0] ?? 0)) / (ob.asks[ob.asks.length - 1]?.[0] ?? 1)) * 100).toFixed(3) + '%'
+                        : '—'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-sm font-bold font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                      {fp(midPrice)}
+                    </span>
+                    <span className="text-[10px] text-white/30">{isUp ? '▲' : '▼'} mid</span>
+                    <span />
+                  </>
+                )}
+              </div>
+
+              {/* Bids */}
+              <div className="flex-1 overflow-y-auto">
+                {displayBids.length > 0
+                  ? <OBSide rows={displayBids} side="bid" />
+                  : <div className="text-center text-white/15 text-xs py-3">{connected ? 'Waiting…' : '…'}</div>
+                }
+              </div>
+            </div>
           </div>
         </div>
       </div>
