@@ -3856,6 +3856,13 @@ export default function SolRefund() {
                 >
                   <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
                 </Button>
+                <Link href="/perps">
+                  <Button
+                    className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30"
+                  >
+                    📈 Perps
+                  </Button>
+                </Link>
                 {canViewPartners && (
                   <Link href="/partners">
                     <Button
@@ -7642,6 +7649,10 @@ export default function SolRefund() {
             <FaSackDollar style={{ width: '20px', height: '20px' }} />
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
           </button>
+          <Link href="/perps" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#9ca3af', textDecoration: 'none', cursor: 'pointer' }}>
+            <span style={{ fontSize: '20px', lineHeight: 1 }}>📈</span>
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>Perps</span>
+          </Link>
           {canViewPartners && (
             <Link href="/partners" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#fde68a', textDecoration: 'none', cursor: 'pointer' }}>
               <span style={{ fontSize: '20px', lineHeight: 1 }}>🤝</span>

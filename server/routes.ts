@@ -12898,6 +12898,59 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // ── /api/perps — Phoenix Perpetuals ──────────────────────────────────────
+  const PHOENIX_API = 'https://perp-api.phoenix.trade';
+
+  app.get('/api/perps/markets', async (_req, res) => {
+    try {
+      const r = await fetch(`${PHOENIX_API}/exchange/markets`);
+      res.status(r.ok ? 200 : r.status).json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/perps/snapshot', async (_req, res) => {
+    try {
+      const r = await fetch(`${PHOENIX_API}/v1/exchange/snapshot`);
+      res.status(r.ok ? 200 : r.status).json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/perps/orderbook/:symbol', async (req, res) => {
+    try {
+      const sym = encodeURIComponent(String(req.params.symbol || ''));
+      const r = await fetch(`${PHOENIX_API}/v1/view/orderbook/${sym}`);
+      res.status(r.ok ? 200 : r.status).json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/perps/candles/:symbol', async (req, res) => {
+    try {
+      const sym = encodeURIComponent(String(req.params.symbol || ''));
+      const tf  = String(req.query.timeframe || '3600');
+      const lim = String(req.query.limit || '120');
+      const r = await fetch(`${PHOENIX_API}/v1/candles/${sym}?timeframe=${tf}&limit=${lim}`);
+      res.status(r.ok ? 200 : r.status).json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/perps/trades/:symbol', async (req, res) => {
+    try {
+      const sym = encodeURIComponent(String(req.params.symbol || ''));
+      const lim = String(req.query.limit || '30');
+      const r = await fetch(`${PHOENIX_API}/market/${sym}/fills?limit=${lim}`);
+      res.status(r.ok ? 200 : r.status).json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/perps/funding/:symbol', async (req, res) => {
+    try {
+      const sym = encodeURIComponent(String(req.params.symbol || ''));
+      const lim = String(req.query.limit || '1');
+      const r = await fetch(`${PHOENIX_API}/v1/funding/${sym}/rates?limit=${lim}`);
+      res.status(r.ok ? 200 : r.status).json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
