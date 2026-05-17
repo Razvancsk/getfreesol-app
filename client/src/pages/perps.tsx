@@ -774,7 +774,7 @@ function PerpsInner() {
       </nav>
 
       {/* ── Market stats bar — full width, under nav ────────────────────── */}
-      <div className="flex items-center gap-4 px-4 py-2.5 border-b border-[#2a2d3e] bg-[#131722] shrink-0 overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-4 px-4 py-1.5 border-b border-[#2a2d3e] bg-[#131722] shrink-0 overflow-x-auto scrollbar-none flex-nowrap">
         <button
           onClick={() => { setMktPanel(v => !v); setMktSearch(''); }}
           className="flex items-center gap-2 shrink-0 pr-4 border-r border-[#2a2d3e]"
@@ -789,7 +789,7 @@ function PerpsInner() {
           <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-200 ${mktPanel ? 'rotate-180' : ''}`} />
         </button>
 
-        <div className="flex items-center gap-8 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-5 overflow-x-auto scrollbar-none flex-nowrap">
           <div className="flex flex-col gap-0.5 shrink-0">
             <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Mark</span>
             <span className="text-sm font-mono text-white whitespace-nowrap">{markPrice != null ? fp(markPrice) : '—'}</span>
