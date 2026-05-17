@@ -1,5 +1,5 @@
 /**
- * Phoenix Perpetuals — real-time data via Phoenix WS + Rise SDK trading
+ * Phoenix Perpetuals — Rise SDK streams + HTTP client
  * https://perp-api.phoenix.trade  |  @ellipsis-labs/rise
  */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -18,7 +18,6 @@ import {
 } from 'recharts';
 
 const logoImage       = '/logo.png';
-const PHOENIX_WS      = 'wss://perp-api.phoenix.trade/v1/ws';
 const PHOENIX_API_URL = 'https://perp-api.phoenix.trade';
 const BUILDER_AUTHORITY = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 
@@ -65,44 +64,68 @@ function fTime(ts: number, tfSecs: string): string {
     : d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-// ── Phoenix WebSocket ─────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface MarketStats {
   markPx: number; midPx: number; oraclePx: number;
   prevDayPx: number; dayNtlVlm: number; openInterest: number; funding: number;
 }
 interface OB { bids: [number, number][]; asks: [number, number][]; mid: number | null; }
+interface FundingRate { rate: number; nextRate: number | null; }
 
 function toOBRow(r: any): [number, number] {
   if (Array.isArray(r)) return [toNum(r[0]), toNum(r[1])];
   return [toNum(r.price ?? r.px), toNum(r.size ?? r.qty)];
 }
 
-interface FundingRate { rate: number; nextRate: number | null; }
+// ── Rise SDK client — ws: eager mode enables client.streams ──────────────────
 
-// Normalize Phoenix WS channel names (they sometimes differ from subscription names)
-const CH: Record<string, string> = {
-  l2Book: 'orderbook', l2BookUpdate: 'orderbook', l2BookDelta: 'orderbook',
-  marketStats: 'market', marketUpdate: 'market',
-  fill: 'trades', fills: 'trades', tradesFill: 'trades',
-  candleData: 'candles', candle: 'candles',
-  allMids: 'allMids',
-  fundingRate: 'fundingRate', funding: 'fundingRate',
-  traderState: 'traderState', traderStateSnapshot: 'traderState', traderStateDelta: 'traderState',
-};
+function useRiseClient() {
+  const [client, setClient] = useState<any>(null);
+  const [ready,  setReady]  = useState(false);
 
-function parseOBData(d: any): { bids: [number,number][]; asks: [number,number][]; mid: number|null } {
-  // Phoenix may send bids/asks as [[price, size]] or [{ price, size }] or nested under levels
-  const bids = d.bids ?? d.levels?.bids ?? [];
-  const asks = d.asks ?? d.levels?.asks ?? [];
-  return {
-    bids: bids.map(toOBRow),
-    asks: asks.map(toOBRow),
-    mid:  d.mid != null ? toNum(d.mid) : null,
-  };
+  useEffect(() => {
+    const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
+    let cancelled = false;
+    let c: any;
+    try {
+      c = createPhoenixClient({
+        apiUrl: PHOENIX_API_URL,
+        rpcUrl,
+        ws: { connectMode: 'eager' },     // enables client.streams.*
+        flight: {
+          builderAuthority: BUILDER_AUTHORITY,
+          builderPdaIndex: 0,
+          builderSubaccountIndex: 0,
+        },
+      } as any);
+    } catch { return; }
+
+    if (!cancelled) setClient(c);
+
+    // exchange.ready() loads market metadata needed for order building
+    // timeout after 8s so streams start even if metadata fetch is slow
+    const timer = setTimeout(() => { if (!cancelled) setReady(true); }, 8000);
+    c.exchange?.ready?.()
+      ?.then(() => { clearTimeout(timer); if (!cancelled) setReady(true); })
+      ?.catch(() => { clearTimeout(timer); if (!cancelled) setReady(true); });
+
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, []);
+
+  return { client, ready };
 }
 
-function usePhoenixWS(symbol: string, wsTimeframe: string, authority?: string) {
+// ── Rise SDK streams — replaces manual WebSocket ──────────────────────────────
+// Uses client.streams.* async iterators (typed, auto-reconnect, correct symbol format)
+// https://ellipsislabs.mintlify.app/sdk/rise
+
+function useRiseStreams(
+  client: any,
+  symbol: string,   // full e.g. "SOL-PERP"
+  wsTimeframe: string,
+  authority?: string,
+) {
   const [connected,    setConnected]    = useState(false);
   const [stats,        setStats]        = useState<MarketStats | null>(null);
   const [ob,           setOb]           = useState<OB>({ bids: [], asks: [], mid: null });
@@ -111,138 +134,106 @@ function usePhoenixWS(symbol: string, wsTimeframe: string, authority?: string) {
   const [allMids,      setAllMids]      = useState<Record<string, number>>({});
   const [fundingRate,  setFundingRate]  = useState<FundingRate | null>(null);
   const [liveTrader,   setLiveTrader]   = useState<any>(null);
-  const wsRef   = useRef<WebSocket | null>(null);
-  const deadRef = useRef(false);
-  // stripPerp only for allMids key lookup; all subscriptions use full symbol
-  const sym = stripPerp(symbol);
 
   useEffect(() => {
-    deadRef.current = false;
-    // Reset state when market changes
+    if (!client) return;
+    let dead = false;
     setStats(null); setOb({ bids: [], asks: [], mid: null });
-    setTrades([]); setLiveCandle(null); setFundingRate(null);
+    setTrades([]); setLiveCandle(null); setFundingRate(null); setConnected(false);
 
-    function connect() {
-      if (deadRef.current) return;
-      const ws = new WebSocket(PHOENIX_WS);
-      wsRef.current = ws;
+    const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-      ws.onopen = () => {
-        if (deadRef.current) { ws.close(); return; }
-        setConnected(true);
-        // Phoenix WS uses full symbol (e.g. "SOL-PERP"), not stripped
-        const subs: object[] = [
-          { channel: 'allMids' },
-          { channel: 'market',      symbol },
-          { channel: 'orderbook',   symbol },
-          { channel: 'trades',      symbol },
-          { channel: 'candles',     symbol, timeframe: wsTimeframe },
-          { channel: 'fundingRate', symbol },
-        ];
-        if (authority) subs.push({ channel: 'traderState', authority, traderPdaIndex: 0 });
-        subs.forEach(sub => ws.send(JSON.stringify({ type: 'subscribe', subscription: sub })));
-      };
-
-      ws.onmessage = ({ data: raw }) => {
+    // Generic async-iterator consumer with auto-retry
+    async function consume<T>(
+      gen: () => AsyncIterable<T> | undefined | null,
+      fn: (v: T) => void,
+    ) {
+      while (!dead) {
         try {
-          const msg = JSON.parse(raw as string);
-          const rawCh: string = msg.channel ?? msg.type ?? '';
-
-          // Log subscription errors for debugging
-          if (rawCh === 'subscriptionError' || rawCh === 'error') {
-            console.warn('[PhoenixWS] error:', msg);
-            return;
+          const iter = gen();
+          if (!iter || typeof (iter as any)[Symbol.asyncIterator] !== 'function') break;
+          for await (const v of iter) {
+            if (dead) return;
+            fn(v);
           }
-          if (rawCh === 'subscriptionConfirmed') return;
-
-          const ch = CH[rawCh] ?? rawCh;
-          // Data can be at msg.data OR directly in msg (some Phoenix messages don't wrap)
-          const d: any = msg.data !== undefined ? msg.data : msg;
-
-          if (ch === 'allMids') {
-            const src = d.mids ?? d; // allMids might be { mids: { SOL: "..." } } or { SOL: "..." }
-            const parsed: Record<string, number> = {};
-            for (const [k, v] of Object.entries(src)) {
-              if (typeof v === 'string' || typeof v === 'number') parsed[k] = toNum(v);
-            }
-            if (Object.keys(parsed).length > 0) setAllMids(parsed);
-          } else if (ch === 'market') {
-            const s = d.stats ?? d;
-            setStats({
-              markPx:       toNum(s.markPx  ?? s.mark_px  ?? s.markPrice),
-              midPx:        toNum(s.midPx   ?? s.mid_px   ?? s.midPrice),
-              oraclePx:     toNum(s.oraclePx ?? s.oracle_px ?? s.indexPrice ?? s.oraclePrice),
-              prevDayPx:    toNum(s.prevDayPx ?? s.prev_day_px ?? s.open24h),
-              dayNtlVlm:    toNum(s.dayNtlVlm ?? s.day_ntl_vlm ?? s.volume24h ?? s.volume),
-              openInterest: toNum(s.openInterest ?? s.open_interest ?? s.oi),
-              funding:      toNum(s.funding ?? s.fundingRate ?? s.funding1h),
-            });
-          } else if (ch === 'orderbook') {
-            setOb(parseOBData(d));
-          } else if (ch === 'trades') {
-            const arr: any[] = Array.isArray(d) ? d : (d.fills ?? d.trades ?? [d]);
-            if (arr.length) setTrades(prev => [...arr, ...prev].slice(0, 60));
-          } else if (ch === 'candles') {
-            const c = Array.isArray(d) ? d[d.length - 1] : d;
-            if (c) setLiveCandle(c);
-          } else if (ch === 'fundingRate') {
-            setFundingRate({
-              rate:     toNum(d.fundingRate ?? d.rate ?? d.current ?? d.funding),
-              nextRate: d.nextFundingRate != null ? toNum(d.nextFundingRate ?? d.next) : null,
-            });
-          } else if (ch === 'traderState') {
-            const payload = d.snapshot ?? d.data ?? d;
-            if (d.type === 'delta') {
-              setLiveTrader((prev: any) => prev ? { ...prev, ...(d.delta ?? payload) } : payload);
-            } else {
-              setLiveTrader(payload);
-            }
-          }
-        } catch (e) { /* ignore malformed */ }
-      };
-
-      ws.onclose = () => {
-        setConnected(false);
-        if (!deadRef.current) setTimeout(connect, 3000);
-      };
-      ws.onerror = () => ws.close();
+        } catch { if (!dead) await sleep(3000); }
+      }
     }
 
-    connect();
-    return () => { deadRef.current = true; wsRef.current?.close(); };
-  }, [symbol, wsTimeframe, authority]);
+    const s = client.streams;
+    if (!s) return; // streams not available — client not ws-enabled
+
+    // L2 orderbook (confirmed SDK method from docs)
+    consume(() => s.l2Book?.(symbol), (u: any) => {
+      setOb({
+        bids: (u.bids ?? []).map(toOBRow),
+        asks: (u.asks ?? []).map(toOBRow),
+        mid:  u.mid != null ? toNum(u.mid) : null,
+      });
+      setConnected(true);
+    });
+
+    // All market mid prices
+    consume(() => s.allMids?.(), (u: any) => {
+      const src: any = u.mids ?? u;
+      const out: Record<string, number> = {};
+      for (const [k, v] of Object.entries(src)) {
+        if (typeof v === 'string' || typeof v === 'number') out[k] = toNum(v);
+      }
+      if (Object.keys(out).length) setAllMids(out);
+    });
+
+    // Market stats (try both method names)
+    consume(
+      () => s.marketStats?.(symbol) ?? s.market?.(symbol),
+      (u: any) => {
+        setStats({
+          markPx:       toNum(u.markPx  ?? u.mark_px  ?? u.markPrice),
+          midPx:        toNum(u.midPx   ?? u.mid_px),
+          oraclePx:     toNum(u.oraclePx ?? u.oracle_px ?? u.indexPrice),
+          prevDayPx:    toNum(u.prevDayPx ?? u.prev_day_px ?? u.open24h),
+          dayNtlVlm:    toNum(u.dayNtlVlm ?? u.day_ntl_vlm ?? u.volume24h),
+          openInterest: toNum(u.openInterest ?? u.open_interest ?? u.oi),
+          funding:      toNum(u.funding ?? u.fundingRate ?? u.funding1h),
+        });
+      },
+    );
+
+    // Fills / recent trades
+    consume(() => s.fills?.(symbol), (u: any) => {
+      const arr: any[] = Array.isArray(u) ? u : [u];
+      setTrades(prev => [...arr, ...prev].slice(0, 60));
+    });
+
+    // Funding rate (current + next)
+    consume(() => s.fundingRate?.(symbol), (u: any) => {
+      setFundingRate({
+        rate:     toNum(u.fundingRate ?? u.rate ?? u.current),
+        nextRate: u.nextFundingRate != null ? toNum(u.nextFundingRate) : null,
+      });
+    });
+
+    // Live candle updates
+    consume(() => s.candles?.(symbol, wsTimeframe), (u: any) => {
+      setLiveCandle(Array.isArray(u) ? u[u.length - 1] : u);
+    });
+
+    // Real-time trader state (positions, orders, collateral)
+    if (authority) {
+      consume(() => s.traderState?.(authority, 0), (u: any) => {
+        const payload = u.snapshot ?? u.data ?? u;
+        if (u.type === 'delta') {
+          setLiveTrader((prev: any) => prev ? { ...prev, ...(u.delta ?? payload) } : payload);
+        } else {
+          setLiveTrader(payload);
+        }
+      });
+    }
+
+    return () => { dead = true; };
+  }, [client, symbol, wsTimeframe, authority]);
 
   return { connected, stats, ob, trades, liveCandle, allMids, fundingRate, liveTrader };
-}
-
-// ── Rise SDK client ───────────────────────────────────────────────────────────
-
-function useRiseClient() {
-  const clientRef = useRef<any>(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
-    let cancelled = false;
-    try {
-      const c = createPhoenixClient({
-        apiUrl: PHOENIX_API_URL,
-        rpcUrl,
-        exchangeMetadata: { stream: true },
-        flight: {
-          builderAuthority: BUILDER_AUTHORITY,
-          builderPdaIndex: 0,
-          builderSubaccountIndex: 0,
-        },
-      });
-      c.exchange.ready().then(() => {
-        if (!cancelled) { clientRef.current = c; setReady(true); }
-      }).catch(() => {});
-    } catch {}
-    return () => { cancelled = true; };
-  }, []);
-
-  return { client: clientRef.current as any, ready };
 }
 
 // ── Orderbook side ────────────────────────────────────────────────────────────
@@ -319,8 +310,10 @@ export default function PerpsPage() {
 
   const wsTimeframe = TIMEFRAMES.find(t => t.s === tf)?.ws ?? '1h';
   const wsAuthority = publicKey?.toString();
+
+  // SDK streams — typed async iterators for all live data
   const { connected, stats, ob, trades, liveCandle, allMids, fundingRate: wsFunding, liveTrader } =
-    usePhoenixWS(market, wsTimeframe, wsAuthority);
+    useRiseStreams(riseClient, market, wsTimeframe, wsAuthority);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -335,14 +328,28 @@ export default function PerpsPage() {
 
   const { data: marketsRaw } = useQuery<unknown>({
     queryKey: ['/api/perps/markets'],
-    queryFn: async () => (await fetch('/api/perps/markets')).json(),
+    queryFn: async () => {
+      // Prefer SDK HTTP client; fall back to server proxy
+      if (riseClient?.api?.markets) {
+        try { return await riseClient.api.markets().getMarkets(); } catch {}
+      }
+      return (await fetch('/api/perps/markets')).json();
+    },
     staleTime: 60_000,
   });
 
   const { data: candlesRaw } = useQuery<unknown>({
     queryKey: ['/api/perps/candles', market, tf],
-    queryFn: async () =>
-      (await fetch(`/api/perps/candles/${encodeURIComponent(market)}?timeframe=${tf}&limit=120`)).json(),
+    queryFn: async () => {
+      // Prefer SDK HTTP client for candles
+      if (riseClient?.api?.candles) {
+        try {
+          return await riseClient.api.candles().getCandles(market, { timeframe: wsTimeframe, limit: 120 });
+        } catch {}
+      }
+      return (await fetch(`/api/perps/candles/${encodeURIComponent(market)}?timeframe=${tf}&limit=120`)).json();
+    },
+    enabled: !!riseClient || true,
     staleTime: 120_000,
     refetchInterval: 120_000,
   });
@@ -357,16 +364,31 @@ export default function PerpsPage() {
 
   const { data: exchangeRaw } = useQuery<unknown>({
     queryKey: ['/api/perps/exchange'],
-    queryFn: async () => (await fetch('/api/perps/exchange')).json(),
+    queryFn: async () => {
+      if (riseClient?.exchange) {
+        try { return await riseClient.exchange().getMarket(market); } catch {}
+      }
+      return (await fetch('/api/perps/exchange')).json();
+    },
     staleTime: 300_000,
   });
 
   const { data: traderRaw, refetch: refetchTrader } = useQuery<unknown>({
     queryKey: ['/api/perps/trader', publicKey?.toString()],
-    queryFn: async () => (await fetch(`/api/perps/trader/${publicKey!.toString()}`)).json(),
+    queryFn: async () => {
+      // Prefer SDK HTTP client for trader state
+      if (riseClient?.traders) {
+        try {
+          return await riseClient.traders().getTraderStateSnapshot(
+            publicKey!.toString(), { traderPdaIndex: 0 },
+          );
+        } catch {}
+      }
+      return (await fetch(`/api/perps/trader/${publicKey!.toString()}`)).json();
+    },
     enabled: !!publicKey,
-    refetchInterval: 10_000,
-    staleTime: 8_000,
+    refetchInterval: 15_000,
+    staleTime: 12_000,
     retry: false,
   });
 
