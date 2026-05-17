@@ -310,10 +310,20 @@ function AccessGate() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 // Wrapper: only calls useWallet so hook count is always stable.
-// Renders AccessGate or the real component based on wallet.
+// Waits for autoConnect before showing gate (avoids flash on page load).
 export default function PerpsPage() {
-  const { publicKey } = useWallet();
-  if (!publicKey || publicKey.toString() !== ALLOWED_WALLET) {
+  const { publicKey, connecting } = useWallet();
+
+  // Still reconnecting via autoConnect — show spinner not gate
+  if (connecting) {
+    return (
+      <div className="h-screen bg-[#0b0b12] flex items-center justify-center">
+        <span className="text-white/25 text-sm">Connecting wallet…</span>
+      </div>
+    );
+  }
+
+  if (!publicKey || publicKey.toBase58() !== ALLOWED_WALLET) {
     return <AccessGate />;
   }
   return <PerpsInner />;
