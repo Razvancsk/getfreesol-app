@@ -5,11 +5,13 @@
  */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { Transaction } from '@solana/web3.js';
+import { Side, createPhoenixClient } from '@ellipsis-labs/rise';
 import { Link } from 'wouter';
 import {
   ArrowLeft, ExternalLink, Activity, TrendingUp, TrendingDown,
-  Zap, User, Key, RefreshCw,
+  Zap, User, Key, RefreshCw, ChevronDown,
 } from 'lucide-react';
 import {
   ComposedChart, Area, Bar, XAxis, YAxis, Tooltip,
@@ -20,6 +22,10 @@ const logoImage = '/logo.png';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const PHOENIX_WS = 'wss://perp-api.phoenix.trade/v1/ws';
+const PHOENIX_API_URL = 'https://perp-api.phoenix.trade';
+
+// Flight fee-routing — builder fees accumulate to this account
+const BUILDER_AUTHORITY  = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 
 const TIMEFRAMES = [
   { label: '1m',  s: '60',    ws: '1m'  },
@@ -161,16 +167,52 @@ function usePhoenixWS(symbol: string, wsTimeframe: string) {
   return { connected, stats, ob, trades, liveCandle };
 }
 
+// ── Rise SDK client (real trading + Flight fee routing) ───────────────────────
+
+function useRiseClient() {
+  const clientRef = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
+    let cancelled = false;
+    try {
+      const c = createPhoenixClient({
+        apiUrl: PHOENIX_API_URL,
+        rpcUrl,
+        exchangeMetadata: { stream: false },
+        flight: {
+          builderAuthority: BUILDER_AUTHORITY,
+          builderPdaIndex: 0,
+          builderSubaccountIndex: 0,
+        },
+      });
+      c.exchange.ready().then(() => {
+        if (!cancelled) { clientRef.current = c; setReady(true); }
+      }).catch(() => { /* non-fatal */ });
+    } catch { /* non-fatal */ }
+    return () => { cancelled = true; };
+  }, []);
+
+  return { client: clientRef.current as ReturnType<typeof createPhoenixClient> | null, ready };
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function PerpsPage() {
   const qc = useQueryClient();
-  const { publicKey } = useWallet();
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+  const { client: riseClient, ready: riseReady } = useRiseClient();
   const [market,     setMarket]     = useState('SOL-PERP');
   const [tf,         setTf]         = useState('3600');
   const [amount,     setAmount]     = useState('100');
   const [inviteCode, setInviteCode] = useState('');
   const [tab,        setTab]        = useState<'account' | 'paper'>('account');
+  const [orderType,  setOrderType]  = useState<'limit' | 'market'>('market');
+  const [orderPrice, setOrderPrice] = useState('');
+  const [orderSize,  setOrderSize]  = useState('0.1');
+  const [txSig,      setTxSig]      = useState<string | null>(null);
 
   const wsTimeframe = TIMEFRAMES.find(t => t.s === tf)?.ws ?? '1h';
   const { connected, stats, ob, trades, liveCandle } = usePhoenixWS(market, wsTimeframe);
@@ -243,6 +285,57 @@ export default function PerpsPage() {
       return r.json();
     },
     onSuccess: () => { refetchTrader(); },
+  });
+
+  // Real on-chain trade via Rise SDK + Flight fee routing
+  const placeMut = useMutation({
+    mutationFn: async ({ side }: { side: 'buy' | 'sell' }) => {
+      if (!publicKey || !riseClient) throw new Error('Not ready');
+      const authority = publicKey.toString();
+      const sym = market; // "SOL-PERP"
+      const riseSide = side === 'buy' ? Side.Bid : Side.Ask;
+      let ix: any;
+
+      if (orderType === 'limit') {
+        if (!orderPrice) throw new Error('Enter a price');
+        const pkt = await (riseClient as any).ixs.orderPackets.buildLimitOrderPacket({
+          symbol: sym, side: riseSide,
+          priceUsd: orderPrice, baseUnits: orderSize,
+        });
+        ix = await (riseClient as any).ixs.buildPlaceLimitOrder({
+          authority, symbol: sym, orderPacket: pkt,
+          traderPdaIndex: 0, traderSubaccountIndex: 0,
+        });
+      } else {
+        // Market order — use 5% slippage from current mark price
+        const slippageMark = markPrice
+          ? (side === 'buy'
+              ? (markPrice * 1.05).toFixed(4)
+              : (markPrice * 0.95).toFixed(4))
+          : (side === 'buy' ? '999999' : '0.01');
+        const pkt = await (riseClient as any).ixs.orderPackets.buildMarketOrderPacket({
+          symbol: sym, side: riseSide,
+          baseUnits: orderSize, priceLimitUsd: slippageMark,
+        });
+        ix = await (riseClient as any).ixs.buildPlaceMarketOrder({
+          authority, symbol: sym, orderPacket: pkt,
+          traderPdaIndex: 0, traderSubaccountIndex: 0,
+        });
+      }
+
+      const tx = new Transaction().add(ix);
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = publicKey;
+      const sig = await sendTransaction(tx, connection);
+      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
+      return sig;
+    },
+    onSuccess: (sig) => {
+      setTxSig(sig as string);
+      setTimeout(() => setTxSig(null), 8000);
+      refetchTrader();
+    },
   });
 
   const initMut = useMutation({
@@ -686,18 +779,87 @@ export default function PerpsPage() {
                     )}
 
                     {traderPositions.length === 0 && traderOrders.length === 0 && (
-                      <p className="text-[10px] text-white/25 text-center py-2">No open positions or orders</p>
+                      <p className="text-[10px] text-white/25 text-center py-1">No open positions or orders</p>
                     )}
 
-                    <div className="flex items-center gap-2">
-                      <a href="https://phoenix.trade" target="_blank" rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1 py-2 bg-purple-700/40 hover:bg-purple-600/50 border border-purple-500/30 rounded-lg text-xs font-medium text-white/70 transition">
-                        Trade on Phoenix <ExternalLink className="h-3 w-3" />
-                      </a>
-                      <button onClick={() => refetchTrader()}
-                        className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition text-white/40 hover:text-white/70">
-                        <RefreshCw className="h-3.5 w-3.5" />
-                      </button>
+                    {/* ── Place Order ──────────────────────────────────── */}
+                    <div className="border-t border-white/10 pt-3 flex flex-col gap-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-white/40 uppercase tracking-wider">Place Order</span>
+                        <div className="flex items-center gap-1 bg-white/5 rounded-md p-0.5">
+                          {(['market', 'limit'] as const).map(t => (
+                            <button key={t} onClick={() => setOrderType(t)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-medium transition ${
+                                orderType === t ? 'bg-purple-600 text-white' : 'text-white/35 hover:text-white/60'
+                              }`}>
+                              {t.charAt(0).toUpperCase() + t.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {orderType === 'limit' && (
+                        <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+                          <span className="text-white/30 text-[10px]">Price $</span>
+                          <input type="number" value={orderPrice} onChange={e => setOrderPrice(e.target.value)}
+                            placeholder={markPrice ? markPrice.toFixed(2) : '0.00'}
+                            className="flex-1 bg-transparent text-xs text-white outline-none w-0 min-w-0" />
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+                        <span className="text-white/30 text-[10px]">Size</span>
+                        <input type="number" value={orderSize} onChange={e => setOrderSize(e.target.value)}
+                          placeholder="0.1"
+                          className="flex-1 bg-transparent text-xs text-white outline-none w-0 min-w-0" />
+                        <span className="text-white/30 text-[10px]">{stripPerp(market)}</span>
+                      </div>
+
+                      {orderType === 'market' && markPrice && (
+                        <p className="text-[10px] text-white/25">
+                          Est. notional ≈ {fUSD(parseFloat(orderSize || '0') * markPrice)} · 5% slippage tol.
+                        </p>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => placeMut.mutate({ side: 'buy' })}
+                          disabled={placeMut.isPending || !riseReady}
+                          className="flex items-center justify-center gap-1 py-2.5 bg-green-600/80 hover:bg-green-500/80 rounded-lg text-xs font-semibold transition disabled:opacity-40">
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          {placeMut.isPending ? '…' : 'Long'}
+                        </button>
+                        <button
+                          onClick={() => placeMut.mutate({ side: 'sell' })}
+                          disabled={placeMut.isPending || !riseReady}
+                          className="flex items-center justify-center gap-1 py-2.5 bg-red-600/80 hover:bg-red-500/80 rounded-lg text-xs font-semibold transition disabled:opacity-40">
+                          <TrendingDown className="h-3.5 w-3.5" />
+                          {placeMut.isPending ? '…' : 'Short'}
+                        </button>
+                      </div>
+
+                      {!riseReady && (
+                        <p className="text-[10px] text-white/25 text-center">Initializing trading engine…</p>
+                      )}
+                      {placeMut.isError && (
+                        <p className="text-red-400 text-[10px] break-all">
+                          {(placeMut.error as any)?.message ?? 'Order failed'}
+                        </p>
+                      )}
+                      {txSig && (
+                        <a href={`https://solscan.io/tx/${txSig}`} target="_blank" rel="noopener noreferrer"
+                          className="text-green-400 text-[10px] truncate hover:underline">
+                          ✓ Order placed · {txSig.slice(0, 16)}… ↗
+                        </a>
+                      )}
+
+                      <div className="flex items-center justify-between text-[10px] text-white/20 pt-1 border-t border-white/5">
+                        <span>Flight fee routing enabled</span>
+                        <button onClick={() => refetchTrader()}
+                          className="hover:text-white/50 transition">
+                          <RefreshCw className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
