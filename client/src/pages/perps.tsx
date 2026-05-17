@@ -3,7 +3,7 @@
  * REST + WS: https://perp-api.phoenix.trade
  * Paper trading: Vulcan CLI  https://github.com/Ellipsis-Labs/vulcan-cli
  */
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Link } from 'wouter';
