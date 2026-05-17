@@ -738,6 +738,78 @@ function PerpsInner() {
         </div>
       </nav>
 
+      {/* ── Market stats bar — full width, under nav ────────────────────── */}
+      <div className="flex items-center gap-4 px-4 py-2.5 border-b border-[#2a2d3e] bg-[#131722] shrink-0 overflow-x-auto scrollbar-none">
+        <button
+          onClick={() => { setMktPanel(v => !v); setMktSearch(''); }}
+          className="flex items-center gap-2 shrink-0 pr-4 border-r border-[#2a2d3e]"
+        >
+          <TokenAvatar symbol={marketBase} size={26} />
+          <span className="text-base font-bold text-white leading-none">{marketBase}</span>
+          {maxLev && (
+            <span className="inline-flex items-center text-xs bg-[#1e2130] border border-[#3a3d4e] text-white/55 rounded px-1.5 py-0.5 font-medium">
+              {maxLev}x
+            </span>
+          )}
+          <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-200 ${mktPanel ? 'rotate-180' : ''}`} />
+        </button>
+
+        <div className="flex items-center gap-8 overflow-x-auto scrollbar-none">
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Mark</span>
+            <span className="text-sm font-mono text-white whitespace-nowrap">{markPrice != null ? fp(markPrice) : '—'}</span>
+          </div>
+          {indexPrice != null && (
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Index</span>
+              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fp(indexPrice)}</span>
+            </div>
+          )}
+          {markPrice != null && stats?.prevDayPx != null && stats.prevDayPx > 0 && (
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Change</span>
+              <span className={`text-sm font-mono flex items-center gap-1 whitespace-nowrap ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                {isUp ? '+' : ''}{fUSD(markPrice - stats.prevDayPx)} ({isUp ? '+' : ''}{((priceChange ?? 0) * 100).toFixed(2)}%)
+                <svg width="10" height="6" viewBox="0 0 12 7" fill="none">
+                  {isUp
+                    ? <path d="M11.47 5.68741L5.73388 0.422607L0 5.69273L1.26021 7L2.17799 6.14435C4.1578 4.29858 7.24693 4.3634 9.14756 6.29061L9.84717 7L11.47 5.68741Z" fill="currentColor"/>
+                    : <path d="M11.47 1.31259L5.73388 6.57739L0 1.30727L1.26021 0L2.17799 0.855648C4.1578 2.70142 7.24693 2.6366 9.14756 0.709392L9.84717 0L11.47 1.31259Z" fill="currentColor"/>
+                  }
+                </svg>
+              </span>
+            </div>
+          )}
+          {dayNtlVlm != null && dayNtlVlm > 0 && (
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Volume</span>
+              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fUSD(dayNtlVlm)}</span>
+            </div>
+          )}
+          {openInterest != null && openInterest > 0 && (
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Open Interest</span>
+              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{fUSD(openInterest)}</span>
+            </div>
+          )}
+          {fundingRate != null && (
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[11px] text-[#F37B28] whitespace-nowrap">1h Funding</span>
+              <span className="text-sm font-mono flex gap-2 whitespace-nowrap">
+                <span className={fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}>
+                  {fundingRate >= 0 ? '+' : ''}{(fundingRate * 100).toFixed(4)}%
+                </span>
+                {fundingCountdown && <span className="text-white/45">{fundingCountdown}</span>}
+              </span>
+            </div>
+          )}
+          <span className={`shrink-0 text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+            connected ? 'text-green-400/70 border-green-500/25 bg-green-500/5' : 'text-white/20 border-white/10'
+          }`}>
+            {connected ? '● LIVE' : '○ …'}
+          </span>
+        </div>
+      </div>
+
       {/* ── Middle: chart (left) + order form (right) ───────────────────── */}
       <div className="flex-1 flex overflow-hidden min-h-0 relative">
 
@@ -915,68 +987,6 @@ function PerpsInner() {
 
         {/* ── Order form (right, 300px) ──────────────────────────────── */}
         <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto bg-[#131722] border-l border-[#2a2d3e]">
-
-          {/* ── Market card ─────────────────────────────────────────────── */}
-          <div className="px-3 py-3 border-b border-[#2a2d3e] shrink-0">
-            <button
-              onClick={() => { setMktPanel(v => !v); setMktSearch(''); }}
-              className="flex items-center gap-2 mb-3"
-            >
-              <TokenAvatar symbol={marketBase} size={28} />
-              <span className="text-lg font-bold text-white leading-none">{marketBase}</span>
-              {maxLev && (
-                <span className="inline-flex items-center text-xs bg-[#1e2130] border border-[#3a3d4e] text-white/55 rounded px-1.5 py-0.5 font-medium">
-                  {maxLev}x
-                </span>
-              )}
-              <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-200 ${mktPanel ? 'rotate-180' : ''}`} />
-            </button>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] text-[#F37B28]">Mark</span>
-                <span className="text-sm font-mono text-white">{markPrice != null ? fp(markPrice) : '—'}</span>
-              </div>
-              {indexPrice != null && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-[#F37B28]">Index</span>
-                  <span className="text-sm font-mono text-white/70">{fp(indexPrice)}</span>
-                </div>
-              )}
-              {markPrice != null && stats?.prevDayPx != null && stats.prevDayPx > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-[#F37B28]">24h Change</span>
-                  <span className={`text-sm font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-                    {isUp ? '+' : ''}{((priceChange ?? 0) * 100).toFixed(2)}%
-                  </span>
-                </div>
-              )}
-              {dayNtlVlm != null && dayNtlVlm > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-[#F37B28]">24h Volume</span>
-                  <span className="text-sm font-mono text-white/70">{fUSD(dayNtlVlm)}</span>
-                </div>
-              )}
-              {openInterest != null && openInterest > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-[#F37B28]">Open Interest</span>
-                  <span className="text-sm font-mono text-white/70">{fUSD(openInterest)}</span>
-                </div>
-              )}
-              {fundingRate != null && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-[#F37B28]">1h Funding</span>
-                  <span className={`text-sm font-mono ${fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {fundingRate >= 0 ? '+' : ''}{(fundingRate * 100).toFixed(4)}%
-                  </span>
-                </div>
-              )}
-            </div>
-            <span className={`mt-2 inline-block text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-              connected ? 'text-green-400/70 border-green-500/25 bg-green-500/5' : 'text-white/20 border-white/10'
-            }`}>
-              {connected ? '● LIVE' : '○ …'}
-            </span>
-          </div>
 
           {/* Cross / Isolated toggle */}
           <div className="px-3 py-2.5 border-b border-[#2a2d3e] shrink-0">
