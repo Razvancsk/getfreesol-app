@@ -12911,21 +12911,19 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // ── /api/perps — Phoenix Perpetuals via Vulcan CLI ──────────────────────
-  // https://github.com/Ellipsis-Labs/vulcan-cli
-  // Fallback: Phoenix REST API for data not covered by Vulcan public commands
+  // ── /api/perps — Phoenix Perpetuals REST + Vulcan CLI fallback ──────────
+  // https://perp-api.phoenix.trade  |  https://ellipsislabs.mintlify.app/api
   const PHOENIX_API = 'https://perp-api.phoenix.trade';
 
   app.get('/api/perps/markets', async (_req, res) => {
     try {
-      const data = await vulcanMarketList();
-      res.json(data);
-    } catch (e: any) {
-      // fallback to Phoenix API
-      try {
-        const r = await fetch(`${PHOENIX_API}/exchange/markets`);
-        res.json(await r.json());
-      } catch { res.status(500).json({ error: e.message }); }
+      // Primary: Phoenix REST /exchange/markets
+      const r = await fetch(`${PHOENIX_API}/exchange/markets`);
+      if (!r.ok) throw new Error(`Phoenix ${r.status}`);
+      res.json(await r.json());
+    } catch {
+      try { res.json(await vulcanMarketList()); }
+      catch (e: any) { res.status(500).json({ error: e.message }); }
     }
   });
 
@@ -12953,23 +12951,29 @@ Claimer: ${walletAddress}`;
 
   app.get('/api/perps/candles/:symbol', async (req, res) => {
     const sym = String(req.params.symbol || 'SOL-PERP');
+    const tfSecs = Number(req.query.timeframe) || 3600;
+    const limit  = Number(req.query.limit) || 120;
+    const tfMap: Record<number, string> = {
+      60: '1m', 300: '5m', 900: '15m', 1800: '30m', 3600: '1h', 14400: '4h', 86400: '1d',
+    };
+    const interval = tfMap[tfSecs] ?? '1h';
     try {
-      // Vulcan uses interval labels (1m, 5m, 1h, 4h, 1d); map from seconds
-      const tfSecs = Number(req.query.timeframe) || 3600;
-      const intervalMap: Record<number, string> = {
-        60: '1m', 300: '5m', 900: '15m', 3600: '1h', 14400: '4h', 86400: '1d',
-      };
-      const interval = intervalMap[tfSecs] ?? '1h';
-      const limit = Number(req.query.limit) || 100;
-      const data = await vulcanMarketCandles(sym, interval, limit);
-      res.json(Array.isArray(data) ? data : data?.candles ?? data);
-    } catch (e: any) {
+      // Primary: Phoenix REST GET /candles
+      const url = `${PHOENIX_API}/candles?symbol=${encodeURIComponent(sym)}&timeframe=${interval}&limit=${limit}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`Phoenix ${r.status}`);
+      const data = await r.json() as any[];
+      // Normalize timestamps: Phoenix returns ms, convert to seconds
+      const candles = (Array.isArray(data) ? data : []).map((c: any) => ({
+        ...c,
+        time: c.time > 1e12 ? Math.floor(c.time / 1000) : c.time,
+      }));
+      res.json(candles);
+    } catch {
       try {
-        const tf = String(req.query.timeframe || '3600');
-        const lim = String(req.query.limit || '100');
-        const r = await fetch(`${PHOENIX_API}/v1/candles/${encodeURIComponent(sym)}?timeframe=${tf}&limit=${lim}`);
-        res.json(await r.json());
-      } catch { res.status(500).json({ error: e.message }); }
+        const data = await vulcanMarketCandles(sym, interval, limit);
+        res.json(Array.isArray(data) ? data : (data as any)?.candles ?? data);
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
     }
   });
 
@@ -13062,6 +13066,43 @@ Claimer: ${walletAddress}`;
       });
       const data = await r.json();
       res.status(r.status).json(data);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // GET /exchange/keys — exchange-level identifiers and authorities
+  app.get('/api/perps/exchange/keys', async (_req, res) => {
+    try {
+      const r = await fetch(`${PHOENIX_API}/exchange/keys`);
+      if (!r.ok) throw new Error(`Phoenix ${r.status}`);
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // GET /exchange/market/:symbol — single market static config
+  app.get('/api/perps/exchange/market/:symbol', async (req, res) => {
+    try {
+      const sym = encodeURIComponent(String(req.params.symbol || ''));
+      const r = await fetch(`${PHOENIX_API}/exchange/market/${sym}`);
+      if (!r.ok) throw new Error(`Phoenix ${r.status}`);
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // GET /v1/exchange/snapshot — full live snapshot: slot, mark prices, all markets
+  app.get('/api/perps/exchange/snapshot', async (_req, res) => {
+    try {
+      const r = await fetch(`${PHOENIX_API}/v1/exchange/snapshot`);
+      if (!r.ok) throw new Error(`Phoenix ${r.status}`);
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // GET /v1/market/next-commodity-market-transition — commodity open/afterHours state
+  app.get('/api/perps/commodity-transition', async (_req, res) => {
+    try {
+      const r = await fetch(`${PHOENIX_API}/v1/market/next-commodity-market-transition`);
+      if (!r.ok) throw new Error(`Phoenix ${r.status}`);
+      res.json(await r.json());
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 

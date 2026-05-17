@@ -78,14 +78,18 @@ function toOBRow(r: any): [number, number] {
   return [toNum(r.price ?? r.px), toNum(r.size ?? r.qty)];
 }
 
-function usePhoenixWS(symbol: string, wsTimeframe: string) {
-  const [connected,   setConnected]   = useState(false);
-  const [stats,       setStats]       = useState<MarketStats | null>(null);
-  const [ob,          setOb]          = useState<OB>({ bids: [], asks: [], mid: null });
-  const [trades,      setTrades]      = useState<any[]>([]);
-  const [liveCandle,  setLiveCandle]  = useState<any>(null);
-  const [allMids,     setAllMids]     = useState<Record<string, number>>({});
-  const wsRef  = useRef<WebSocket | null>(null);
+interface FundingRate { rate: number; nextRate: number | null; }
+
+function usePhoenixWS(symbol: string, wsTimeframe: string, authority?: string) {
+  const [connected,    setConnected]    = useState(false);
+  const [stats,        setStats]        = useState<MarketStats | null>(null);
+  const [ob,           setOb]           = useState<OB>({ bids: [], asks: [], mid: null });
+  const [trades,       setTrades]       = useState<any[]>([]);
+  const [liveCandle,   setLiveCandle]   = useState<any>(null);
+  const [allMids,      setAllMids]      = useState<Record<string, number>>({});
+  const [fundingRate,  setFundingRate]  = useState<FundingRate | null>(null);
+  const [liveTrader,   setLiveTrader]   = useState<any>(null);
+  const wsRef   = useRef<WebSocket | null>(null);
   const deadRef = useRef(false);
   const sym = stripPerp(symbol);
 
@@ -100,13 +104,19 @@ function usePhoenixWS(symbol: string, wsTimeframe: string) {
       ws.onopen = () => {
         if (deadRef.current) { ws.close(); return; }
         setConnected(true);
-        [
+        const subs: object[] = [
           { channel: 'allMids' },
-          { channel: 'market',    symbol: sym },
-          { channel: 'orderbook', symbol: sym },
-          { channel: 'trades',    symbol: sym },
-          { channel: 'candles',   symbol: sym, timeframe: wsTimeframe },
-        ].forEach(sub => ws.send(JSON.stringify({ type: 'subscribe', subscription: sub })));
+          { channel: 'market',       symbol: sym },
+          { channel: 'orderbook',    symbol: sym },
+          { channel: 'trades',       symbol: sym },
+          { channel: 'candles',      symbol: sym, timeframe: wsTimeframe },
+          { channel: 'fundingRate',  symbol: sym },
+        ];
+        // Subscribe to real-time trader state if wallet connected
+        if (authority) {
+          subs.push({ channel: 'traderState', authority, traderPdaIndex: 0 });
+        }
+        subs.forEach(sub => ws.send(JSON.stringify({ type: 'subscribe', subscription: sub })));
       };
 
       ws.onmessage = ({ data: raw }) => {
@@ -140,6 +150,18 @@ function usePhoenixWS(symbol: string, wsTimeframe: string) {
             setTrades(prev => [...arr, ...prev].slice(0, 60));
           } else if (ch === 'candle' || ch === 'candles') {
             setLiveCandle(d);
+          } else if (ch === 'fundingRate') {
+            setFundingRate({
+              rate:     toNum(d.fundingRate ?? d.rate ?? d.current),
+              nextRate: d.nextFundingRate != null ? toNum(d.nextFundingRate ?? d.next) : null,
+            });
+          } else if (ch === 'traderState') {
+            // Snapshot: replace; delta: merge
+            if (d.type === 'snapshot' || !d.type) {
+              setLiveTrader(d.snapshot ?? d);
+            } else if (d.type === 'delta') {
+              setLiveTrader((prev: any) => prev ? { ...prev, ...d.delta } : d.delta);
+            }
           }
         } catch { /* ignore */ }
       };
@@ -153,9 +175,9 @@ function usePhoenixWS(symbol: string, wsTimeframe: string) {
 
     connect();
     return () => { deadRef.current = true; wsRef.current?.close(); };
-  }, [sym, wsTimeframe]);
+  }, [sym, wsTimeframe, authority]);
 
-  return { connected, stats, ob, trades, liveCandle, allMids };
+  return { connected, stats, ob, trades, liveCandle, allMids, fundingRate, liveTrader };
 }
 
 // ── Rise SDK client ───────────────────────────────────────────────────────────
@@ -233,7 +255,9 @@ export default function PerpsPage() {
   const dropRef = useRef<HTMLDivElement>(null);
 
   const wsTimeframe = TIMEFRAMES.find(t => t.s === tf)?.ws ?? '1h';
-  const { connected, stats, ob, trades, liveCandle, allMids } = usePhoenixWS(market, wsTimeframe);
+  const wsAuthority = publicKey?.toString();
+  const { connected, stats, ob, trades, liveCandle, allMids, fundingRate: wsFunding, liveTrader } =
+    usePhoenixWS(market, wsTimeframe, wsAuthority);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -353,7 +377,9 @@ export default function PerpsPage() {
 
   const markPrice    = stats?.markPx ?? null;
   const indexPrice   = stats?.oraclePx ?? null;
-  const fundingRate  = stats?.funding ?? null;
+  // Prefer dedicated fundingRate WS channel; fall back to market stats
+  const fundingRate  = wsFunding?.rate ?? stats?.funding ?? null;
+  const nextFunding  = wsFunding?.nextRate ?? null;
   const dayNtlVlm    = stats?.dayNtlVlm ?? null;
   const openInterest = stats?.openInterest ?? null;
   const priceChange  = (markPrice && stats?.prevDayPx && stats.prevDayPx > 0)
@@ -395,9 +421,11 @@ export default function PerpsPage() {
   const takerFee = mktCfg?.takerFee ?? null;
   const makerFee = mktCfg?.makerFee ?? null;
 
+  // Prefer live WS trader state; fall back to REST polling
   const trader: any    = traderRaw;
   const traderArr      = trader?.traders ?? (trader && !trader.error ? [trader] : []);
-  const td: any        = traderArr[0];
+  const tdRest: any    = traderArr[0];
+  const td: any        = liveTrader ?? tdRest;
   const isRegistered   = !!td && td.state !== 'uninitialized' && !trader?.error;
   const traderPositions: any[] = td?.positions ?? [];
   const traderOrders: any[]    = Object.values(td?.limitOrders ?? {}).flat() as any[];
@@ -494,8 +522,15 @@ export default function PerpsPage() {
           {fundingRate != null && (
             <div className="shrink-0">
               <div className="text-[9px] text-white/30 uppercase tracking-wider">1h Funding</div>
-              <div className={`text-[11px] font-mono ${fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {fundingRate >= 0 ? '+' : ''}{(fundingRate * 100).toFixed(4)}%
+              <div className="flex items-baseline gap-1.5">
+                <span className={`text-[11px] font-mono ${fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {fundingRate >= 0 ? '+' : ''}{(fundingRate * 100).toFixed(4)}%
+                </span>
+                {nextFunding != null && (
+                  <span className={`text-[9px] font-mono opacity-50 ${nextFunding >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    → {nextFunding >= 0 ? '+' : ''}{(nextFunding * 100).toFixed(4)}%
+                  </span>
+                )}
               </div>
             </div>
           )}
