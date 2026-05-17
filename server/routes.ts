@@ -1,4 +1,17 @@
 ﻿import type { Express } from "express";
+import {
+  marketList as vulcanMarketList,
+  marketTicker as vulcanMarketTicker,
+  marketOrderbook as vulcanMarketOrderbook,
+  marketCandles as vulcanMarketCandles,
+  taReport as vulcanTaReport,
+  paperInit as vulcanPaperInit,
+  paperStatus as vulcanPaperStatus,
+  paperPositions as vulcanPaperPositions,
+  paperFills as vulcanPaperFills,
+  paperBuy as vulcanPaperBuy,
+  paperSell as vulcanPaperSell,
+} from './vulcanCli';
 import { createServer, type Server } from "http";
 import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { computeWalletPnl, remainingCostSol, remainingQty } from './heliusPnl';
@@ -12898,56 +12911,124 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // ── /api/perps — Phoenix Perpetuals ──────────────────────────────────────
+  // ── /api/perps — Phoenix Perpetuals via Vulcan CLI ──────────────────────
+  // https://github.com/Ellipsis-Labs/vulcan-cli
+  // Fallback: Phoenix REST API for data not covered by Vulcan public commands
   const PHOENIX_API = 'https://perp-api.phoenix.trade';
 
   app.get('/api/perps/markets', async (_req, res) => {
     try {
-      const r = await fetch(`${PHOENIX_API}/exchange/markets`);
-      res.status(r.ok ? 200 : r.status).json(await r.json());
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+      const data = await vulcanMarketList();
+      res.json(data);
+    } catch (e: any) {
+      // fallback to Phoenix API
+      try {
+        const r = await fetch(`${PHOENIX_API}/exchange/markets`);
+        res.json(await r.json());
+      } catch { res.status(500).json({ error: e.message }); }
+    }
   });
 
-  app.get('/api/perps/snapshot', async (_req, res) => {
+  app.get('/api/perps/ticker/:symbol', async (req, res) => {
     try {
-      const r = await fetch(`${PHOENIX_API}/v1/exchange/snapshot`);
-      res.status(r.ok ? 200 : r.status).json(await r.json());
+      const sym = String(req.params.symbol || 'SOL-PERP');
+      const data = await vulcanMarketTicker(sym);
+      res.json(data);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.get('/api/perps/orderbook/:symbol', async (req, res) => {
+    const sym = String(req.params.symbol || 'SOL-PERP');
     try {
-      const sym = encodeURIComponent(String(req.params.symbol || ''));
-      const r = await fetch(`${PHOENIX_API}/v1/view/orderbook/${sym}`);
-      res.status(r.ok ? 200 : r.status).json(await r.json());
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+      const depth = Number(req.query.depth) || 15;
+      const data = await vulcanMarketOrderbook(sym, depth);
+      res.json(data);
+    } catch (e: any) {
+      try {
+        const r = await fetch(`${PHOENIX_API}/v1/view/orderbook/${encodeURIComponent(sym)}`);
+        res.json(await r.json());
+      } catch { res.status(500).json({ error: e.message }); }
+    }
   });
 
   app.get('/api/perps/candles/:symbol', async (req, res) => {
+    const sym = String(req.params.symbol || 'SOL-PERP');
     try {
-      const sym = encodeURIComponent(String(req.params.symbol || ''));
-      const tf  = String(req.query.timeframe || '3600');
-      const lim = String(req.query.limit || '120');
-      const r = await fetch(`${PHOENIX_API}/v1/candles/${sym}?timeframe=${tf}&limit=${lim}`);
-      res.status(r.ok ? 200 : r.status).json(await r.json());
+      // Vulcan uses interval labels (1m, 5m, 1h, 4h, 1d); map from seconds
+      const tfSecs = Number(req.query.timeframe) || 3600;
+      const intervalMap: Record<number, string> = {
+        60: '1m', 300: '5m', 900: '15m', 3600: '1h', 14400: '4h', 86400: '1d',
+      };
+      const interval = intervalMap[tfSecs] ?? '1h';
+      const limit = Number(req.query.limit) || 100;
+      const data = await vulcanMarketCandles(sym, interval, limit);
+      res.json(Array.isArray(data) ? data : data?.candles ?? data);
+    } catch (e: any) {
+      try {
+        const tf = String(req.query.timeframe || '3600');
+        const lim = String(req.query.limit || '100');
+        const r = await fetch(`${PHOENIX_API}/v1/candles/${encodeURIComponent(sym)}?timeframe=${tf}&limit=${lim}`);
+        res.json(await r.json());
+      } catch { res.status(500).json({ error: e.message }); }
+    }
+  });
+
+  app.get('/api/perps/ta/:symbol', async (req, res) => {
+    try {
+      const sym = String(req.params.symbol || 'SOL-PERP');
+      const tf = String(req.query.timeframe || '1h');
+      const data = await vulcanTaReport(sym, tf);
+      res.json(data);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  // Public fills — Phoenix API direct (no Vulcan auth needed)
   app.get('/api/perps/trades/:symbol', async (req, res) => {
     try {
       const sym = encodeURIComponent(String(req.params.symbol || ''));
       const lim = String(req.query.limit || '30');
       const r = await fetch(`${PHOENIX_API}/market/${sym}/fills?limit=${lim}`);
-      res.status(r.ok ? 200 : r.status).json(await r.json());
+      res.json(await r.json());
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  app.get('/api/perps/funding/:symbol', async (req, res) => {
+  // ── Paper trading (no wallet required) ────────────────────────────────────
+
+  app.post('/api/perps/paper/init', async (req, res) => {
     try {
-      const sym = encodeURIComponent(String(req.params.symbol || ''));
-      const lim = String(req.query.limit || '1');
-      const r = await fetch(`${PHOENIX_API}/v1/funding/${sym}/rates?limit=${lim}`);
-      res.status(r.ok ? 200 : r.status).json(await r.json());
+      const balance = Number(req.body?.balance) || 10000;
+      const data = await vulcanPaperInit(balance);
+      res.json(data);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/perps/paper/status', async (_req, res) => {
+    try { res.json(await vulcanPaperStatus()); }
+    catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/perps/paper/positions', async (_req, res) => {
+    try { res.json(await vulcanPaperPositions()); }
+    catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/perps/paper/fills', async (req, res) => {
+    try {
+      const limit = Number(req.query.limit) || 20;
+      res.json(await vulcanPaperFills(limit));
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/perps/paper/trade', async (req, res) => {
+    try {
+      const { symbol, side, notionalUsdc } = req.body || {};
+      if (!symbol || !side || !notionalUsdc) {
+        return res.status(400).json({ error: 'symbol, side, notionalUsdc required' });
+      }
+      const data = side === 'buy'
+        ? await vulcanPaperBuy(String(symbol), Number(notionalUsdc))
+        : await vulcanPaperSell(String(symbol), Number(notionalUsdc));
+      res.json(data);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
