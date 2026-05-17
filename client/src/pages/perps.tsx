@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { Transaction } from '@solana/web3.js';
 import { Side, createPhoenixClient } from '@ellipsis-labs/rise';
 import { Link } from 'wouter';
@@ -312,7 +312,7 @@ function AccessGate() {
 // Wrapper: only calls useWallet so hook count is always stable.
 // Waits for autoConnect before showing gate (avoids flash on page load).
 export default function PerpsPage() {
-  const { publicKey, connecting } = useWallet();
+  const { publicKey, connecting } = useWalletAdapter();
 
   // Still reconnecting via autoConnect — show spinner not gate
   if (connecting) {
@@ -331,8 +331,7 @@ export default function PerpsPage() {
 
 function PerpsInner() {
   const qc = useQueryClient();
-  const { publicKey, sendTransaction } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey, signTransaction, connection } = useWalletAdapter();
   const { client: riseClient, ready: riseReady } = useRiseClient();
 
   const [market,       setMarket]       = useState('SOL-PERP');
@@ -487,7 +486,8 @@ function PerpsInner() {
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       tx.recentBlockhash = blockhash;
       tx.feePayer = publicKey;
-      const sig = await sendTransaction(tx, connection);
+      const signedTx = await signTransaction(tx);
+      const sig = await connection.sendRawTransaction((signedTx as Transaction).serialize());
       await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
       return sig;
     },
