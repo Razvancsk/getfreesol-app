@@ -180,7 +180,7 @@ function useRiseClient() {
       const c = createPhoenixClient({
         apiUrl: PHOENIX_API_URL,
         rpcUrl,
-        exchangeMetadata: { stream: false },
+        exchangeMetadata: { stream: true },
         flight: {
           builderAuthority: BUILDER_AUTHORITY,
           builderPdaIndex: 0,
@@ -298,7 +298,7 @@ export default function PerpsPage() {
 
       if (orderType === 'limit') {
         if (!orderPrice) throw new Error('Enter a price');
-        const pkt = await (riseClient as any).ixs.orderPackets.buildLimitOrderPacket({
+        const pkt = await (riseClient as any).orderPackets.buildLimitOrderPacket({
           symbol: sym, side: riseSide,
           priceUsd: orderPrice, baseUnits: orderSize,
         });
@@ -313,7 +313,7 @@ export default function PerpsPage() {
               ? (markPrice * 1.05).toFixed(4)
               : (markPrice * 0.95).toFixed(4))
           : (side === 'buy' ? '999999' : '0.01');
-        const pkt = await (riseClient as any).ixs.orderPackets.buildMarketOrderPacket({
+        const pkt = await (riseClient as any).orderPackets.buildMarketOrderPacket({
           symbol: sym, side: riseSide,
           baseUnits: orderSize, priceLimitUsd: slippageMark,
         });
