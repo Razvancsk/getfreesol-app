@@ -2,11 +2,15 @@ import { useState, useCallback } from 'react';
 import { triggerFeedbackCard } from '@/components/FeedbackWidget';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { createTransferInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import lossGif from '@assets/tenor_1773011576032.gif';
+
+const GSOL_MINT = new PublicKey('GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3');
+const GSOL_DECIMALS = 9;
 
 const BET_AMOUNTS = [0.002, 0.01, 0.05, 0.1, 0.5, 1];
 const ADMIN_ONLY_BET_AMOUNTS = new Set([0.1, 0.5, 1]);
@@ -86,6 +90,7 @@ export function CoinFlipGame() {
   const { publicKey, signTransaction, connected, connection } = useWalletAdapter();
   const { toast } = useToast();
   const [choice, setChoice] = useState<'heads' | 'tails'>('heads');
+  const [betToken, setBetToken] = useState<'sol' | 'gsol'>('sol');
   const [betAmount, setBetAmount] = useState<number | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipResult, setFlipResult] = useState<{ result: string; won: boolean; payoutAmount: number } | null>(null);
@@ -149,7 +154,7 @@ export function CoinFlipGame() {
     const feeAmount = betAmount * FEE_RATE;
     const maxPayout = betAmount * 2; // win = full 2x bet
 
-    if (vaultBalance < maxPayout) {
+    if (betToken === 'sol' && vaultBalance < maxPayout) {
       toast({ title: 'Vault balance too low for this bet', description: `Vault has ${vaultBalance.toFixed(4)} SOL but needs ${maxPayout.toFixed(4)} SOL to cover a win. Try a smaller bet.`, variant: 'destructive' });
       return;
     }
@@ -161,21 +166,25 @@ export function CoinFlipGame() {
     let spinInterval: ReturnType<typeof setInterval> | null = null;
 
     try {
-      // Two instructions: bet → vault, fee → fees wallet
-      const betLamports = Math.floor(betAmount * LAMPORTS_PER_SOL);
-      const feeLamports = Math.floor(feeAmount * LAMPORTS_PER_SOL);
-      const transaction = new Transaction()
-        .add(SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: new PublicKey(vaultAddress),
-          lamports: betLamports,
-        }));
-      if (feesWallet) {
-        transaction.add(SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: new PublicKey(feesWallet),
-          lamports: feeLamports,
-        }));
+      const vaultPubkey = new PublicKey(vaultAddress);
+      let transaction: Transaction;
+
+      if (betToken === 'gsol') {
+        // ── GSOL bet: SPL token transfer to vault's GSOL ATA ─────────────────
+        const userGsolATA  = getAssociatedTokenAddressSync(GSOL_MINT, publicKey);
+        const vaultGsolATA = getAssociatedTokenAddressSync(GSOL_MINT, vaultPubkey);
+        const betTokenAmount = BigInt(Math.floor(betAmount * 10 ** GSOL_DECIMALS));
+        transaction = new Transaction().add(
+          createTransferInstruction(userGsolATA, vaultGsolATA, publicKey, betTokenAmount, [], TOKEN_PROGRAM_ID)
+        );
+      } else {
+        // ── SOL bet: SOL + fee transfers ──────────────────────────────────────
+        const betLamports = Math.floor(betAmount * LAMPORTS_PER_SOL);
+        const feeLamports = Math.floor(feeAmount * LAMPORTS_PER_SOL);
+        transaction = new Transaction().add(SystemProgram.transfer({ fromPubkey: publicKey, toPubkey: vaultPubkey, lamports: betLamports }));
+        if (feesWallet) {
+          transaction.add(SystemProgram.transfer({ fromPubkey: publicKey, toPubkey: new PublicKey(feesWallet), lamports: feeLamports }));
+        }
       }
 
       const bhResp = await fetch('/api/blockhash');
@@ -218,6 +227,7 @@ export function CoinFlipGame() {
         betAmount,
         choice,
         betTxSignature: signature,
+        betToken,
       });
 
       const minAnimMs = 1500;
@@ -367,10 +377,32 @@ export function CoinFlipGame() {
               {flipResult.won ? 'YOU WON' : 'YOU LOST'}
             </div>
             <div className={`text-xl font-bold ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
-              {flipResult.won ? `${flipResult.payoutAmount.toFixed(4)} SOL` : `-${((betAmount ?? 0) * 1.035).toFixed(6)} SOL`}
+              {flipResult.won
+                ? `${flipResult.payoutAmount.toFixed(4)} ${betToken.toUpperCase()}`
+                : `-${((betAmount ?? 0) * (betToken === 'sol' ? 1.035 : 1)).toFixed(6)} ${betToken.toUpperCase()}`}
             </div>
           </div>
         )}
+      </div>
+
+      {/* Token selector */}
+      <div className="flex justify-center">
+        <div className="inline-flex rounded-xl border border-purple-500/30 bg-purple-900/30 p-1 gap-1">
+          {(['sol', 'gsol'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => { setBetToken(t); setBetAmount(null); }}
+              disabled={isFlipping}
+              className={`px-5 py-2 rounded-lg font-bold text-sm uppercase tracking-wider transition-all ${
+                betToken === t
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30'
+                  : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
+              }`}
+            >
+              {t === 'sol' ? '◎ SOL' : '🟢 GSOL'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* I LIKE */}
@@ -407,7 +439,7 @@ export function CoinFlipGame() {
         <p className="text-gray-300 font-bold text-lg tracking-widest uppercase mb-3">For</p>
         <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
           {BET_AMOUNTS.filter(a => !ADMIN_ONLY_BET_AMOUNTS.has(a) || publicKey?.toBase58() === ADMIN_WALLET).map((amount) => {
-            const tooHighForVault = vaultBalance > 0 && vaultBalance < amount * 2;
+            const tooHighForVault = betToken === 'sol' && vaultBalance > 0 && vaultBalance < amount * 2;
             return (
               <button
                 key={amount}
@@ -420,9 +452,9 @@ export function CoinFlipGame() {
                     ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
                     : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
                 }`}
-                title={tooHighForVault ? `Vault needs ${(amount * 2).toFixed(2)} SOL to cover this bet` : ''}
+                title={tooHighForVault && betToken === 'sol' ? `Vault needs ${(amount * 2).toFixed(2)} SOL to cover this bet` : ''}
               >
-                {amount} SOL
+                {amount} {betToken.toUpperCase()}
               </button>
             );
           })}

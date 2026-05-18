@@ -937,6 +937,7 @@ export const coinFlips = pgTable("coin_flips", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   walletAddress: text("wallet_address").notNull(),
   betAmount: decimal("bet_amount", { precision: 18, scale: 9 }).notNull(),
+  betToken: text("bet_token").notNull().default('sol'), // 'sol' | 'gsol'
   choice: text("choice").notNull(),
   result: text("result").notNull(),
   won: boolean("won").notNull(),

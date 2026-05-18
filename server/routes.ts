@@ -11233,7 +11233,7 @@ Claimer: ${walletAddress}`;
 
   app.post("/api/coinflip/play", async (req, res) => {
     try {
-      const { walletAddress, betAmount, choice, betTxSignature } = req.body;
+      const { walletAddress, betAmount, choice, betTxSignature, betToken = 'sol' } = req.body;
 
       if (!walletAddress || !betAmount || !choice || !betTxSignature) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -11242,6 +11242,13 @@ Claimer: ${walletAddress}`;
       if (!['heads', 'tails'].includes(choice)) {
         return res.status(400).json({ error: 'Choice must be heads or tails' });
       }
+
+      if (!['sol', 'gsol'].includes(betToken)) {
+        return res.status(400).json({ error: 'betToken must be sol or gsol' });
+      }
+
+      const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
+      const GSOL_DECIMALS = 9;
 
       const bet = parseFloat(betAmount);
       if (isNaN(bet) || bet < 0.001 || bet > 5) {
@@ -11256,6 +11263,7 @@ Claimer: ${walletAddress}`;
           result: existingFlip[0].result,
           won: existingFlip[0].won,
           betAmount: parseFloat(existingFlip[0].betAmount),
+          betToken: (existingFlip[0] as any).betToken ?? 'sol',
           payoutAmount: existingFlip[0].payoutAmount ? parseFloat(existingFlip[0].payoutAmount) : 0,
           platformFee: existingFlip[0].platformFee ? parseFloat(existingFlip[0].platformFee) : 0,
           payoutTxSignature: existingFlip[0].payoutTxSignature,
@@ -11297,37 +11305,48 @@ Claimer: ${walletAddress}`;
         return res.status(400).json({ error: 'Transaction sender does not match wallet address' });
       }
 
-      const preBalances = txInfo.meta.preBalances;
-      const postBalances = txInfo.meta.postBalances;
-      const FEES_WALLET_ADDRESS = process.env.FEES_WALLET ?? 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
-
-      const vaultIndex = accountKeys.indexOf(VAULT_ADDRESS);
-      if (vaultIndex === -1) {
-        return res.status(400).json({ error: 'Transaction does not transfer to game vault' });
-      }
-
-      const feesWalletIndex = accountKeys.indexOf(FEES_WALLET_ADDRESS);
-
-      // Vault must receive the full bet amount
-      const vaultReceived = postBalances[vaultIndex] - preBalances[vaultIndex];
-      const expectedBetLamports = Math.floor(bet * LAMPORTS_PER_SOL);
-      if (vaultReceived < expectedBetLamports * 0.99) {
-        return res.status(400).json({ error: 'Vault did not receive the correct bet amount' });
-      }
-
-      // Fees wallet must receive the 3.5% fee (if present in the tx)
-      const expectedFeeLamports = Math.floor(bet * PLATFORM_FEE_RATE * LAMPORTS_PER_SOL);
-      if (feesWalletIndex !== -1) {
-        const feesReceived = postBalances[feesWalletIndex] - preBalances[feesWalletIndex];
-        if (feesReceived < expectedFeeLamports * 0.99) {
-          return res.status(400).json({ error: 'Fees wallet did not receive the correct 3.5% fee' });
+      if (betToken === 'gsol') {
+        // ── GSOL bet: verify token transfer to vault's GSOL ATA ──────────────
+        const { getAssociatedTokenAddressSync: getATA } = await import('@solana/spl-token');
+        const vaultGsolATA = getATA(new PublicKey(GSOL_MINT), new PublicKey(VAULT_ADDRESS)).toString();
+        const expectedTokenAmount = BigInt(Math.floor(bet * 10 ** GSOL_DECIMALS));
+        const pre  = txInfo.meta?.preTokenBalances?.find((b: any) => b.accountIndex !== undefined && accountKeys[b.accountIndex] === vaultGsolATA);
+        const post = txInfo.meta?.postTokenBalances?.find((b: any) => b.accountIndex !== undefined && accountKeys[b.accountIndex] === vaultGsolATA);
+        const preAmt  = BigInt(pre?.uiTokenAmount?.amount  ?? '0');
+        const postAmt = BigInt(post?.uiTokenAmount?.amount ?? '0');
+        const received = postAmt - preAmt;
+        if (received < (expectedTokenAmount * 99n / 100n)) {
+          return res.status(400).json({ error: 'Vault GSOL ATA did not receive the correct bet amount' });
         }
       } else {
-        // Fallback: accept old-style single transfer where vault got bet + fee
-        const totalReceived = vaultReceived;
-        const expectedTotal = Math.floor(bet * (1 + PLATFORM_FEE_RATE) * LAMPORTS_PER_SOL);
-        if (totalReceived < expectedTotal * 0.99) {
-          return res.status(400).json({ error: 'Transaction amount does not match bet + fee' });
+        // ── SOL bet: verify lamport transfer to vault ─────────────────────────
+        const preBalances = txInfo.meta.preBalances;
+        const postBalances = txInfo.meta.postBalances;
+        const FEES_WALLET_ADDRESS = process.env.FEES_WALLET ?? 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+
+        const vaultIndex = accountKeys.indexOf(VAULT_ADDRESS);
+        if (vaultIndex === -1) {
+          return res.status(400).json({ error: 'Transaction does not transfer to game vault' });
+        }
+
+        const feesWalletIndex = accountKeys.indexOf(FEES_WALLET_ADDRESS);
+        const vaultReceived = postBalances[vaultIndex] - preBalances[vaultIndex];
+        const expectedBetLamports = Math.floor(bet * LAMPORTS_PER_SOL);
+        if (vaultReceived < expectedBetLamports * 0.99) {
+          return res.status(400).json({ error: 'Vault did not receive the correct bet amount' });
+        }
+
+        const expectedFeeLamports = Math.floor(bet * PLATFORM_FEE_RATE * LAMPORTS_PER_SOL);
+        if (feesWalletIndex !== -1) {
+          const feesReceived = postBalances[feesWalletIndex] - preBalances[feesWalletIndex];
+          if (feesReceived < expectedFeeLamports * 0.99) {
+            return res.status(400).json({ error: 'Fees wallet did not receive the correct 3.5% fee' });
+          }
+        } else {
+          const expectedTotal = Math.floor(bet * (1 + PLATFORM_FEE_RATE) * LAMPORTS_PER_SOL);
+          if (vaultReceived < expectedTotal * 0.99) {
+            return res.status(400).json({ error: 'Transaction amount does not match bet + fee' });
+          }
         }
       }
 
@@ -11339,28 +11358,18 @@ Claimer: ${walletAddress}`;
       const payoutRpcUrl = getHeliusRpcUrl();
       const payoutConnection = getHeliusConnection();
 
-      const vaultBalance = await connection.getBalance(vaultKeypair.publicKey);
-      if (vaultBalance < maxPossiblePayout + 10000) {
-        console.error(`🎰 Vault balance too low: ${vaultBalance / LAMPORTS_PER_SOL} SOL, need ${maxPossiblePayout / LAMPORTS_PER_SOL} SOL. Refunding bet.`);
-        try {
-          const refundLamports = Math.floor(bet * LAMPORTS_PER_SOL);
-          const refundTx = new Transaction().add(
-            SystemProgram.transfer({
-              fromPubkey: vaultKeypair.publicKey,
-              toPubkey: recipientPubkey,
-              lamports: refundLamports,
-            })
-          );
-          const { blockhash: refundBlockhash } = await payoutConnection.getLatestBlockhash('confirmed');
-          refundTx.recentBlockhash = refundBlockhash;
-          refundTx.feePayer = vaultKeypair.publicKey;
-          refundTx.sign(vaultKeypair);
-          const refundSig = await payoutConnection.sendRawTransaction(refundTx.serialize(), { skipPreflight: true, maxRetries: 5 });
-          console.log(`🎰 Refunded ${bet} SOL to ${walletAddress}, tx: ${refundSig}`);
-          return res.status(400).json({ error: `Vault balance too low for this bet. Your ${bet} SOL has been refunded.`, refundTx: refundSig });
-        } catch (refundErr: any) {
-          console.error('❌ Refund failed:', refundErr.message);
-          return res.status(500).json({ error: 'Vault balance too low and refund failed. Please contact support.' });
+      // Vault balance check (SOL only — GSOL uses token balance checked separately)
+      if (betToken === 'sol') {
+        const vaultBalance = await connection.getBalance(vaultKeypair.publicKey);
+        if (vaultBalance < maxPossiblePayout + 10000) {
+          console.error(`🎰 Vault SOL balance too low: ${vaultBalance / LAMPORTS_PER_SOL}, need ${maxPossiblePayout / LAMPORTS_PER_SOL}`);
+          try {
+            const refundTx = new Transaction().add(SystemProgram.transfer({ fromPubkey: vaultKeypair.publicKey, toPubkey: recipientPubkey, lamports: Math.floor(bet * LAMPORTS_PER_SOL) }));
+            const { blockhash: rb } = await payoutConnection.getLatestBlockhash('confirmed');
+            refundTx.recentBlockhash = rb; refundTx.feePayer = vaultKeypair.publicKey; refundTx.sign(vaultKeypair);
+            const refundSig = await payoutConnection.sendRawTransaction(refundTx.serialize(), { skipPreflight: true, maxRetries: 5 });
+            return res.status(400).json({ error: `Vault balance too low. Your ${bet} SOL has been refunded.`, refundTx: refundSig });
+          } catch { return res.status(500).json({ error: 'Vault balance too low and refund failed. Contact support.' }); }
         }
       }
 
@@ -11369,74 +11378,62 @@ Claimer: ${walletAddress}`;
       const hashBuffer = crypto.createHash('sha256').update(seedData).digest();
       const hashValue = hashBuffer.readUInt32BE(0);
 
-
       // House edge: player wins 40% of the time (0-3 out of 0-9)
       const playerWins = (hashValue % 10) < 4;
       const result: 'heads' | 'tails' = playerWins ? choice as 'heads' | 'tails' : (choice === 'heads' ? 'tails' : 'heads');
       const won = playerWins;
 
       let payoutAmount = 0;
-      const platformFee = bet * PLATFORM_FEE_RATE; // 3.5% of bet — collected directly on-chain by player tx
+      const platformFee = betToken === 'sol' ? bet * PLATFORM_FEE_RATE : 0;
       let payoutTxSignature: string | null = null;
 
       if (won) {
-        payoutAmount = bet * 2; // Full 2x — fee was paid upfront
-
+        payoutAmount = bet * 2;
         try {
-          const payoutLamports = Math.floor(payoutAmount * LAMPORTS_PER_SOL);
-
-          const transaction = new Transaction().add(
-            SystemProgram.transfer({
-              fromPubkey: vaultKeypair.publicKey,
-              toPubkey: recipientPubkey,
-              lamports: payoutLamports,
-            })
-          );
-
-          const { blockhash } = await payoutConnection.getLatestBlockhash('confirmed');
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = vaultKeypair.publicKey;
-          transaction.sign(vaultKeypair);
-
-          payoutTxSignature = await payoutConnection.sendRawTransaction(transaction.serialize(), {
-            skipPreflight: true,
-            maxRetries: 5,
-          });
-
-          console.log(`🎰 Coin flip WIN: ${walletAddress} bet ${bet} SOL, payout ${payoutAmount} SOL, tx: ${payoutTxSignature}`);
+          if (betToken === 'gsol') {
+            // ── GSOL payout: SPL token transfer from vault's GSOL ATA ──────────
+            const { getAssociatedTokenAddressSync: getATA, createTransferInstruction: createTx } = await import('@solana/spl-token');
+            const gsolMintPubkey = new PublicKey(GSOL_MINT);
+            const vaultGsolATA = getATA(gsolMintPubkey, vaultKeypair.publicKey);
+            const userGsolATA  = getATA(gsolMintPubkey, recipientPubkey);
+            const payoutTokens = BigInt(Math.floor(payoutAmount * 10 ** GSOL_DECIMALS));
+            const payTx = new Transaction().add(createTx(vaultGsolATA, userGsolATA, vaultKeypair.publicKey, payoutTokens));
+            const { blockhash } = await payoutConnection.getLatestBlockhash('confirmed');
+            payTx.recentBlockhash = blockhash; payTx.feePayer = vaultKeypair.publicKey; payTx.sign(vaultKeypair);
+            payoutTxSignature = await payoutConnection.sendRawTransaction(payTx.serialize(), { skipPreflight: true, maxRetries: 5 });
+            console.log(`🎰 GSOL WIN: ${walletAddress} bet ${bet} GSOL, payout ${payoutAmount} GSOL, tx: ${payoutTxSignature}`);
+          } else {
+            // ── SOL payout ────────────────────────────────────────────────────
+            const payTx = new Transaction().add(SystemProgram.transfer({ fromPubkey: vaultKeypair.publicKey, toPubkey: recipientPubkey, lamports: Math.floor(payoutAmount * LAMPORTS_PER_SOL) }));
+            const { blockhash } = await payoutConnection.getLatestBlockhash('confirmed');
+            payTx.recentBlockhash = blockhash; payTx.feePayer = vaultKeypair.publicKey; payTx.sign(vaultKeypair);
+            payoutTxSignature = await payoutConnection.sendRawTransaction(payTx.serialize(), { skipPreflight: true, maxRetries: 5 });
+            console.log(`🎰 SOL WIN: ${walletAddress} bet ${bet} SOL, payout ${payoutAmount} SOL, tx: ${payoutTxSignature}`);
+          }
         } catch (payoutError: any) {
           console.error('❌ Coin flip payout failed:', payoutError.message);
-          try {
-            const refundLamports = Math.floor(bet * LAMPORTS_PER_SOL);
-            const refundTx = new Transaction().add(
-              SystemProgram.transfer({
-                fromPubkey: vaultKeypair.publicKey,
-                toPubkey: recipientPubkey,
-                lamports: refundLamports,
-              })
-            );
-            const { blockhash: rb } = await payoutConnection.getLatestBlockhash('confirmed');
-            refundTx.recentBlockhash = rb;
-            refundTx.feePayer = vaultKeypair.publicKey;
-            refundTx.sign(vaultKeypair);
-            const refundSig = await payoutConnection.sendRawTransaction(refundTx.serialize(), { skipPreflight: true, maxRetries: 5 });
-            console.log(`🎰 Payout failed, refunded ${bet} SOL to ${walletAddress}, tx: ${refundSig}`);
-            return res.status(500).json({ error: `Payout failed. Your ${bet} SOL has been refunded.`, refundTx: refundSig });
-          } catch (refundErr: any) {
-            console.error('❌ Refund after payout failure also failed:', refundErr.message);
-            return res.status(500).json({ error: 'Payout and refund both failed. Please contact support.' });
+          // Refund (SOL only — GSOL refund would need separate token tx, skip for now)
+          if (betToken === 'sol') {
+            try {
+              const refundTx = new Transaction().add(SystemProgram.transfer({ fromPubkey: vaultKeypair.publicKey, toPubkey: recipientPubkey, lamports: Math.floor(bet * LAMPORTS_PER_SOL) }));
+              const { blockhash: rb } = await payoutConnection.getLatestBlockhash('confirmed');
+              refundTx.recentBlockhash = rb; refundTx.feePayer = vaultKeypair.publicKey; refundTx.sign(vaultKeypair);
+              const refundSig = await payoutConnection.sendRawTransaction(refundTx.serialize(), { skipPreflight: true, maxRetries: 5 });
+              return res.status(500).json({ error: `Payout failed. Your ${bet} SOL refunded.`, refundTx: refundSig });
+            } catch { return res.status(500).json({ error: 'Payout and refund both failed. Contact support.' }); }
           }
+          return res.status(500).json({ error: 'Payout failed. Contact support.' });
         }
       } else {
-        console.log(`🎰 Coin flip LOSS: ${walletAddress} bet ${bet} SOL, result: ${result}`);
+        console.log(`🎰 Coin flip LOSS: ${walletAddress} bet ${bet} ${betToken.toUpperCase()}, result: ${result}`);
       }
 
-      // 3.5% fee was sent directly to the fees wallet by the player's transaction (on-chain)
-      console.log(`🎰 Fee ${platformFee} SOL collected directly to fees wallet by player tx`);
+      if (platformFee > 0) console.log(`🎰 Fee ${platformFee} SOL collected directly to fees wallet by player tx`);
 
       await db.insert(coinFlips).values({
         walletAddress,
         betAmount: bet.toString(),
+        betToken,
         choice,
         result,
         won,
@@ -11447,17 +11444,13 @@ Claimer: ${walletAddress}`;
       });
 
       res.json({
-        success: true,
-        result,
-        won,
-        betAmount: bet,
+        success: true, result, won, betAmount: bet, betToken,
         payoutAmount: won ? payoutAmount : 0,
         platformFee: won ? platformFee : 0,
         payoutTxSignature,
       });
 
-      // Fire-and-forget: automatically distribute this flip's fee to partners and auto-pay on-chain
-      if (platformFee > 0) {
+      if (betToken === 'sol' && platformFee > 0) {
         distributeFlipFee(platformFee).catch(e => console.error('❌ Auto-pay distribution failed:', e.message));
       }
     } catch (error: any) {
