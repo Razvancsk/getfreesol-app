@@ -775,7 +775,7 @@ function PerpsInner() {
       </nav>
 
       {/* ── Middle: chart (left) + order form (right) ───────────────────── */}
-      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
+      <div className="flex-1 flex min-h-0 relative overflow-hidden">
 
         {/* ── Market list panel overlay ─────────────────────────────────── */}
         {mktPanel && (
@@ -926,10 +926,11 @@ function PerpsInner() {
           </div>
         )}
 
-        {/* ── Row 1: Stats bar (chart-width) | Cross button (300px) — same height ── */}
-        <div className="flex shrink-0 border-b border-[#2a2d3e]">
-          {/* Stats bar — flex-1, only as wide as the chart column */}
-          <div className="flex-1 flex items-center gap-5 px-4 py-2 border-r border-[#2a2d3e] overflow-x-auto scrollbar-none flex-nowrap min-w-0">
+        {/* ── Chart column (flex-1, left) ───────────────────────────────────── */}
+        <div className="flex-1 flex flex-col min-w-0 border-r border-[#2a2d3e] overflow-hidden">
+
+          {/* Stats bar — constrained to chart column width only */}
+          <div className="flex items-center gap-5 px-4 py-2 border-b border-[#2a2d3e] shrink-0 overflow-x-auto scrollbar-none flex-nowrap">
             <button onClick={() => setMktPanel(true)} className="flex items-center gap-2 shrink-0 hover:opacity-80 transition">
               <TokenAvatar symbol={marketBase} size={20} />
               <span className="text-sm font-bold text-white">{marketBase}/USD</span>
@@ -965,39 +966,36 @@ function PerpsInner() {
               </span>
             </div>
           </div>
-          {/* Cross button — w-[300px], same width as order form below */}
-          <div className="w-[300px] shrink-0 px-3 py-2 flex items-center">
-            <button className="w-full flex items-center justify-between bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#252840] transition">
-              Cross <ChevronDown className="w-4 h-4 text-white/40" />
-            </button>
+
+          {/* Timeframe tabs */}
+          <div className="flex items-center gap-0.5 px-3 py-2 border-b border-[#2a2d3e] shrink-0">
+            {TIMEFRAMES.map(t => (
+              <button key={t.s} onClick={() => setTf(t.s)}
+                className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
+                  tf === t.s
+                    ? 'text-[#F37B28] bg-[#F37B28]/10'
+                    : 'text-white/35 hover:bg-white/5 hover:text-white/70'
+                }`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* TradingView candlestick chart */}
+          <div className="flex-1 min-h-0">
+            <TVChart symbol={marketBase} interval={TIMEFRAMES.find(t => t.s === tf)?.tv ?? '60'} />
           </div>
         </div>
 
-        {/* ── Row 2: Chart + Order form body ───────────────────────────────── */}
-        <div className="flex-1 flex min-h-0">
-          {/* Chart column */}
-          <div className="flex-1 flex flex-col min-w-0 border-r border-[#2a2d3e] overflow-hidden">
-            {/* Timeframe tabs */}
-            <div className="flex items-center gap-0.5 px-3 py-2 border-b border-[#2a2d3e] shrink-0">
-              {TIMEFRAMES.map(t => (
-                <button key={t.s} onClick={() => setTf(t.s)}
-                  className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
-                    tf === t.s
-                      ? 'text-[#F37B28] bg-[#F37B28]/10'
-                      : 'text-white/35 hover:bg-white/5 hover:text-white/70'
-                  }`}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            {/* TradingView candlestick chart */}
-            <div className="flex-1 min-h-0">
-              <TVChart symbol={marketBase} interval={TIMEFRAMES.find(t => t.s === tf)?.tv ?? '60'} />
-            </div>
-          </div>
+        {/* ── Order form (right, 360px, full middle height) ───────────────── */}
+        <div className="w-[360px] shrink-0 flex flex-col overflow-y-auto bg-[#131722]">
 
-          {/* Order form body — 300px */}
-          <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto bg-[#131722]">
+          {/* Cross button — top of form card */}
+          <div className="px-3 pt-3 pb-0 shrink-0">
+            <button className="w-full flex items-center justify-between bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-[#252840] transition max-h-[30px]">
+              Cross <ChevronDown className="w-4 h-4 text-white/40" />
+            </button>
+          </div>
             {!publicKey ? (
               <div className="flex flex-col items-center justify-center gap-3 p-6 h-full">
                 <User className="h-8 w-8 text-white/10" />
@@ -1187,7 +1185,6 @@ function PerpsInner() {
             )}
           </div>
         </div>
-      </div>
 
       {/* ── Bottom: positions/orders (left) + orderbook (right) ──────── */}
       <div className="h-[220px] flex border-t border-[#2a2d3e] shrink-0 bg-[#131722]">
