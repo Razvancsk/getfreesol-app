@@ -478,7 +478,7 @@ export function CoinFlipGame() {
             <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
           </svg>
         </div>
-        <p className="text-center text-xs text-white mt-2">50/50 odds · Win = 2x your bet · 3.5% fee charged upfront</p>
+        <p className="text-center text-xs text-white mt-2">Win = 2x your bet · 3.5% fee charged upfront</p>
       </div>
 
       {/* Plays Ledger with Tabs */}
