@@ -11430,7 +11430,7 @@ Claimer: ${walletAddress}`;
       const won = playerWins;
 
       let payoutAmount = 0;
-      const platformFee = betToken === 'sol' ? bet * PLATFORM_FEE_RATE : 0;
+      const platformFee = bet * PLATFORM_FEE_RATE;
       let payoutTxSignature: string | null = null;
 
       if (won) {

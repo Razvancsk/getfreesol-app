@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { triggerFeedbackCard } from '@/components/FeedbackWidget';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { createTransferInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { createTransferInstruction, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -178,13 +178,21 @@ export function CoinFlipGame() {
       let transaction: Transaction;
 
       if (betToken === 'gsol') {
-        // ── GSOL bet: SPL token transfer to vault's GSOL ATA ─────────────────
+        // ── GSOL bet: bet to vault + 3.5% fee to fees wallet ─────────────────
         const userGsolATA  = getAssociatedTokenAddressSync(GSOL_MINT, publicKey);
         const vaultGsolATA = getAssociatedTokenAddressSync(GSOL_MINT, vaultPubkey);
         const betTokenAmount = BigInt(Math.floor(betAmount * 10 ** GSOL_DECIMALS));
+        const feeTokenAmount = BigInt(Math.floor(feeAmount * 10 ** GSOL_DECIMALS));
         transaction = new Transaction().add(
           createTransferInstruction(userGsolATA, vaultGsolATA, publicKey, betTokenAmount, [], TOKEN_PROGRAM_ID)
         );
+        if (feesWallet && feeTokenAmount > 0n) {
+          const feesWalletPubkey = new PublicKey(feesWallet);
+          const feesGsolATA = getAssociatedTokenAddressSync(GSOL_MINT, feesWalletPubkey);
+          transaction
+            .add(createAssociatedTokenAccountIdempotentInstruction(publicKey, feesGsolATA, feesWalletPubkey, GSOL_MINT))
+            .add(createTransferInstruction(userGsolATA, feesGsolATA, publicKey, feeTokenAmount, [], TOKEN_PROGRAM_ID));
+        }
       } else {
         // ── SOL bet: SOL + fee transfers ──────────────────────────────────────
         const betLamports = Math.floor(betAmount * LAMPORTS_PER_SOL);
