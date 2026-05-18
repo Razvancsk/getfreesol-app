@@ -447,6 +447,7 @@ function PerpsInner() {
   const [mktPanel,         setMktPanel]         = useState(false);
   const [mktSearch,        setMktSearch]        = useState('');
   const [mktCat,           setMktCat]           = useState<'all' | 'crypto' | 'commodities'>('all');
+  const statsBarRef = useRef<HTMLDivElement>(null);
   const [sortCol,          setSortCol]          = useState<'market' | 'price' | 'change' | 'volume' | 'oi' | 'funding'>('market');
   const [sortDir,          setSortDir]          = useState<'asc' | 'desc'>('asc');
   const [fundingCountdown, setFundingCountdown] = useState('');
@@ -781,7 +782,7 @@ function PerpsInner() {
         <div className="flex-1 flex flex-col gap-3 min-h-0 relative">
 
         {/* ── Stats bar card ──────────────────────────────────────────────── */}
-        <div className="shrink-0 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 px-4 py-2.5 flex items-center gap-5 overflow-x-auto scrollbar-none flex-nowrap">
+        <div ref={statsBarRef} className="shrink-0 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 px-4 py-2.5 flex items-center gap-5 overflow-x-auto scrollbar-none flex-nowrap">
           <button onClick={() => setMktPanel(true)} className="flex items-center gap-2 shrink-0 hover:opacity-80 transition">
             <TokenAvatar symbol={marketBase} size={20} />
             <span className="text-sm font-bold text-white">{marketBase}/USD</span>
@@ -825,7 +826,14 @@ function PerpsInner() {
             <div className="fixed inset-0 z-50 bg-black/60" onClick={() => setMktPanel(false)} />
             {/* Floating panel — starts at left edge of stats bar, below it */}
             <div className="fixed z-50 bg-purple-950/95 backdrop-blur-sm border border-purple-500/20 rounded-xl shadow-2xl overflow-hidden flex flex-col"
-                 style={{ top: '128px', left: '12px', width: 'calc(100vw - 396px)', height: 'min(560px, 80vh)' }}>
+                 style={{
+                   top: statsBarRef.current
+                     ? `${statsBarRef.current.getBoundingClientRect().bottom + 12}px`
+                     : '140px',
+                   left: '12px',
+                   width: 'calc(100vw - 396px)',
+                   height: 'min(560px, 80vh)'
+                 }}>
               {/* Search */}
               <div className="p-3 border-b border-purple-500/20">
                 <div className="flex items-center gap-2 bg-purple-900/40 border border-purple-500/20 rounded-lg px-3 py-2">
