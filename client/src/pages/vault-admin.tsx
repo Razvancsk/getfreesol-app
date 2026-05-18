@@ -27,11 +27,28 @@ export default function VaultAdmin() {
   const [isBotStarting, setIsBotStarting] = useState(false);
   const [isBotStopping, setIsBotStopping] = useState(false);
 
+  const [oddsValue, setOddsValue] = useState(40);
+  const [isSavingOdds, setIsSavingOdds] = useState(false);
+
   const [gfsDistAmount, setGfsDistAmount] = useState('');
   const [gfsHolders, setGfsHolders] = useState<Array<{ wallet: string; balance: number }> | null>(null);
   const [isFetchingHolders, setIsFetchingHolders] = useState(false);
   const [isDistributing, setIsDistributing] = useState(false);
   const [distResult, setDistResult] = useState<any>(null);
+
+  const oddsQuery = useQuery({
+    queryKey: ['/api/coinflip/odds'],
+    queryFn: async () => {
+      const res = await fetch('/api/coinflip/odds');
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if ((oddsQuery.data as any)?.playerWinPct !== undefined) {
+      setOddsValue((oddsQuery.data as any).playerWinPct);
+    }
+  }, [(oddsQuery.data as any)?.playerWinPct]);
 
   const vaultQuery = useQuery({
     queryKey: ['/api/coinflip/vault'],
@@ -728,6 +745,74 @@ export default function VaultAdmin() {
               </div>
 
               {/* Fund Instructions */}
+              {/* Odds Control */}
+              <div className="bg-purple-900/30 backdrop-blur-sm rounded-xl border border-orange-500/30 p-6">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">🎲 Flip Odds Control</h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-gray-300">Player Win %</span>
+                    <span className="text-orange-300 font-bold text-lg">{oddsValue}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={95}
+                    value={oddsValue}
+                    onChange={e => setOddsValue(parseInt(e.target.value))}
+                    className="w-full accent-orange-500 cursor-pointer"
+                  />
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs text-gray-400">
+                    <div className="bg-black/20 rounded-lg p-2">
+                      <div className="text-orange-300 font-bold text-base">{oddsValue}%</div>
+                      <div>Player wins</div>
+                    </div>
+                    <div className="bg-black/20 rounded-lg p-2">
+                      <div className="text-purple-300 font-bold text-base">{100 - oddsValue}%</div>
+                      <div>House wins</div>
+                    </div>
+                    <div className="bg-black/20 rounded-lg p-2">
+                      <div className="text-green-300 font-bold text-base">{(100 - oddsValue - oddsValue * 0.035).toFixed(1)}%</div>
+                      <div>Edge + fee</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {[30, 35, 40, 45, 50].map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setOddsValue(p)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${oddsValue === p ? 'bg-orange-600 border-orange-400 text-white' : 'bg-black/20 border-gray-600 text-gray-300 hover:border-orange-500'}`}
+                      >{p}%</button>
+                    ))}
+                  </div>
+                  <button
+                    disabled={isSavingOdds}
+                    onClick={async () => {
+                      setIsSavingOdds(true);
+                      try {
+                        const res = await fetch('/api/coinflip/set-odds', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ adminSecret, playerWinPct: oddsValue }),
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          toast({ title: `✅ Odds updated: player ${data.playerWinPct}% / house ${data.houseWinPct}%` });
+                        } else {
+                          toast({ title: 'Failed to update odds', description: data.error, variant: 'destructive' });
+                        }
+                      } catch {
+                        toast({ title: 'Network error', variant: 'destructive' });
+                      } finally {
+                        setIsSavingOdds(false);
+                      }
+                    }}
+                    className="w-full py-2.5 rounded-lg font-bold text-sm bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-50 transition-all"
+                  >
+                    {isSavingOdds ? 'Saving…' : 'Apply Odds'}
+                  </button>
+                </div>
+              </div>
+
               <div className="bg-purple-900/30 backdrop-blur-sm rounded-xl border border-green-500/20 p-6">
                 <h2 className="text-lg font-semibold text-white mb-3">💰 Fund the Vault</h2>
                 <p className="text-sm text-gray-400 mb-3">

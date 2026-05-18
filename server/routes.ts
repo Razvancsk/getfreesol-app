@@ -25,7 +25,7 @@ import { transactionLedger, userPoints, feedback, insertFeedbackSchema } from '@
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
 import axios from 'axios';
-import { db } from './db';
+import { db, pool } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction, getMint, getPermanentDelegate, ExtensionType, getExtensionData, createAssociatedTokenAccountIdempotentInstruction } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
@@ -301,6 +301,18 @@ async function getReferrerCommissionRate(referrerWalletAddress: string): Promise
   }
   return 50; // Regular referrers get 50% commission
 }
+
+// ── Coinflip dynamic odds ─────────────────────────────────────────────────────
+let coinflipPlayerWinPct = 40; // default: player wins 40% of flips
+
+(async () => {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS game_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW())`);
+    const r = await pool.query(`SELECT value FROM game_settings WHERE key = 'coinflip_player_win_pct'`);
+    if (r.rows.length > 0) coinflipPlayerWinPct = parseInt(r.rows[0].value) || 40;
+    console.log(`🎰 Coinflip player win %: ${coinflipPlayerWinPct}%`);
+  } catch (e) { console.error('game_settings init error:', e); }
+})();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Platform wallet auth middleware — must be defined first so all routes below can use it
@@ -11231,6 +11243,32 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // GET /api/coinflip/odds — current player win %
+  app.get("/api/coinflip/odds", (_req, res) => {
+    res.json({ playerWinPct: coinflipPlayerWinPct, houseWinPct: 100 - coinflipPlayerWinPct });
+  });
+
+  // POST /api/coinflip/set-odds — admin: update player win %
+  app.post("/api/coinflip/set-odds", async (req, res) => {
+    const { adminSecret, playerWinPct } = req.body;
+    if (!process.env.VAULT_ADMIN_SECRET || adminSecret !== process.env.VAULT_ADMIN_SECRET) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const pct = parseInt(playerWinPct);
+    if (isNaN(pct) || pct < 1 || pct > 95) {
+      return res.status(400).json({ error: 'playerWinPct must be 1–95' });
+    }
+    coinflipPlayerWinPct = pct;
+    try {
+      await pool.query(
+        `INSERT INTO game_settings (key, value, updated_at) VALUES ('coinflip_player_win_pct', $1, NOW()) ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`,
+        [pct.toString()]
+      );
+    } catch (e) { console.error('Failed to persist odds:', e); }
+    console.log(`🎰 Coinflip odds updated: player ${pct}% / house ${100 - pct}%`);
+    res.json({ success: true, playerWinPct: pct, houseWinPct: 100 - pct });
+  });
+
   app.post("/api/coinflip/play", async (req, res) => {
     try {
       const { walletAddress, betAmount, choice, betTxSignature, betToken = 'sol' } = req.body;
@@ -11379,7 +11417,7 @@ Claimer: ${walletAddress}`;
       const hashValue = hashBuffer.readUInt32BE(0);
 
       // House edge: player wins 40% of the time (0-3 out of 0-9)
-      const playerWins = (hashValue % 10) < 4;
+      const playerWins = (hashValue % 100) < coinflipPlayerWinPct;
       const result: 'heads' | 'tails' = playerWins ? choice as 'heads' | 'tails' : (choice === 'heads' ? 'tails' : 'heads');
       const won = playerWins;
 
