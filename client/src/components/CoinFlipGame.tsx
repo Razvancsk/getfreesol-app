@@ -120,7 +120,9 @@ export function CoinFlipGame() {
 
   const vaultAddress = (vaultQuery.data as any)?.address || '';
   const vaultBalance = (vaultQuery.data as any)?.balance || 0;
+  const vaultGsolBalance = (vaultQuery.data as any)?.gsolBalance || 0;
   const feesWallet = (vaultQuery.data as any)?.feesWallet || '';
+  const displayBalance = betToken === 'gsol' ? vaultGsolBalance : vaultBalance;
 
   const flipMutation = useMutation({
     mutationFn: async ({ walletAddress, betAmount, choice, betTxSignature, betToken }: any) => {
@@ -160,8 +162,8 @@ export function CoinFlipGame() {
     const feeAmount = betAmount * FEE_RATE;
     const maxPayout = betAmount * 2; // win = full 2x bet
 
-    if (betToken === 'sol' && vaultBalance < maxPayout) {
-      toast({ title: 'Vault balance too low for this bet', description: `Vault has ${vaultBalance.toFixed(4)} SOL but needs ${maxPayout.toFixed(4)} SOL to cover a win. Try a smaller bet.`, variant: 'destructive' });
+    if (displayBalance > 0 && displayBalance < maxPayout) {
+      toast({ title: 'Vault balance too low for this bet', description: `Vault has ${displayBalance.toFixed(4)} ${betToken.toUpperCase()} but needs ${maxPayout.toFixed(4)} ${betToken.toUpperCase()} to cover a win. Try a smaller bet.`, variant: 'destructive' });
       return;
     }
 
@@ -445,7 +447,7 @@ export function CoinFlipGame() {
         <p className="text-gray-300 font-bold text-lg tracking-widest uppercase mb-3">For</p>
         <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
           {BET_AMOUNTS.filter(a => !ADMIN_ONLY_BET_AMOUNTS.has(a) || publicKey?.toBase58() === ADMIN_WALLET).map((amount) => {
-            const tooHighForVault = betToken === 'sol' && vaultBalance > 0 && vaultBalance < amount * 2;
+            const tooHighForVault = displayBalance > 0 && displayBalance < amount * 2;
             return (
               <button
                 key={amount}
@@ -509,7 +511,7 @@ export function CoinFlipGame() {
               <path d="M9 7.49996C9 7.22382 9.22386 6.99996 9.5 6.99996H10.5C10.7761 6.99996 11 7.22382 11 7.49996V12H13V7.49996C13 7.22382 13.2239 6.99996 13.5 6.99996H14.5C14.7761 6.99996 15 7.22382 15 7.49996V13H15.5C15.7761 13 16 13.2238 16 13.5V14.5C16 14.7761 15.7761 15 15.5 15H0.5C0.223858 15 0 14.7761 0 14.5V13.5C0 13.2238 0.223858 13 0.5 13H1V7.49996C1 7.22382 1.22386 6.99996 1.5 6.99996H2.5C2.77614 6.99996 3 7.22382 3 7.49996V12H5V7.49996C5 7.22382 5.22386 6.99996 5.5 6.99996H6.5C6.77614 6.99996 7 7.22382 7 7.49996V12H9V7.49996Z" />
             </svg>
           </div>
-          <span className="text-white font-bold text-xl flex-1">{vaultBalance.toFixed(4)} SOL</span>
+          <span className="text-white font-bold text-xl flex-1">{displayBalance.toFixed(4)} {betToken.toUpperCase()}</span>
           <svg className="w-6 h-6" viewBox="0 0 397.7 311.7" style={{ fill: '#14F195' }}>
             <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
             <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>

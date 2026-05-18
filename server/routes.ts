@@ -10986,7 +10986,15 @@ Claimer: ${walletAddress}`;
       const conn = getHeliusConnection('confirmed');
       const bal = await conn.getBalance(kp.publicKey);
       const balance = bal / LAMPORTS_PER_SOL;
-      res.json({ success: true, address, balance, feesWallet });
+      // GSOL balance
+      let gsolBalance = 0;
+      try {
+        const gsolMint = new PublicKey('GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3');
+        const vaultGsolATA = getAssociatedTokenAddressSync(gsolMint, kp.publicKey);
+        const tokenBal = await conn.getTokenAccountBalance(vaultGsolATA);
+        gsolBalance = tokenBal.value.uiAmount ?? 0;
+      } catch {}
+      res.json({ success: true, address, balance, gsolBalance, feesWallet });
     } catch (error: any) {
       console.error('Error fetching vault info:', error);
       res.status(500).json({ error: 'Failed to fetch vault info' });
