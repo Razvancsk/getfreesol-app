@@ -3212,12 +3212,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get SOL refund statistics
   app.get("/api/sol-refund/stats", async (req, res) => {
     try {
-      const BASE_SOL = 418.19;
-      const BASE_ACCOUNTS = 202667;
       const dbSol = await storage.getTotalSolRecovered();
       const dbAccounts = await storage.getTotalAccountsClaimed();
-      const totalSolRecovered = BASE_SOL + dbSol;
-      const totalAccountsClaimed = BASE_ACCOUNTS + dbAccounts;
+      const totalSolRecovered = dbSol;
+      const totalAccountsClaimed = dbAccounts;
       const recentTransactions = await storage.getTransactionRecords(20);
 
       const stats = {
