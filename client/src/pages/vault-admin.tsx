@@ -748,6 +748,18 @@ export default function VaultAdmin() {
               {/* Odds Control */}
               <div className="bg-purple-900/30 backdrop-blur-sm rounded-xl border border-orange-500/30 p-6">
                 <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">🎲 Flip Odds Control</h2>
+                {/* Live active odds banner */}
+                <div className="flex items-center justify-between bg-black/40 border border-orange-500/40 rounded-lg px-4 py-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-gray-300 text-sm font-medium">Live Active Odds</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm font-bold">
+                    <span className="text-orange-300">Player: {(oddsQuery.data as any)?.playerWinPct ?? '…'}%</span>
+                    <span className="text-gray-500">|</span>
+                    <span className="text-purple-300">House: {(oddsQuery.data as any)?.houseWinPct ?? '…'}%</span>
+                  </div>
+                </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span className="text-gray-300">Player Win %</span>
@@ -796,6 +808,7 @@ export default function VaultAdmin() {
                         });
                         const data = await res.json();
                         if (data.success) {
+                          queryClient.invalidateQueries({ queryKey: ['/api/coinflip/odds'] });
                           toast({ title: `✅ Odds updated: player ${data.playerWinPct}% / house ${data.houseWinPct}%` });
                         } else {
                           toast({ title: 'Failed to update odds', description: data.error, variant: 'destructive' });
