@@ -4078,7 +4078,7 @@ export default function SolRefund() {
                   <div className="w-px bg-purple-500/30 my-4" />
                   <div className="flex-1 p-5 text-center">
                     <div className="text-3xl font-bold text-white mb-1">
-                      {stats ? (stats.totalAccountsClaimed / 1000).toFixed(3) : '0.000'}
+                      {stats ? stats.totalAccountsClaimed.toLocaleString() : '0'}
                     </div>
                     <div className="text-xs text-white uppercase tracking-wider">ACCOUNTS CLOSED</div>
                   </div>
@@ -4094,7 +4094,7 @@ export default function SolRefund() {
                   <div className="w-px bg-purple-500/30 my-5" />
                   <div className="flex-1 p-6 text-center">
                     <div className="text-3xl font-bold text-white mb-2">
-                      {stats ? (stats.totalAccountsClaimed / 1000).toFixed(3) : '0.000'}
+                      {stats ? stats.totalAccountsClaimed.toLocaleString() : '0'}
                     </div>
                     <div className="text-sm text-white uppercase tracking-wider">ACCOUNTS CLOSED</div>
                   </div>
