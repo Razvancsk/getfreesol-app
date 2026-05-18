@@ -569,18 +569,12 @@ export function CoinFlipGame() {
       {publicKey && (
         <div className="rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/40 to-purple-800/20 px-4 py-4">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-white font-bold text-sm uppercase tracking-widest">Rakeback</p>
-              <p className="text-purple-300 text-xs mt-0.5">10% of fees back · paid in GSOL</p>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center gap-1.5 justify-end">
-                <img src={TOKEN_ICONS['gsol']} className="w-4 h-4 rounded-full" alt="GSOL" />
-                <span className="text-green-400 font-black text-lg">
-                  {(rakebackQuery.data?.pendingGsol ?? 0).toFixed(6)}
-                </span>
-              </div>
-              <p className="text-gray-500 text-xs">GSOL pending</p>
+            <p className="text-white font-bold text-sm uppercase tracking-widest">Rakeback</p>
+            <div className="flex items-center gap-1.5">
+              <img src={TOKEN_ICONS['gsol']} className="w-4 h-4 rounded-full" alt="GSOL" />
+              <span className="text-green-400 font-black text-lg">
+                {(rakebackQuery.data?.pendingGsol ?? 0).toFixed(6)} GSOL
+              </span>
             </div>
           </div>
           <button
