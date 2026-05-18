@@ -1284,8 +1284,7 @@ function PerpsInner() {
 
               </div>
             )}
-          </div>
-        </div>{/* end order form */}
+        </div>
 
       </div>{/* end content area */}
     </div>
