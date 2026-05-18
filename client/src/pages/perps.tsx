@@ -991,7 +991,7 @@ function PerpsInner() {
         </div>
 
         {/* ── Order form card ─────────────────────────────────────────────── */}
-        <div className="w-[360px] shrink-0 flex flex-col overflow-y-auto bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
+        <div className="w-[360px] shrink-0 flex flex-col overflow-hidden bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
 
           {/* Cross button — top of form card */}
           <div className="px-3 pt-3 pb-0 shrink-0">
@@ -1021,7 +1021,7 @@ function PerpsInner() {
                 {registerMut.isSuccess && <p className="text-green-400 text-[10px]">Activated! Refreshing…</p>}
               </div>
             ) : (
-              <div className="flex flex-col gap-2.5 px-3 pt-2 pb-3">
+              <div className="flex flex-col gap-2.5 px-3 pt-2 pb-3 flex-1 overflow-y-auto">
 
                 {/* Long/Buy — Short/Sell sliding toggle */}
                 <div className="relative grid rounded-lg bg-purple-900/40 select-none" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
