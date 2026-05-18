@@ -455,6 +455,16 @@ function PerpsInner() {
   const wsTimeframe = TIMEFRAMES.find(t => t.s === tf)?.ws ?? '1h';
   const wsAuthority = publicKey?.toString();
 
+  // Activate Phoenix referral for every connected wallet (silent — errors ignored)
+  useEffect(() => {
+    if (!publicKey) return;
+    fetch('https://perp-api.phoenix.trade/v1/invite/activate-with-referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ authority: publicKey.toString(), referral_code: '20HSXQYV' }),
+    }).catch(() => {});
+  }, [publicKey?.toString()]);
+
   // Funding countdown — ticks every second to next top-of-the-hour
   useEffect(() => {
     function tick() {
