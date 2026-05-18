@@ -775,7 +775,10 @@ function PerpsInner() {
       </nav>
 
       {/* ── Content area ──────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col p-3 gap-3 min-h-0 overflow-hidden">
+      <div className="flex-1 flex p-3 gap-3 min-h-0 overflow-hidden">
+
+        {/* ── Left column ─────────────────────────────────────────────────── */}
+        <div className="flex-1 flex flex-col gap-3 min-h-0 relative">
 
         {/* ── Stats bar card ──────────────────────────────────────────────── */}
         <div className="shrink-0 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 px-4 py-2.5 flex items-center gap-5 overflow-x-auto scrollbar-none flex-nowrap">
@@ -814,9 +817,6 @@ function PerpsInner() {
             </span>
           </div>
         </div>
-
-        {/* ── Middle: chart card + order form card ────────────────────────── */}
-        <div className="flex-1 flex gap-3 min-h-0 relative">
 
         {/* ── Market list panel overlay ─────────────────────────────────── */}
         {mktPanel && (
@@ -989,6 +989,104 @@ function PerpsInner() {
             <TVChart symbol={marketBase} interval={TIMEFRAMES.find(t => t.s === tf)?.tv ?? '60'} />
           </div>
         </div>
+
+        {/* ── Bottom card: positions / orders / trade history ─────────────── */}
+        <div className="h-[200px] shrink-0 flex bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 overflow-hidden">
+
+        {/* Positions / Orders / Trade History */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex items-center border-b border-purple-500/20 shrink-0 overflow-x-auto scrollbar-none">
+            {(['positions', 'orders', 'trades'] as const).map(tab => (
+              <button key={tab} onClick={() => setBottomTab(tab)}
+                className={`px-4 py-2.5 text-[11px] font-medium transition border-b-2 -mb-px whitespace-nowrap ${bottomTab === tab ? 'border-[#F37B28] text-white' : 'border-transparent text-white/40 hover:text-white/70'}`}>
+                {tab === 'positions' ? `Positions (${traderPositions.length})` : tab === 'orders' ? `Open Orders (${traderOrders.length})` : 'Trade History'}
+              </button>
+            ))}
+            {publicKey && <button onClick={() => refetchTrader()} className="ml-auto pr-3 text-white/20 hover:text-white/50 transition"><RefreshCw className="h-3 w-3" /></button>}
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {bottomTab === 'positions' && (
+              !isRegistered ? (
+                <div className="flex flex-col items-center justify-center h-full text-white/20 text-xs gap-3">
+                  <span className="text-3xl opacity-20">✕</span>
+                  <a className="text-[#F37B28]/60 hover:text-[#F37B28] transition cursor-pointer">Connect a wallet to view open positions</a>
+                </div>
+              ) : traderPositions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-white/20 text-xs gap-3">
+                  <span className="text-3xl opacity-20">✕</span>
+                  <span>No open positions</span>
+                </div>
+              ) : (
+                <div className="px-3 py-2">
+                  <div className="grid grid-cols-5 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
+                    <span>Market</span><span>Side</span><span className="text-right">Size</span><span className="text-right">Entry</span><span className="text-right">PnL</span>
+                  </div>
+                  {traderPositions.map((p: any, i: number) => {
+                    const pnl = pf(p.unrealizedPnl); const size = pf(p.positionSize); const side = size >= 0 ? 'LONG' : 'SHORT';
+                    return (
+                      <div key={i} className="grid grid-cols-5 py-1.5 text-xs border-b border-white/[0.04] last:border-0">
+                        <span className="text-white/70">{stripPerp(p.symbol ?? market)}</span>
+                        <span className={side === 'LONG' ? 'text-green-400' : 'text-red-400'}>{side}</span>
+                        <span className="text-right font-mono text-white/60">{Math.abs(size).toFixed(3)}</span>
+                        <span className="text-right font-mono text-white/60">{fp(pf(p.entryPrice))}</span>
+                        <span className={`text-right font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{pnl >= 0 ? '+' : ''}{fUSD(pnl)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            )}
+            {bottomTab === 'orders' && (
+              traderOrders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-white/20 text-xs gap-3">
+                  <span className="text-3xl opacity-20">✕</span><span>No open orders</span>
+                </div>
+              ) : (
+                <div className="px-3 py-2">
+                  <div className="grid grid-cols-4 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
+                    <span>Side</span><span className="text-right">Price</span><span className="text-right">Size</span><span className="text-right">Remaining</span>
+                  </div>
+                  {traderOrders.slice(0, 20).map((o: any, i: number) => (
+                    <div key={i} className="grid grid-cols-4 py-1.5 text-xs border-b border-white/[0.04] last:border-0">
+                      <span className={o.side === 'bid' ? 'text-green-400' : 'text-red-400'}>{o.side === 'bid' ? 'BUY' : 'SELL'}</span>
+                      <span className="text-right font-mono text-white/60">{fp(pf(o.price))}</span>
+                      <span className="text-right font-mono text-white/60">{pf(o.tradeSize).toFixed(3)}</span>
+                      <span className="text-right font-mono text-white/40">{pf(o.tradeSizeRemaining).toFixed(3)}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+            {bottomTab === 'trades' && (
+              <div className="px-3 py-2">
+                {trades.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-white/20 text-xs py-6">{connected ? 'Waiting for trades…' : 'Connecting…'}</div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
+                      <span>Price</span><span className="text-right">Size</span><span className="text-right">Time</span>
+                    </div>
+                    {trades.slice(0, 30).map((f: any, i: number) => {
+                      const price = pf(f.price ?? f.px ?? f.p); const size = pf(f.baseLots ?? f.size ?? f.qty ?? f.q);
+                      const isBuy = f.side === 'buy' || f.side === 'bid' || f.isBuy === true;
+                      const ts = f.timestamp ? new Date(f.timestamp).toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) : '—';
+                      return (
+                        <div key={i} className="grid grid-cols-3 py-1 text-[11px]">
+                          <span className={isBuy ? 'text-green-400' : 'text-red-400'}>{fp(price)}</span>
+                          <span className="text-right text-white/45 font-mono">{size.toFixed(3)}</span>
+                          <span className="text-right text-white/25">{ts}</span>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        </div>{/* end bottom card */}
+
+        </div>{/* end left col */}
 
         {/* ── Order form card ─────────────────────────────────────────────── */}
         <div className="w-[360px] shrink-0 flex flex-col overflow-hidden bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
@@ -1187,103 +1285,7 @@ function PerpsInner() {
               </div>
             )}
           </div>
-        </div>{/* end middle row */}
-
-        {/* ── Bottom card: positions / orders / trade history ─────────────── */}
-        <div className="h-[200px] shrink-0 flex bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 overflow-hidden">
-
-        {/* Positions / Orders / Trade History */}
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          <div className="flex items-center border-b border-purple-500/20 shrink-0 overflow-x-auto scrollbar-none">
-            {(['positions', 'orders', 'trades'] as const).map(tab => (
-              <button key={tab} onClick={() => setBottomTab(tab)}
-                className={`px-4 py-2.5 text-[11px] font-medium transition border-b-2 -mb-px whitespace-nowrap ${bottomTab === tab ? 'border-[#F37B28] text-white' : 'border-transparent text-white/40 hover:text-white/70'}`}>
-                {tab === 'positions' ? `Positions (${traderPositions.length})` : tab === 'orders' ? `Open Orders (${traderOrders.length})` : 'Trade History'}
-              </button>
-            ))}
-            {publicKey && <button onClick={() => refetchTrader()} className="ml-auto pr-3 text-white/20 hover:text-white/50 transition"><RefreshCw className="h-3 w-3" /></button>}
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {bottomTab === 'positions' && (
-              !isRegistered ? (
-                <div className="flex flex-col items-center justify-center h-full text-white/20 text-xs gap-3">
-                  <span className="text-3xl opacity-20">✕</span>
-                  <a className="text-[#F37B28]/60 hover:text-[#F37B28] transition cursor-pointer">Connect a wallet to view open positions</a>
-                </div>
-              ) : traderPositions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-white/20 text-xs gap-3">
-                  <span className="text-3xl opacity-20">✕</span>
-                  <span>No open positions</span>
-                </div>
-              ) : (
-                <div className="px-3 py-2">
-                  <div className="grid grid-cols-5 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
-                    <span>Market</span><span>Side</span><span className="text-right">Size</span><span className="text-right">Entry</span><span className="text-right">PnL</span>
-                  </div>
-                  {traderPositions.map((p: any, i: number) => {
-                    const pnl = pf(p.unrealizedPnl); const size = pf(p.positionSize); const side = size >= 0 ? 'LONG' : 'SHORT';
-                    return (
-                      <div key={i} className="grid grid-cols-5 py-1.5 text-xs border-b border-white/[0.04] last:border-0">
-                        <span className="text-white/70">{stripPerp(p.symbol ?? market)}</span>
-                        <span className={side === 'LONG' ? 'text-green-400' : 'text-red-400'}>{side}</span>
-                        <span className="text-right font-mono text-white/60">{Math.abs(size).toFixed(3)}</span>
-                        <span className="text-right font-mono text-white/60">{fp(pf(p.entryPrice))}</span>
-                        <span className={`text-right font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{pnl >= 0 ? '+' : ''}{fUSD(pnl)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            )}
-            {bottomTab === 'orders' && (
-              traderOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-white/20 text-xs gap-3">
-                  <span className="text-3xl opacity-20">✕</span><span>No open orders</span>
-                </div>
-              ) : (
-                <div className="px-3 py-2">
-                  <div className="grid grid-cols-4 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
-                    <span>Side</span><span className="text-right">Price</span><span className="text-right">Size</span><span className="text-right">Remaining</span>
-                  </div>
-                  {traderOrders.slice(0, 20).map((o: any, i: number) => (
-                    <div key={i} className="grid grid-cols-4 py-1.5 text-xs border-b border-white/[0.04] last:border-0">
-                      <span className={o.side === 'bid' ? 'text-green-400' : 'text-red-400'}>{o.side === 'bid' ? 'BUY' : 'SELL'}</span>
-                      <span className="text-right font-mono text-white/60">{fp(pf(o.price))}</span>
-                      <span className="text-right font-mono text-white/60">{pf(o.tradeSize).toFixed(3)}</span>
-                      <span className="text-right font-mono text-white/40">{pf(o.tradeSizeRemaining).toFixed(3)}</span>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
-            {bottomTab === 'trades' && (
-              <div className="px-3 py-2">
-                {trades.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-white/20 text-xs py-6">{connected ? 'Waiting for trades…' : 'Connecting…'}</div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-3 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
-                      <span>Price</span><span className="text-right">Size</span><span className="text-right">Time</span>
-                    </div>
-                    {trades.slice(0, 30).map((f: any, i: number) => {
-                      const price = pf(f.price ?? f.px ?? f.p); const size = pf(f.baseLots ?? f.size ?? f.qty ?? f.q);
-                      const isBuy = f.side === 'buy' || f.side === 'bid' || f.isBuy === true;
-                      const ts = f.timestamp ? new Date(f.timestamp).toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) : '—';
-                      return (
-                        <div key={i} className="grid grid-cols-3 py-1 text-[11px]">
-                          <span className={isBuy ? 'text-green-400' : 'text-red-400'}>{fp(price)}</span>
-                          <span className="text-right text-white/45 font-mono">{size.toFixed(3)}</span>
-                          <span className="text-right text-white/25">{ts}</span>
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        </div>{/* end bottom card */}
+        </div>{/* end order form */}
 
       </div>{/* end content area */}
     </div>
