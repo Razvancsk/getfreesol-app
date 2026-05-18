@@ -1198,38 +1198,6 @@ function PerpsInner() {
           </div>
         </div>
 
-        {/* Orderbook */}
-        <div className="w-[320px] shrink-0 flex flex-col">
-          <div className="flex items-center border-b border-[#2a2d3e] shrink-0">
-            <button className="px-4 py-2.5 text-xs font-semibold text-white border-b-2 border-[#F37B28] -mb-px">Order Book</button>
-            <button className="px-4 py-2.5 text-xs text-white/35 hover:text-white/60 transition">Trades</button>
-            {connected && <span className="ml-auto pr-3 text-[9px] text-green-400/40">● live</span>}
-          </div>
-          <div className="grid grid-cols-3 px-3 py-1.5 border-b border-[#2a2d3e] shrink-0">
-            <span className="text-[10px] text-white/30">Price USDC</span>
-            <span className="text-[10px] text-white/30 text-right">Size USDC</span>
-            <span className="text-[10px] text-white/30 text-right">Total USDC</span>
-          </div>
-          <div className="flex flex-col overflow-hidden" style={{flex:'1 1 0', minHeight:0}}>
-            <div className="flex-1 overflow-y-auto flex flex-col justify-end">
-              {displayAsks.length > 0 ? <OBSide rows={displayAsks} side="ask" /> : <div className="text-center text-white/15 text-xs py-2">{connected?'Waiting…':'…'}</div>}
-            </div>
-            <div className="flex items-center justify-between px-3 py-1.5 bg-[#1a1d2e] border-y border-[#2a2d3e] shrink-0">
-              {ob.asks.length > 0 && ob.bids.length > 0 ? (
-                <>
-                  <span className="text-[10px] font-mono text-white/55">{Math.abs((ob.asks[ob.asks.length-1]?.[0]??0)-(ob.bids[0]?.[0]??0)).toFixed(5)}</span>
-                  <span className="text-[10px] text-white/35">Spread</span>
-                  <span className="text-[10px] font-mono text-white/55">{ob.asks[ob.asks.length-1]?.[0]>0?((Math.abs((ob.asks[ob.asks.length-1]?.[0]??0)-(ob.bids[0]?.[0]??0))/(ob.asks[ob.asks.length-1]?.[0]??1))*100).toFixed(3)+'%':'—'}</span>
-                </>
-              ) : (
-                <><span className={`text-sm font-bold font-mono ${isUp?'text-green-400':'text-red-400'}`}>{fp(midPrice)}</span><span className="text-[10px] text-white/30">{isUp?'▲':'▼'} mid</span><span/></>
-              )}
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {displayBids.length > 0 ? <OBSide rows={displayBids} side="bid" /> : <div className="text-center text-white/15 text-xs py-2">{connected?'Waiting…':'…'}</div>}
-            </div>
-          </div>
-        </div>
       </div>
 
     </div>
