@@ -585,7 +585,7 @@ export function CoinFlipGame() {
             {isClaiming ? 'Claiming…' : 'Claim'}
           </button>
           {(rakebackQuery.data?.pendingGsol ?? 0) < 0.001 && (
-            <p className="text-center text-xs text-gray-500 mt-2">Minimum 0.001 GSOL to claim</p>
+            <p className="text-center text-xs text-gray-500 mt-2">Minimum 0.001 GSOL</p>
           )}
         </div>
       )}
