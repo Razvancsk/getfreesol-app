@@ -582,12 +582,10 @@ export function CoinFlipGame() {
             disabled={isClaiming || !rakebackQuery.data?.pendingGsol || rakebackQuery.data.pendingGsol < 0.001}
             className="w-full py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider transition-all border-2 border-green-500/40 bg-green-900/30 text-green-300 hover:bg-green-800/40 hover:border-green-400/60 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {isClaiming ? 'Claiming…' : `Claim ${(rakebackQuery.data?.pendingGsol ?? 0).toFixed(6)} GSOL`}
+            {isClaiming ? 'Claiming…' : 'Claim'}
           </button>
-          {(rakebackQuery.data?.totalEarned ?? 0) > 0 && (
-            <p className="text-center text-xs text-gray-500 mt-2">
-              Total earned: {rakebackQuery.data!.totalEarned.toFixed(6)} GSOL · Claimed: {rakebackQuery.data!.totalClaimed.toFixed(6)} GSOL
-            </p>
+          {(rakebackQuery.data?.pendingGsol ?? 0) < 0.001 && (
+            <p className="text-center text-xs text-gray-500 mt-2">Minimum 0.001 GSOL to claim</p>
           )}
         </div>
       )}
