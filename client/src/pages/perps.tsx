@@ -831,8 +831,8 @@ function PerpsInner() {
                      ? `${statsBarRef.current.getBoundingClientRect().bottom + 12}px`
                      : '140px',
                    left: '12px',
-                   width: 'min(680px, calc(100vw - 396px))',
-                   height: 'min(560px, 80vh)'
+                   width: '800px',
+                   height: '560px'
                  }}>
               {/* Header + Search */}
               <div className="p-4 border-b border-purple-500/30">
