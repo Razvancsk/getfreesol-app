@@ -470,6 +470,7 @@ export default function SolRefund() {
   // Check if platform wallet
   const isPlatformWallet = publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT';
   const canViewPartners = publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' || publicKey?.toString() === '6p7Zh4ptyVphDU5SfWjLEB8JfH7BhkK9PX4CRiMEHjbR';
+  const canViewPerps = publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
   const canFlip = isPlatformWallet || publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
   // Query for user profile stats (platform wallet viewing other users)
@@ -3856,13 +3857,15 @@ export default function SolRefund() {
                 >
                   <FaSackDollar className="h-5 w-5 shrink-0" /> Staking
                 </Button>
-                <Link href="/perps">
-                  <Button
-                    className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30"
-                  >
-                    📈 Perps
-                  </Button>
-                </Link>
+                {canViewPerps && (
+                  <Link href="/perps">
+                    <Button
+                      className="md:w-[215px] px-4 py-3 text-xl font-semibold rounded-full transition-all flex items-center justify-center gap-2 border whitespace-nowrap bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30"
+                    >
+                      📈 Perps
+                    </Button>
+                  </Link>
+                )}
                 {canViewPartners && (
                   <Link href="/partners">
                     <Button
@@ -7648,10 +7651,12 @@ export default function SolRefund() {
             <FaSackDollar style={{ width: '20px', height: '20px' }} />
             <span style={{ fontSize: '11px', fontWeight: 500 }}>Staking</span>
           </button>
-          <Link href="/perps" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#9ca3af', textDecoration: 'none', cursor: 'pointer' }}>
-            <span style={{ fontSize: '20px', lineHeight: 1 }}>📈</span>
-            <span style={{ fontSize: '11px', fontWeight: 500 }}>Perps</span>
-          </Link>
+          {canViewPerps && (
+            <Link href="/perps" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#9ca3af', textDecoration: 'none', cursor: 'pointer' }}>
+              <span style={{ fontSize: '20px', lineHeight: 1 }}>📈</span>
+              <span style={{ fontSize: '11px', fontWeight: 500 }}>Perps</span>
+            </Link>
+          )}
           {canViewPartners && (
             <Link href="/partners" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#fde68a', textDecoration: 'none', cursor: 'pointer' }}>
               <span style={{ fontSize: '20px', lineHeight: 1 }}>🤝</span>

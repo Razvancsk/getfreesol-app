@@ -391,22 +391,8 @@ const ALLOWED_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 // ── Access gate ───────────────────────────────────────────────────────────────
 
 function AccessGate() {
-  return (
-    <div className="h-screen bg-[#0b0b12] text-white flex flex-col items-center justify-center gap-6">
-      <div className="w-14 h-14 rounded-2xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center">
-        <svg className="h-7 w-7 text-purple-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-        </svg>
-      </div>
-      <div className="text-center">
-        <p className="text-white/70 font-semibold text-sm mb-1">Perps is in private beta</p>
-        <p className="text-white/25 text-xs">Connect the authorized wallet to access this page.</p>
-      </div>
-      <Link href="/"><a className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to home
-      </a></Link>
-    </div>
-  );
+  useEffect(() => { window.location.replace('/'); }, []);
+  return null;
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
