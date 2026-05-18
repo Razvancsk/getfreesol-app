@@ -405,8 +405,7 @@ export function CoinFlipGame() {
                   : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
               }`}
             >
-              <img src={TOKEN_ICONS[t]} alt={t.toUpperCase()} className="w-5 h-5 rounded-full object-cover" />
-              {t.toUpperCase()}
+              <img src={TOKEN_ICONS[t]} alt={t.toUpperCase()} className="w-7 h-7 rounded-full object-cover" />
             </button>
           ))}
         </div>
