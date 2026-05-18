@@ -860,11 +860,11 @@ function PerpsInner() {
               </div>
 
               {/* Column headers */}
-              <div className="grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] px-3 py-2 border-b border-purple-500/20">
+              <div className="grid gap-x-2 border-l-2 border-l-transparent text-white/30 px-5 py-2 text-[11px] mr-[11px] grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] border-b border-purple-500/20">
                 {(['market', 'price', 'change', 'volume', 'oi', 'funding'] as const).map(col => {
                   const labels: Record<string, string> = {
-                    market: 'Market', price: 'Price', change: '24h %',
-                    volume: '24h Vol', oi: 'Open Int', funding: '1h Fund',
+                    market: 'Market', price: 'Price', change: '24h Change',
+                    volume: '24h Volume', oi: 'Open Interest', funding: '1h Funding',
                   };
                   const active = sortCol === col;
                   return (
@@ -873,16 +873,15 @@ function PerpsInner() {
                         if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
                         else { setSortCol(col as any); setSortDir('asc'); }
                       }}
-                      className={`flex items-center gap-0.5 text-[10px] transition ${
-                        col === 'market' ? '' : 'justify-end'
-                      } ${active ? 'text-[#F37B28]' : 'text-white/30 hover:text-white/55'}`}>
+                      className={`group flex w-full items-center gap-1 cursor-pointer select-none hover:underline transition-colors ${
+                        col === 'market' ? '' : 'flex-row-reverse'
+                      } ${active ? 'text-[#F37B28]' : ''}`}>
                       {labels[col]}
-                      <svg className="h-2 w-2 shrink-0" viewBox="0 0 8 8" fill="currentColor" style={{ opacity: active ? 1 : 0.3 }}>
-                        {active && sortDir === 'desc'
-                          ? <path d="M4 6L1 2h6z"/>
-                          : <path d="M4 2L7 6H1z"/>
-                        }
-                      </svg>
+                      {active && (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 transition-transform duration-200 ${sortDir === 'desc' ? 'rotate-180' : ''}`} aria-hidden="true">
+                          <path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>
+                        </svg>
+                      )}
                     </button>
                   );
                 })}
