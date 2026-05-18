@@ -825,7 +825,7 @@ function PerpsInner() {
             {/* Backdrop */}
             <div className="fixed inset-0 z-50 bg-black/60" onClick={() => setMktPanel(false)} />
             {/* Floating panel — starts at left edge of stats bar, below it */}
-            <div className="fixed z-50 bg-purple-950 border border-purple-500/20 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            <div className="fixed z-50 bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 rounded-xl shadow-2xl overflow-hidden flex flex-col"
                  style={{
                    top: statsBarRef.current
                      ? `${statsBarRef.current.getBoundingClientRect().bottom + 12}px`
@@ -834,27 +834,28 @@ function PerpsInner() {
                    width: 'calc(100vw - 396px)',
                    height: 'min(560px, 80vh)'
                  }}>
-              {/* Search */}
-              <div className="p-3 border-b border-purple-500/20">
-                <div className="flex items-center gap-2 bg-purple-900/40 border border-purple-500/20 rounded-lg px-3 py-2">
-                  <Search className="h-3.5 w-3.5 text-white/30 shrink-0" />
+              {/* Header + Search */}
+              <div className="p-4 border-b border-purple-500/30">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-white font-semibold text-lg">Search Markets</h3>
+                  <button onClick={() => setMktPanel(false)} className="text-purple-200 hover:text-white transition">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
                   <input
                     autoFocus
                     value={mktSearch}
                     onChange={e => setMktSearch(e.target.value)}
-                    placeholder="Search markets…"
-                    className="flex-1 bg-transparent text-xs text-white placeholder-white/25 outline-none"
+                    placeholder="Search markets"
+                    className="w-full pl-11 pr-4 h-12 rounded-lg bg-purple-950/50 border border-purple-500/30 text-white placeholder:text-purple-300/50 outline-none text-sm"
                   />
-                  {mktSearch && (
-                    <button onClick={() => setMktSearch('')} className="text-white/30 hover:text-white/60 transition">
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
                 </div>
               </div>
 
               {/* Category tabs */}
-              <div className="flex gap-1 px-3 py-2 border-b border-purple-500/20">
+              <div className="flex gap-1 px-3 py-2 border-b border-purple-500/30">
                 {(['all', 'crypto', 'commodities'] as const).map(cat => (
                   <button key={cat} onClick={() => setMktCat(cat)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
@@ -868,7 +869,7 @@ function PerpsInner() {
               </div>
 
               {/* Column headers */}
-              <div className="grid gap-x-2 border-l-2 border-l-transparent text-white/30 px-5 py-2 text-[11px] mr-[11px] grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] border-b border-purple-500/20">
+              <div className="grid gap-x-2 border-l-2 border-l-transparent text-white/30 px-5 py-2 text-[11px] mr-[11px] grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] border-b border-purple-500/30">
                 {(['market', 'price', 'change', 'volume', 'oi', 'funding'] as const).map(col => {
                   const labels: Record<string, string> = {
                     market: 'Market', price: 'Price', change: '24h Change',
@@ -917,7 +918,7 @@ function PerpsInner() {
                   return (
                     <button key={sym}
                       onClick={() => { setMarket(sym); setMktPanel(false); }}
-                      className={`w-full grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] items-center px-3 py-2.5 text-xs transition hover:bg-white/[0.04] border-l-2 ${
+                      className={`w-full grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] items-center px-3 py-2.5 text-xs transition hover:bg-purple-700/30 rounded-lg border-l-2 ${
                         isSel ? 'border-[#F37B28] bg-[#F37B28]/[0.06]' : 'border-transparent'
                       }`}>
                       {/* Market col */}
