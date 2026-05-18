@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { triggerFeedbackCard } from '@/components/FeedbackWidget';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
@@ -12,10 +12,18 @@ import lossGif from '@assets/tenor_1773011576032.gif';
 const GSOL_MINT = new PublicKey('GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3');
 const GSOL_DECIMALS = 9;
 
-const TOKEN_ICONS: Record<string, string> = {
-  sol: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
-  gsol: 'https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw',
-};
+const SOL_MINT = 'So11111111111111111111111111111111111111112';
+const GSOL_MINT_STR = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
+
+async function fetchTokenIcon(mint: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mint}`);
+    const data = await res.json();
+    return data[0]?.icon ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const BET_AMOUNTS = [0.002, 0.01, 0.05, 0.1, 0.5, 1];
 const ADMIN_ONLY_BET_AMOUNTS = new Set([0.1, 0.5, 1]);
@@ -102,6 +110,12 @@ export function CoinFlipGame() {
   const [coinRotation, setCoinRotation] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [ledgerTab, setLedgerTab] = useState<'recent' | 'top'>('recent');
+  const [tokenIcons, setTokenIcons] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchTokenIcon(SOL_MINT).then(icon => icon && setTokenIcons(prev => ({ ...prev, sol: icon })));
+    fetchTokenIcon(GSOL_MINT_STR).then(icon => icon && setTokenIcons(prev => ({ ...prev, gsol: icon })));
+  }, []);
 
   const vaultQuery = useQuery<{ success: boolean; address: string; balance: number }>({
     queryKey: ['/api/coinflip/vault'],
@@ -405,7 +419,7 @@ export function CoinFlipGame() {
                   : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
               }`}
             >
-              <img src={TOKEN_ICONS[t]} alt={t.toUpperCase()} className="w-5 h-5 rounded-full" />
+              {tokenIcons[t] && <img src={tokenIcons[t]} alt={t.toUpperCase()} className="w-5 h-5 rounded-full" />}
               {t.toUpperCase()}
             </button>
           ))}
