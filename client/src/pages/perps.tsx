@@ -820,7 +820,7 @@ function PerpsInner() {
 
         {/* ── Market list panel overlay ─────────────────────────────────── */}
         {mktPanel && (
-          <div className="absolute inset-0 z-40 flex">
+          <div className="fixed inset-0 z-50 flex">
             {/* Panel */}
             <div className="w-[560px] bg-purple-950/60 border-r border-purple-500/20 flex flex-col shadow-2xl overflow-hidden">
               {/* Search */}
