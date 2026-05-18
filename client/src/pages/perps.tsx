@@ -820,9 +820,12 @@ function PerpsInner() {
 
         {/* ── Market list panel overlay ─────────────────────────────────── */}
         {mktPanel && (
-          <div className="fixed inset-0 z-50 flex">
-            {/* Panel */}
-            <div className="w-[560px] bg-purple-950/60 border-r border-purple-500/20 flex flex-col shadow-2xl overflow-hidden">
+          <>
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-50 bg-black/60" onClick={() => setMktPanel(false)} />
+            {/* Floating panel — starts at left edge of stats bar, below it */}
+            <div className="fixed z-50 bg-purple-950/95 backdrop-blur-sm border border-purple-500/20 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                 style={{ top: '128px', left: '12px', width: 'calc(100vw - 396px)', height: 'min(560px, 80vh)' }}>
               {/* Search */}
               <div className="p-3 border-b border-purple-500/20">
                 <div className="flex items-center gap-2 bg-purple-900/40 border border-purple-500/20 rounded-lg px-3 py-2">
@@ -961,10 +964,7 @@ function PerpsInner() {
                 })}
               </div>
             </div>
-
-            {/* Backdrop — click to close */}
-            <div className="flex-1 bg-black/40 cursor-pointer" onClick={() => setMktPanel(false)} />
-          </div>
+          </>
         )}
 
         {/* ── Chart card ───────────────────────────────────────────────────── */}
