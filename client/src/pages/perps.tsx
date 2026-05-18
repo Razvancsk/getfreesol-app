@@ -6,7 +6,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { Transaction } from '@solana/web3.js';
-import { Side, createPhoenixClient } from '@ellipsis-labs/rise';
+import {
+  Side, Direction, StopLossOrderKind,
+  createPhoenixClient, PhoenixHttpClient, priceUsdToTicksWithMarketParams,
+} from '@ellipsis-labs/rise';
 import { Link } from 'wouter';
 import {
   ArrowLeft, Activity, TrendingUp, TrendingDown,
@@ -444,6 +447,9 @@ function PerpsInner() {
   const [orderSize,    setOrderSize]    = useState('');
   const [txSig,        setTxSig]        = useState<string | null>(null);
   const [bottomTab,    setBottomTab]    = useState<'positions' | 'orders' | 'trades'>('positions');
+  const [tpslEnabled,      setTpslEnabled]      = useState(false);
+  const [stopLossPrice,    setStopLossPrice]    = useState('');
+  const [takeProfitPrice,  setTakeProfitPrice]  = useState('');
   const [mktPanel,         setMktPanel]         = useState(false);
   const [mktSearch,        setMktSearch]        = useState('');
   const [mktCat,           setMktCat]           = useState<'all' | 'crypto' | 'commodities'>('all');
@@ -551,10 +557,11 @@ function PerpsInner() {
   });
 
   const { data: exchangeRaw } = useQuery<unknown>({
-    queryKey: ['/api/perps/exchange'],
+    queryKey: ['/api/perps/exchange', market],
     queryFn: async () => {
-      if (riseClient?.exchange) {
-        try { return await riseClient.exchange().getMarket(market); } catch {}
+      // Use SDK's correct path: api.exchangeClient (createPhoenixClient)
+      if (riseClient?.api?.exchangeClient) {
+        try { return await riseClient.api.exchangeClient.getMarket(stripPerp(market)); } catch {}
       }
       return (await fetch('/api/perps/exchange')).json();
     },
@@ -564,10 +571,10 @@ function PerpsInner() {
   const { data: traderRaw, refetch: refetchTrader } = useQuery<unknown>({
     queryKey: ['/api/perps/trader', publicKey?.toString()],
     queryFn: async () => {
-      // Prefer SDK HTTP client for trader state
-      if (riseClient?.traders) {
+      // Use SDK's correct path: api.tradersClient (createPhoenixClient)
+      if (riseClient?.api?.tradersClient) {
         try {
-          return await riseClient.traders().getTraderStateSnapshot(
+          return await riseClient.api.tradersClient.getTraderStateSnapshot(
             publicKey!.toString(), { traderPdaIndex: 0 },
           );
         } catch {}
@@ -594,6 +601,18 @@ function PerpsInner() {
     onSuccess: () => refetchTrader(),
   });
 
+  // Helper: sign & send a single instruction
+  async function signAndSend(ix: any): Promise<string> {
+    const tx = new Transaction().add(ix);
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = publicKey!;
+    const signedTx = await signTransaction(tx);
+    const sig = await connection.sendRawTransaction((signedTx as Transaction).serialize());
+    await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
+    return sig;
+  }
+
   const placeMut = useMutation({
     mutationFn: async ({ side }: { side: 'buy' | 'sell' }) => {
       if (!publicKey || !riseClient) throw new Error('Not ready');
@@ -604,33 +623,41 @@ function PerpsInner() {
 
       if (orderType === 'limit') {
         if (!orderPrice) throw new Error('Enter a price');
+        // placeLimitOrder is Flight-aware (per SDK docs)
         const pkt = await riseClient.orderPackets.buildLimitOrderPacket({
           symbol: sym, side: riseSide, priceUsd: orderPrice, baseUnits: orderSize,
         });
-        ix = await riseClient.ixs.buildPlaceLimitOrder({
-          authority, symbol: sym, orderPacket: pkt,
-          traderPdaIndex: 0, traderSubaccountIndex: 0,
-        });
+        ix = await riseClient.ixs.placeLimitOrder({ authority, symbol: sym, orderPacket: pkt });
       } else {
         const limit = markPrice
           ? (side === 'buy' ? (markPrice * 1.05).toFixed(4) : (markPrice * 0.95).toFixed(4))
           : (side === 'buy' ? '999999' : '0.01');
+        // placeMarketOrder is Flight-aware (per SDK docs)
         const pkt = await riseClient.orderPackets.buildMarketOrderPacket({
           symbol: sym, side: riseSide, baseUnits: orderSize, priceLimitUsd: limit,
         });
-        ix = await riseClient.ixs.buildPlaceMarketOrder({
-          authority, symbol: sym, orderPacket: pkt,
-          traderPdaIndex: 0, traderSubaccountIndex: 0,
-        });
+        ix = await riseClient.ixs.placeMarketOrder({ authority, symbol: sym, orderPacket: pkt });
       }
 
-      const tx = new Transaction().add(ix);
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      tx.recentBlockhash = blockhash;
-      tx.feePayer = publicKey;
-      const signedTx = await signTransaction(tx);
-      const sig = await connection.sendRawTransaction((signedTx as Transaction).serialize());
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
+      const sig = await signAndSend(ix);
+
+      // Place stop loss if enabled (POST /v1/invite/... handled by SDK)
+      const mktCfg: any = exchangeRaw;
+      if (tpslEnabled && stopLossPrice && mktCfg?.tickSize) {
+        try {
+          const triggerPrice = priceUsdToTicksWithMarketParams(stopLossPrice, mktCfg);
+          const slIx = await riseClient.ixs.buildPlaceStopLoss({
+            authority,
+            symbol: sym,
+            tradeSide: riseSide,
+            executionDirection: side === 'buy' ? Direction.LessThan : Direction.GreaterThan,
+            orderKind: StopLossOrderKind.IOC,
+            triggerPrice,
+          });
+          await signAndSend(slIx);
+        } catch { /* stop loss is optional — don't fail the main order */ }
+      }
+
       return sig;
     },
     onSuccess: (sig) => {
@@ -638,6 +665,31 @@ function PerpsInner() {
       setTimeout(() => setTxSig(null), 8000);
       refetchTrader();
     },
+  });
+
+  // Cancel all open orders for current market
+  const cancelAllMut = useMutation({
+    mutationFn: async () => {
+      if (!publicKey || !riseClient) throw new Error('Not ready');
+      const ix = await riseClient.ixs.buildCancelAll({
+        authority: publicKey.toString(), symbol: market,
+      });
+      return signAndSend(ix);
+    },
+    onSuccess: (sig) => { setTxSig(sig as string); setTimeout(() => setTxSig(null), 8000); refetchTrader(); },
+  });
+
+  // Cancel a specific order by price + sequence number
+  const cancelByIdMut = useMutation({
+    mutationFn: async ({ price, orderSequenceNumber }: { price: bigint; orderSequenceNumber: string }) => {
+      if (!publicKey || !riseClient) throw new Error('Not ready');
+      const ix = await riseClient.ixs.buildCancelOrdersById({
+        authority: publicKey.toString(), symbol: market,
+        orders: [{ price, orderSequenceNumber }],
+      });
+      return signAndSend(ix);
+    },
+    onSuccess: (sig) => { setTxSig(sig as string); setTimeout(() => setTxSig(null), 8000); refetchTrader(); },
   });
 
   // ── Derived state ─────────────────────────────────────────────────────────
@@ -1020,7 +1072,17 @@ function PerpsInner() {
                 {tab === 'positions' ? `Positions (${traderPositions.length})` : tab === 'orders' ? `Open Orders (${traderOrders.length})` : 'Trade History'}
               </button>
             ))}
-            {publicKey && <button onClick={() => refetchTrader()} className="ml-auto pr-3 text-white/20 hover:text-white/50 transition"><RefreshCw className="h-3 w-3" /></button>}
+            {publicKey && (
+              <div className="ml-auto pr-3 flex items-center gap-2">
+                {bottomTab === 'orders' && traderOrders.length > 0 && (
+                  <button onClick={() => cancelAllMut.mutate()} disabled={cancelAllMut.isPending}
+                    className="text-[10px] text-red-400/70 hover:text-red-400 transition disabled:opacity-40 border border-red-400/20 hover:border-red-400/40 rounded px-2 py-0.5">
+                    {cancelAllMut.isPending ? '…' : 'Cancel All'}
+                  </button>
+                )}
+                <button onClick={() => refetchTrader()} className="text-white/20 hover:text-white/50 transition"><RefreshCw className="h-3 w-3" /></button>
+              </div>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto">
             {bottomTab === 'positions' && (
@@ -1061,15 +1123,21 @@ function PerpsInner() {
                 </div>
               ) : (
                 <div className="px-3 py-2">
-                  <div className="grid grid-cols-4 text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1">
-                    <span>Side</span><span className="text-right">Price</span><span className="text-right">Size</span><span className="text-right">Remaining</span>
+                  <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] text-[10px] text-white/25 pb-1.5 border-b border-white/5 mb-1 gap-2">
+                    <span>Side</span><span className="text-right">Price</span><span className="text-right">Size</span><span className="text-right">Remaining</span><span />
                   </div>
                   {traderOrders.slice(0, 20).map((o: any, i: number) => (
-                    <div key={i} className="grid grid-cols-4 py-1.5 text-xs border-b border-white/[0.04] last:border-0">
+                    <div key={i} className="grid grid-cols-[auto_1fr_1fr_1fr_auto] py-1.5 text-xs border-b border-white/[0.04] last:border-0 gap-2 items-center">
                       <span className={o.side === 'bid' ? 'text-green-400' : 'text-red-400'}>{o.side === 'bid' ? 'BUY' : 'SELL'}</span>
                       <span className="text-right font-mono text-white/60">{fp(pf(o.price))}</span>
                       <span className="text-right font-mono text-white/60">{pf(o.tradeSize).toFixed(3)}</span>
                       <span className="text-right font-mono text-white/40">{pf(o.tradeSizeRemaining).toFixed(3)}</span>
+                      <button
+                        onClick={() => cancelByIdMut.mutate({ price: BigInt(o.priceInTicks ?? Math.round(pf(o.price) * 100)), orderSequenceNumber: String(o.orderSequenceNumber ?? o.seqNum ?? i) })}
+                        disabled={cancelByIdMut.isPending}
+                        className="text-[9px] text-red-400/50 hover:text-red-400 transition disabled:opacity-30 px-1">
+                        ✕
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -1241,12 +1309,42 @@ function PerpsInner() {
                     Post Only
                   </label>
                   <div className="col-span-2">
-                    <label className="flex items-center gap-2 text-xs text-white/40 cursor-pointer select-none">
-                      <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-purple-900/40 inline-block" />
+                    <label className="flex items-center gap-2 text-xs text-white/70 cursor-pointer select-none" onClick={() => setTpslEnabled(v => !v)}>
+                      <span className={`w-4 h-4 shrink-0 rounded-sm border inline-flex items-center justify-center transition ${tpslEnabled ? 'border-[#F37B28] bg-[#F37B28]' : 'border-white/30 bg-purple-900/40'}`}>
+                        {tpslEnabled && <svg className="w-2.5 h-2.5 text-black" viewBox="0 0 10 10" fill="currentColor"><path d="M1.5 5L4 7.5 8.5 2.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+                      </span>
                       Take Profit / Stop Loss
                     </label>
                   </div>
                 </div>
+
+                {/* TP/SL inputs — shown when checkbox is ticked */}
+                {tpslEnabled && (
+                  <div className="flex flex-col gap-2 px-1">
+                    <div className="flex items-center bg-purple-900/40 rounded-lg px-3 py-1.5 gap-2">
+                      <span className="text-[10px] text-green-400/70 shrink-0 w-16">Take Profit</span>
+                      <span className="text-white/30 text-xs">$</span>
+                      <input
+                        type="number"
+                        value={takeProfitPrice}
+                        onChange={e => setTakeProfitPrice(e.target.value)}
+                        placeholder="0.00"
+                        className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0"
+                      />
+                    </div>
+                    <div className="flex items-center bg-purple-900/40 rounded-lg px-3 py-1.5 gap-2">
+                      <span className="text-[10px] text-red-400/70 shrink-0 w-16">Stop Loss</span>
+                      <span className="text-white/30 text-xs">$</span>
+                      <input
+                        type="number"
+                        value={stopLossPrice}
+                        onChange={e => setStopLossPrice(e.target.value)}
+                        placeholder="0.00"
+                        className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Place order / Deposit */}
                 {placeMut.isError && <p className="text-red-400 text-[10px] break-all px-1">{(placeMut.error as any)?.message ?? 'Order failed'}</p>}
