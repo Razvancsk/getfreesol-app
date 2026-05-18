@@ -566,7 +566,7 @@ export function CoinFlipGame() {
                       {flip.walletAddress.slice(0, 8)}...{flip.walletAddress.slice(-8)}
                     </div>
                     <div className="text-white text-center text-sm font-semibold">
-                      {parseFloat(flip.betAmount).toFixed(4)} SOL
+                      {parseFloat(flip.betAmount).toFixed(4)} {(flip.betToken || 'sol').toUpperCase()}
                     </div>
                     <div className={`text-center text-sm font-bold ${flip.won ? 'text-green-400' : 'text-red-400'}`}>
                       {flip.won ? 'Doubled' : 'Rugged'}
