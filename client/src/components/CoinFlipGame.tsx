@@ -95,7 +95,7 @@ export function CoinFlipGame() {
   const { publicKey, signTransaction, connected, connection } = useWalletAdapter();
   const { toast } = useToast();
   const [choice, setChoice] = useState<'heads' | 'tails'>('heads');
-  const [betToken, setBetToken] = useState<'sol' | 'gsol'>('sol');
+  const betToken = 'sol';
   const [betAmount, setBetAmount] = useState<number | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipResult, setFlipResult] = useState<{ result: string; won: boolean; payoutAmount: number } | null>(null);
@@ -158,7 +158,7 @@ export function CoinFlipGame() {
   const vaultBalance = (vaultQuery.data as any)?.balance || 0;
   const vaultGsolBalance = (vaultQuery.data as any)?.gsolBalance || 0;
   const feesWallet = (vaultQuery.data as any)?.feesWallet || '';
-  const displayBalance = betToken === 'gsol' ? vaultGsolBalance : vaultBalance;
+  const displayBalance = vaultBalance;
 
   const flipMutation = useMutation({
     mutationFn: async ({ walletAddress, betAmount, choice, betTxSignature, betToken }: any) => {
@@ -435,26 +435,6 @@ export function CoinFlipGame() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Token selector */}
-      <div className="flex justify-center">
-        <div className="inline-flex rounded-xl border border-purple-500/30 bg-purple-900/30 p-1 gap-1">
-          {(['sol', 'gsol'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => { setBetToken(t); setBetAmount(null); }}
-              disabled={isFlipping}
-              className={`px-5 py-2 rounded-lg font-bold text-sm uppercase tracking-wider transition-all ${
-                betToken === t
-                  ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30'
-                  : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
-              }`}
-            >
-              <img src={TOKEN_ICONS[t]} alt={t.toUpperCase()} className="w-7 h-7 rounded-full object-cover" />
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* I LIKE */}
