@@ -400,7 +400,14 @@ export function CoinFlipGame() {
                   : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
               }`}
             >
-              {t === 'sol' ? '◎ SOL' : '🟢 GSOL'}
+              <img
+                src={t === 'sol'
+                  ? 'https://img.jup.ag/tokens/So11111111111111111111111111111111111111112'
+                  : 'https://img.jup.ag/tokens/GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3'}
+                alt={t.toUpperCase()}
+                className="w-5 h-5 rounded-full"
+              />
+              {t.toUpperCase()}
             </button>
           ))}
         </div>
