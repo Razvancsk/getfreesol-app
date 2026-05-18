@@ -12,6 +12,11 @@ import lossGif from '@assets/tenor_1773011576032.gif';
 const GSOL_MINT = new PublicKey('GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3');
 const GSOL_DECIMALS = 9;
 
+const TOKEN_ICONS: Record<string, string> = {
+  sol: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
+  gsol: 'https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw',
+};
+
 const BET_AMOUNTS = [0.002, 0.01, 0.05, 0.1, 0.5, 1];
 const ADMIN_ONLY_BET_AMOUNTS = new Set([0.1, 0.5, 1]);
 const ADMIN_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
@@ -400,13 +405,7 @@ export function CoinFlipGame() {
                   : 'text-purple-300 hover:text-white hover:bg-purple-800/40'
               }`}
             >
-              <img
-                src={t === 'sol'
-                  ? 'https://img.jup.ag/tokens/So11111111111111111111111111111111111111112'
-                  : 'https://img.jup.ag/tokens/GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3'}
-                alt={t.toUpperCase()}
-                className="w-5 h-5 rounded-full"
-              />
+              <img src={TOKEN_ICONS[t]} alt={t.toUpperCase()} className="w-5 h-5 rounded-full" />
               {t.toUpperCase()}
             </button>
           ))}
