@@ -825,7 +825,7 @@ function PerpsInner() {
             {/* Backdrop */}
             <div className="fixed inset-0 z-50 bg-black/60" onClick={() => setMktPanel(false)} />
             {/* Floating panel — starts at left edge of stats bar, below it */}
-            <div className="fixed z-50 bg-purple-950/95 backdrop-blur-sm border border-purple-500/20 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            <div className="fixed z-50 bg-purple-950 border border-purple-500/20 rounded-xl shadow-2xl overflow-hidden flex flex-col"
                  style={{
                    top: statsBarRef.current
                      ? `${statsBarRef.current.getBoundingClientRect().bottom + 12}px`
