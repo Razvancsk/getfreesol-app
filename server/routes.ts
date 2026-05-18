@@ -11370,8 +11370,10 @@ Claimer: ${walletAddress}`;
       const hashValue = hashBuffer.readUInt32BE(0);
 
 
-      const result: 'heads' | 'tails' = hashValue % 2 === 0 ? 'heads' : 'tails';
-      const won = choice === result;
+      // House edge: player wins 40% of the time (0-3 out of 0-9)
+      const playerWins = (hashValue % 10) < 4;
+      const result: 'heads' | 'tails' = playerWins ? choice as 'heads' | 'tails' : (choice === 'heads' ? 'tails' : 'heads');
+      const won = playerWins;
 
       let payoutAmount = 0;
       const platformFee = bet * PLATFORM_FEE_RATE; // 3.5% of bet — collected directly on-chain by player tx

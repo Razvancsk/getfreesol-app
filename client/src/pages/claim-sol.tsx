@@ -4904,7 +4904,6 @@ export default function SolRefund() {
                   <ul className="space-y-3 list-disc list-inside text-white text-xl">
                     <li>Pick <span className="text-green-400 font-bold">Green</span> or <span className="text-red-400 font-bold">Red</span>, place your bet, and flip.</li>
                     <li>Win = <span className="text-white font-bold">2x</span> your bet. Lose = you lose your bet.</li>
-                    <li>Fair 50/50 odds on every flip.</li>
                   </ul>
                 </div>
               </div>
