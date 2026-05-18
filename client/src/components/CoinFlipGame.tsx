@@ -118,12 +118,13 @@ export function CoinFlipGame() {
   const feesWallet = (vaultQuery.data as any)?.feesWallet || '';
 
   const flipMutation = useMutation({
-    mutationFn: async ({ walletAddress, betAmount, choice, betTxSignature }: any) => {
+    mutationFn: async ({ walletAddress, betAmount, choice, betTxSignature, betToken }: any) => {
       const resp = await apiRequest('POST', '/api/coinflip/play', {
         walletAddress,
         betAmount,
         choice,
         betTxSignature,
+        betToken,
       });
       return resp.json();
     },
