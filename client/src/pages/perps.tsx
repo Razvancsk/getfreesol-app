@@ -1021,7 +1021,7 @@ function PerpsInner() {
                 {registerMut.isSuccess && <p className="text-green-400 text-[10px]">Activated! Refreshing…</p>}
               </div>
             ) : (
-              <div className="flex flex-col gap-5 px-3 pt-3 pb-5">
+              <div className="flex flex-col gap-2.5 px-3 pt-2 pb-3">
 
                 {/* Long/Buy — Short/Sell sliding toggle */}
                 <div className="relative grid rounded-lg bg-purple-900/40 select-none" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
@@ -1031,11 +1031,11 @@ function PerpsInner() {
                     </div>
                   </div>
                   <button type="button" onClick={() => setOrderSide('buy')}
-                    className={`relative z-10 px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderSide === 'buy' ? 'text-black' : 'text-white/40 hover:text-white/70'}`}>
+                    className={`relative z-10 px-2.5 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderSide === 'buy' ? 'text-black' : 'text-white/40 hover:text-white/70'}`}>
                     Long/Buy
                   </button>
                   <button type="button" onClick={() => setOrderSide('sell')}
-                    className={`relative z-10 px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderSide === 'sell' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}>
+                    className={`relative z-10 px-2.5 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderSide === 'sell' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}>
                     Short/Sell
                   </button>
                 </div>
@@ -1050,16 +1050,16 @@ function PerpsInner() {
                       </div>
                     </div>
                     <button type="button" onClick={() => setOrderType('market')}
-                      className={`relative z-10 px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderType === 'market' ? (orderSide === 'buy' ? 'text-[#22c55e]' : 'text-[#ef4444]') : 'text-white/40 hover:text-white/70'}`}>
+                      className={`relative z-10 px-2.5 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderType === 'market' ? (orderSide === 'buy' ? 'text-[#22c55e]' : 'text-[#ef4444]') : 'text-white/40 hover:text-white/70'}`}>
                       Market
                     </button>
                     <button type="button" onClick={() => setOrderType('limit')}
-                      className={`relative z-10 px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderType === 'limit' ? (orderSide === 'buy' ? 'text-[#22c55e]' : 'text-[#ef4444]') : 'text-white/40 hover:text-white/70'}`}>
+                      className={`relative z-10 px-2.5 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderType === 'limit' ? (orderSide === 'buy' ? 'text-[#22c55e]' : 'text-[#ef4444]') : 'text-white/40 hover:text-white/70'}`}>
                       Limit
                     </button>
                   </div>
                   {/* Price input */}
-                  <div className={`flex items-center bg-purple-900/40 rounded-lg px-3 py-2 gap-1.5 min-h-[43px] ${orderType === 'market' ? 'opacity-50' : ''}`}>
+                  <div className={`flex items-center bg-purple-900/40 rounded-lg px-3 py-1.5 gap-1.5 min-h-[36px] ${orderType === 'market' ? 'opacity-50' : ''}`}>
                     <span className="text-white/40 text-xs shrink-0">$</span>
                     <input
                       type="number"
@@ -1074,7 +1074,7 @@ function PerpsInner() {
                 </div>
 
                 {/* Available / Position */}
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
                   <div className="px-0 flex justify-between items-center">
                     <span className="text-white/40 text-xs leading-none">Available to Trade</span>
                     <span className="text-white text-xs font-semibold leading-none">{fUSD(pf(td?.collateralBalance))}</span>
@@ -1086,7 +1086,7 @@ function PerpsInner() {
                 </div>
 
                 {/* Order Size input */}
-                <div className="bg-purple-900/40 rounded-lg p-3 grid grid-cols-[auto_1fr] items-start gap-2">
+                <div className="bg-purple-900/40 rounded-lg p-2.5 grid grid-cols-[auto_1fr] items-start gap-2">
                   <div className="flex flex-col gap-2">
                     <label className="text-xs text-white/40 leading-none">Order Size</label>
                     <button className="bg-purple-950/60 rounded px-2 py-1.5 text-xs text-white/60 font-medium flex items-center gap-1">
@@ -1109,7 +1109,7 @@ function PerpsInner() {
                 </div>
 
                 {/* Order Leverage */}
-                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-purple-500/20">
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-purple-500/20">
                   <div className="flex items-center gap-1.5 text-xs text-white/40">Order Leverage</div>
                   <span className="text-base text-right font-semibold text-white/40 leading-none">-</span>
                 </div>
@@ -1142,7 +1142,7 @@ function PerpsInner() {
                 <button
                   onClick={() => placeMut.mutate({ side: orderSide })}
                   disabled={placeMut.isPending || !riseReady}
-                  className={`w-full py-2.5 rounded-lg text-base font-semibold transition disabled:opacity-40 ${
+                  className={`w-full py-2 rounded-lg text-base font-semibold transition disabled:opacity-40 ${
                     orderSide === 'buy'
                       ? 'bg-[#22c55e] hover:bg-[#16a34a] text-black'
                       : 'bg-[#ef4444] hover:bg-[#dc2626] text-white'
@@ -1152,7 +1152,7 @@ function PerpsInner() {
                 </button>
 
                 {/* Summary */}
-                <div className="bg-purple-950/50 rounded-[10px] p-4 flex flex-col gap-3">
+                <div className="bg-purple-950/50 rounded-[10px] p-3 flex flex-col gap-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-white/40 leading-none">Expected Price</span>
                     <span className="text-white font-medium leading-none">{markPrice ? fp(markPrice) : '—'}</span>
