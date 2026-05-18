@@ -580,7 +580,7 @@ export function CoinFlipGame() {
           <button
             onClick={handleClaimRakeback}
             disabled={isClaiming || !rakebackQuery.data?.pendingGsol || rakebackQuery.data.pendingGsol < 0.001}
-            className="w-full py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider transition-all border-2 border-green-500/40 bg-green-900/30 text-green-300 hover:bg-green-800/40 hover:border-green-400/60 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider transition-all bg-green-400 text-black hover:bg-green-300 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isClaiming ? 'Claiming…' : (rakebackQuery.data?.pendingGsol ?? 0) >= 0.001 ? 'Claim' : 'Minimum 0.001 GSOL to claim'}
           </button>
