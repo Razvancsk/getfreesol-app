@@ -738,10 +738,10 @@ function PerpsInner() {
   }, [displayMarkets, mktSearch, mktCat, sortCol, sortDir, allMids]);
 
   return (
-    <div className="h-screen bg-[#131722] text-white flex flex-col overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex flex-col overflow-hidden">
 
       {/* ── Nav bar ──────────────────────────────────────────────────────── */}
-      <nav className="h-[52px] flex items-center justify-between px-4 md:px-6 border-b border-[#2a2d3e] bg-[#131722] shrink-0">
+      <nav className="h-[52px] flex items-center justify-between px-4 md:px-6 border-b border-purple-500/20 bg-black/20 backdrop-blur-sm shrink-0">
 
         <div className="flex items-center gap-6">
           <Link href="/"><a className="shrink-0">
@@ -763,7 +763,7 @@ function PerpsInner() {
             </button>
             {walletMenuOpen && <div className="fixed inset-0 z-40" onClick={() => setWalletMenuOpen(false)} />}
             {walletMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 z-50 bg-[#1e2130] border border-[#2a2d3e] rounded-md shadow-lg overflow-hidden min-w-[120px]">
+              <div className="absolute right-0 top-full mt-1 z-50 bg-purple-900/40 border border-purple-500/20 rounded-md shadow-lg overflow-hidden min-w-[120px]">
                 <div onClick={() => { disconnectWallet(); setWalletMenuOpen(false); }}
                   className="px-3 py-2 text-white hover:bg-white/10 cursor-pointer text-sm text-center">
                   Disconnect
@@ -774,17 +774,58 @@ function PerpsInner() {
         </div>
       </nav>
 
-      {/* ── Middle: chart (left) + order form (right) ───────────────────── */}
-      <div className="flex-1 flex min-h-0 relative overflow-hidden">
+      {/* ── Content area ──────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col p-3 gap-3 min-h-0 overflow-hidden">
+
+        {/* ── Stats bar card ──────────────────────────────────────────────── */}
+        <div className="shrink-0 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 px-4 py-2.5 flex items-center gap-5 overflow-x-auto scrollbar-none flex-nowrap">
+          <button onClick={() => setMktPanel(true)} className="flex items-center gap-2 shrink-0 hover:opacity-80 transition">
+            <TokenAvatar symbol={marketBase} size={20} />
+            <span className="text-sm font-bold text-white">{marketBase}/USD</span>
+            <ChevronDown className="w-3.5 h-3.5 text-white/40" />
+          </button>
+          <div className="w-px h-6 bg-purple-500/30 shrink-0" />
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[10px] text-[#F37B28] whitespace-nowrap">Mark</span>
+            <span className="text-sm font-mono text-white whitespace-nowrap">{markPrice != null ? fp(markPrice) : '—'}</span>
+          </div>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[10px] text-[#F37B28] whitespace-nowrap">Index</span>
+            <span className="text-sm font-mono text-white/70 whitespace-nowrap">{indexPrice != null ? fp(indexPrice) : '—'}</span>
+          </div>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[10px] text-[#F37B28] whitespace-nowrap">24h Change</span>
+            <span className={`text-sm font-mono whitespace-nowrap ${priceChange == null ? 'text-white/50' : isUp ? 'text-green-400' : 'text-red-400'}`}>
+              {priceChange == null ? '—' : `${isUp ? '+' : ''}${(priceChange * 100).toFixed(2)}%`}
+            </span>
+          </div>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[10px] text-[#F37B28] whitespace-nowrap">24h Volume</span>
+            <span className="text-sm font-mono text-white/70 whitespace-nowrap">{dayNtlVlm != null ? fUSD(dayNtlVlm) : '—'}</span>
+          </div>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[10px] text-[#F37B28] whitespace-nowrap">Open Interest</span>
+            <span className="text-sm font-mono text-white/70 whitespace-nowrap">{openInterest != null ? fUSD(openInterest) : '—'}</span>
+          </div>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <span className="text-[10px] text-[#F37B28] whitespace-nowrap">1h Funding</span>
+            <span className={`text-sm font-mono whitespace-nowrap ${fundingRate == null ? 'text-white/50' : fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {fundingRate == null ? '—' : `${fundingRate >= 0 ? '+' : ''}${(fundingRate * 100).toFixed(4)}%`}
+            </span>
+          </div>
+        </div>
+
+        {/* ── Middle: chart card + order form card ────────────────────────── */}
+        <div className="flex-1 flex gap-3 min-h-0 relative">
 
         {/* ── Market list panel overlay ─────────────────────────────────── */}
         {mktPanel && (
           <div className="absolute inset-0 z-40 flex">
             {/* Panel */}
-            <div className="w-[560px] bg-[#131722] border-r border-[#2a2d3e] flex flex-col shadow-2xl overflow-hidden">
+            <div className="w-[560px] bg-purple-950/60 border-r border-purple-500/20 flex flex-col shadow-2xl overflow-hidden">
               {/* Search */}
-              <div className="p-3 border-b border-[#2a2d3e]">
-                <div className="flex items-center gap-2 bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2">
+              <div className="p-3 border-b border-purple-500/20">
+                <div className="flex items-center gap-2 bg-purple-900/40 border border-purple-500/20 rounded-lg px-3 py-2">
                   <Search className="h-3.5 w-3.5 text-white/30 shrink-0" />
                   <input
                     autoFocus
@@ -802,7 +843,7 @@ function PerpsInner() {
               </div>
 
               {/* Category tabs */}
-              <div className="flex gap-1 px-3 py-2 border-b border-[#2a2d3e]">
+              <div className="flex gap-1 px-3 py-2 border-b border-purple-500/20">
                 {(['all', 'crypto', 'commodities'] as const).map(cat => (
                   <button key={cat} onClick={() => setMktCat(cat)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
@@ -816,7 +857,7 @@ function PerpsInner() {
               </div>
 
               {/* Column headers */}
-              <div className="grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] px-3 py-2 border-b border-[#2a2d3e]">
+              <div className="grid grid-cols-[minmax(140px,1.4fr)_repeat(5,1fr)] px-3 py-2 border-b border-purple-500/20">
                 {(['market', 'price', 'change', 'volume', 'oi', 'funding'] as const).map(col => {
                   const labels: Record<string, string> = {
                     market: 'Market', price: 'Price', change: '24h %',
@@ -874,7 +915,7 @@ function PerpsInner() {
                         <TokenAvatar symbol={base} />
                         <span className={`font-semibold ${isSel ? 'text-white' : 'text-white/75'}`}>{base}</span>
                         {mLev != null && (
-                          <span className="text-[9px] bg-[#1e2130] text-white/40 border border-[#2a2d3e] rounded px-1 py-0.5 leading-none">
+                          <span className="text-[9px] bg-purple-900/40 text-white/40 border border-purple-500/20 rounded px-1 py-0.5 leading-none">
                             {mLev}×
                           </span>
                         )}
@@ -926,49 +967,11 @@ function PerpsInner() {
           </div>
         )}
 
-        {/* ── Chart column (flex-1, left) ───────────────────────────────────── */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-[#2a2d3e] overflow-hidden">
-
-          {/* Stats bar — constrained to chart column width only */}
-          <div className="flex items-center gap-5 px-4 py-2 border-b border-[#2a2d3e] shrink-0 overflow-x-auto scrollbar-none flex-nowrap">
-            <button onClick={() => setMktPanel(true)} className="flex items-center gap-2 shrink-0 hover:opacity-80 transition">
-              <TokenAvatar symbol={marketBase} size={20} />
-              <span className="text-sm font-bold text-white">{marketBase}/USD</span>
-              <ChevronDown className="w-3.5 h-3.5 text-white/40" />
-            </button>
-            <div className="w-px h-6 bg-[#2a2d3e] shrink-0" />
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">Mark</span>
-              <span className="text-sm font-mono text-white whitespace-nowrap">{markPrice != null ? fp(markPrice) : '—'}</span>
-            </div>
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">Index</span>
-              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{indexPrice != null ? fp(indexPrice) : '—'}</span>
-            </div>
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">24h Change</span>
-              <span className={`text-sm font-mono whitespace-nowrap ${priceChange == null ? 'text-white/50' : isUp ? 'text-green-400' : 'text-red-400'}`}>
-                {priceChange == null ? '—' : `${isUp ? '+' : ''}${(priceChange * 100).toFixed(2)}%`}
-              </span>
-            </div>
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">24h Volume</span>
-              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{dayNtlVlm != null ? fUSD(dayNtlVlm) : '—'}</span>
-            </div>
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">Open Interest</span>
-              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{openInterest != null ? fUSD(openInterest) : '—'}</span>
-            </div>
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">1h Funding</span>
-              <span className={`text-sm font-mono whitespace-nowrap ${fundingRate == null ? 'text-white/50' : fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {fundingRate == null ? '—' : `${fundingRate >= 0 ? '+' : ''}${(fundingRate * 100).toFixed(4)}%`}
-              </span>
-            </div>
-          </div>
+        {/* ── Chart card ───────────────────────────────────────────────────── */}
+        <div className="flex-1 flex flex-col min-w-0 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 overflow-hidden">
 
           {/* Timeframe tabs */}
-          <div className="flex items-center gap-0.5 px-3 py-2 border-b border-[#2a2d3e] shrink-0">
+          <div className="flex items-center gap-0.5 px-3 py-2 border-b border-purple-500/20 shrink-0">
             {TIMEFRAMES.map(t => (
               <button key={t.s} onClick={() => setTf(t.s)}
                 className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
@@ -987,12 +990,12 @@ function PerpsInner() {
           </div>
         </div>
 
-        {/* ── Order form (right, 360px, full middle height) ───────────────── */}
-        <div className="w-[360px] shrink-0 flex flex-col overflow-y-auto bg-[#131722]">
+        {/* ── Order form card ─────────────────────────────────────────────── */}
+        <div className="w-[360px] shrink-0 flex flex-col overflow-y-auto bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
 
           {/* Cross button — top of form card */}
           <div className="px-3 pt-3 pb-0 shrink-0">
-            <button className="w-full flex items-center justify-between bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-[#252840] transition max-h-[30px]">
+            <button className="w-full flex items-center justify-between bg-purple-900/40 border border-purple-500/30 rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-purple-800/50 transition max-h-[30px]">
               Cross <ChevronDown className="w-4 h-4 text-white/40" />
             </button>
           </div>
@@ -1009,7 +1012,7 @@ function PerpsInner() {
                 </div>
                 <p className="text-[10px] text-white/25 leading-relaxed">Enter your Phoenix invite code to trade perps on-chain.</p>
                 <input value={inviteCode} onChange={e => setInviteCode(e.target.value)} placeholder="Invite code…"
-                  className="bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-[#F37B28]/40 transition" />
+                  className="bg-purple-900/40 border border-purple-500/20 rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-[#F37B28]/40 transition" />
                 <button onClick={() => registerMut.mutate()} disabled={!inviteCode.trim() || registerMut.isPending}
                   className="w-full py-2.5 bg-[#F37B28] hover:bg-[#e06b1a] rounded-lg text-sm font-semibold text-black transition disabled:opacity-40">
                   {registerMut.isPending ? 'Activating…' : 'Activate Account'}
@@ -1021,7 +1024,7 @@ function PerpsInner() {
               <div className="flex flex-col gap-5 px-3 pt-3 pb-5">
 
                 {/* Long/Buy — Short/Sell sliding toggle */}
-                <div className="relative grid rounded-lg bg-[#1e2130] select-none" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+                <div className="relative grid rounded-lg bg-purple-900/40 select-none" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
                   <div className="pointer-events-none absolute inset-0">
                     <div className="absolute inset-y-0 left-0 transition-transform duration-200" style={{ width: '50%', transform: orderSide === 'buy' ? 'translateX(0)' : 'translateX(100%)' }}>
                       <div className={`absolute inset-0 rounded-lg ${orderSide === 'buy' ? 'bg-[#22c55e]' : 'bg-[#ef4444]'}`} />
@@ -1040,7 +1043,7 @@ function PerpsInner() {
                 {/* Market/Limit + Price input */}
                 <div className="grid grid-cols-2 gap-2">
                   {/* Market/Limit toggle */}
-                  <div className="relative grid rounded-lg bg-[#1e2130] select-none" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+                  <div className="relative grid rounded-lg bg-purple-900/40 select-none" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
                     <div className="pointer-events-none absolute inset-0">
                       <div className="absolute inset-y-0 left-0 transition-transform duration-200" style={{ width: '50%', transform: orderType === 'market' ? 'translateX(0)' : 'translateX(100%)' }}>
                         <div className={`absolute inset-0.5 rounded-md border ${orderSide === 'buy' ? 'border-[#22c55e] bg-[#22c55e]/10' : 'border-[#ef4444] bg-[#ef4444]/10'}`} />
@@ -1056,7 +1059,7 @@ function PerpsInner() {
                     </button>
                   </div>
                   {/* Price input */}
-                  <div className={`flex items-center bg-[#1e2130] rounded-lg px-3 py-2 gap-1.5 min-h-[43px] ${orderType === 'market' ? 'opacity-50' : ''}`}>
+                  <div className={`flex items-center bg-purple-900/40 rounded-lg px-3 py-2 gap-1.5 min-h-[43px] ${orderType === 'market' ? 'opacity-50' : ''}`}>
                     <span className="text-white/40 text-xs shrink-0">$</span>
                     <input
                       type="number"
@@ -1066,7 +1069,7 @@ function PerpsInner() {
                       placeholder="0"
                       className="flex-1 bg-transparent text-sm font-mono tabular-nums text-white outline-none min-w-0"
                     />
-                    <button className="shrink-0 bg-[#131722] rounded px-1.5 py-1 text-[11px] text-white/50 font-medium">MID</button>
+                    <button className="shrink-0 bg-purple-950/60 rounded px-1.5 py-1 text-[11px] text-white/50 font-medium">MID</button>
                   </div>
                 </div>
 
@@ -1083,10 +1086,10 @@ function PerpsInner() {
                 </div>
 
                 {/* Order Size input */}
-                <div className="bg-[#1e2130] rounded-lg p-3 grid grid-cols-[auto_1fr] items-start gap-2">
+                <div className="bg-purple-900/40 rounded-lg p-3 grid grid-cols-[auto_1fr] items-start gap-2">
                   <div className="flex flex-col gap-2">
                     <label className="text-xs text-white/40 leading-none">Order Size</label>
-                    <button className="bg-[#131722] rounded px-2 py-1.5 text-xs text-white/60 font-medium flex items-center gap-1">
+                    <button className="bg-purple-950/60 rounded px-2 py-1.5 text-xs text-white/60 font-medium flex items-center gap-1">
                       {marketBase}
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>
                     </button>
@@ -1106,7 +1109,7 @@ function PerpsInner() {
                 </div>
 
                 {/* Order Leverage */}
-                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-[#2a2d3e]">
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-purple-500/20">
                   <div className="flex items-center gap-1.5 text-xs text-white/40">Order Leverage</div>
                   <span className="text-base text-right font-semibold text-white/40 leading-none">-</span>
                 </div>
@@ -1114,16 +1117,16 @@ function PerpsInner() {
                 {/* Checkboxes */}
                 <div className="grid grid-cols-2 gap-4 px-3">
                   <label className="flex items-center gap-2 text-xs text-white/40 cursor-not-allowed opacity-50 select-none">
-                    <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-[#1e2130] inline-block" />
+                    <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-purple-900/40 inline-block" />
                     Reduce Only
                   </label>
                   <label className="flex items-center gap-2 text-xs text-white/40 cursor-not-allowed opacity-50 select-none">
-                    <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-[#1e2130] inline-block" />
+                    <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-purple-900/40 inline-block" />
                     Post Only
                   </label>
                   <div className="col-span-2">
                     <label className="flex items-center gap-2 text-xs text-white/40 cursor-pointer select-none">
-                      <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-[#1e2130] inline-block" />
+                      <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-purple-900/40 inline-block" />
                       Take Profit / Stop Loss
                     </label>
                   </div>
@@ -1149,7 +1152,7 @@ function PerpsInner() {
                 </button>
 
                 {/* Summary */}
-                <div className="bg-[#1a1d2e] rounded-[10px] p-4 flex flex-col gap-3">
+                <div className="bg-purple-950/50 rounded-[10px] p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-white/40 leading-none">Expected Price</span>
                     <span className="text-white font-medium leading-none">{markPrice ? fp(markPrice) : '—'}</span>
@@ -1184,17 +1187,17 @@ function PerpsInner() {
               </div>
             )}
           </div>
-        </div>
+        </div>{/* end middle row */}
 
-      {/* ── Bottom: positions/orders (left) + orderbook (right) ──────── */}
-      <div className="h-[220px] flex border-t border-[#2a2d3e] shrink-0 bg-[#131722]">
+        {/* ── Bottom card: positions / orders / trade history ─────────────── */}
+        <div className="h-[200px] shrink-0 flex bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 overflow-hidden">
 
         {/* Positions / Orders / Trade History */}
-        <div className="flex-1 flex flex-col border-r border-[#2a2d3e] overflow-hidden min-w-0">
-          <div className="flex items-center border-b border-[#2a2d3e] shrink-0 overflow-x-auto scrollbar-none">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex items-center border-b border-purple-500/20 shrink-0 overflow-x-auto scrollbar-none">
             {(['positions', 'orders', 'trades'] as const).map(tab => (
               <button key={tab} onClick={() => setBottomTab(tab)}
-                className={`px-4 py-2.5 text-[11px] font-medium transition border-b-2 -mb-px whitespace-nowrap ${bottomTab === tab ? 'border-[#F37B28] text-white' : 'border-transparent text-white/35 hover:text-white/60'}`}>
+                className={`px-4 py-2.5 text-[11px] font-medium transition border-b-2 -mb-px whitespace-nowrap ${bottomTab === tab ? 'border-[#F37B28] text-white' : 'border-transparent text-white/40 hover:text-white/70'}`}>
                 {tab === 'positions' ? `Positions (${traderPositions.length})` : tab === 'orders' ? `Open Orders (${traderOrders.length})` : 'Trade History'}
               </button>
             ))}
@@ -1280,9 +1283,9 @@ function PerpsInner() {
             )}
           </div>
         </div>
+        </div>{/* end bottom card */}
 
-      </div>
-
+      </div>{/* end content area */}
     </div>
   );
 }
