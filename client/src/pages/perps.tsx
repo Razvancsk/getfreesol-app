@@ -438,9 +438,10 @@ function PerpsInner() {
   const [market,       setMarket]       = useState('SOL-PERP');
   const [tf,           setTf]           = useState('3600');
   const [inviteCode,   setInviteCode]   = useState('');
+  const [orderSide,    setOrderSide]    = useState<'buy' | 'sell'>('buy');
   const [orderType,    setOrderType]    = useState<'market' | 'limit'>('market');
   const [orderPrice,   setOrderPrice]   = useState('');
-  const [orderSize,    setOrderSize]    = useState('0.1');
+  const [orderSize,    setOrderSize]    = useState('');
   const [txSig,        setTxSig]        = useState<string | null>(null);
   const [bottomTab,    setBottomTab]    = useState<'positions' | 'orders' | 'trades'>('positions');
   const [mktPanel,         setMktPanel]         = useState(false);
@@ -998,7 +999,7 @@ function PerpsInner() {
           {/* Order form body — 300px */}
           <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto bg-[#131722]">
             {!publicKey ? (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
+              <div className="flex flex-col items-center justify-center gap-3 p-6 h-full">
                 <User className="h-8 w-8 text-white/10" />
                 <p className="text-sm text-white/30">Connect wallet to trade</p>
               </div>
@@ -1019,85 +1020,170 @@ function PerpsInner() {
                 {registerMut.isSuccess && <p className="text-green-400 text-[10px]">Activated! Refreshing…</p>}
               </div>
             ) : (
-              <>
-                {/* Long/Buy — Short/Sell */}
-                <div className="grid grid-cols-2 p-3 gap-1.5 border-b border-[#2a2d3e]">
-                  <button onClick={() => placeMut.mutate({ side: 'buy' })} disabled={placeMut.isPending || !riseReady}
-                    className="py-3 rounded-lg text-sm font-bold bg-[#22c55e] hover:bg-[#16a34a] text-black transition disabled:opacity-40 flex items-center justify-center gap-1.5">
-                    <TrendingUp className="h-4 w-4" />
-                    {placeMut.isPending ? '…' : 'Long/Buy'}
+              <div className="flex flex-col gap-5 px-3 pt-3 pb-5">
+
+                {/* Long/Buy — Short/Sell sliding toggle */}
+                <div className="relative grid rounded-lg bg-[#1e2130] select-none" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+                  <div className="pointer-events-none absolute inset-0">
+                    <div className="absolute inset-y-0 left-0 transition-transform duration-200" style={{ width: '50%', transform: orderSide === 'buy' ? 'translateX(0)' : 'translateX(100%)' }}>
+                      <div className={`absolute inset-0 rounded-lg ${orderSide === 'buy' ? 'bg-[#22c55e]' : 'bg-[#ef4444]'}`} />
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setOrderSide('buy')}
+                    className={`relative z-10 px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderSide === 'buy' ? 'text-black' : 'text-white/40 hover:text-white/70'}`}>
+                    Long/Buy
                   </button>
-                  <button onClick={() => placeMut.mutate({ side: 'sell' })} disabled={placeMut.isPending || !riseReady}
-                    className="py-3 rounded-lg text-sm font-semibold bg-[#1e2130] hover:bg-[#ef4444]/80 text-white/60 hover:text-white transition disabled:opacity-40 flex items-center justify-center gap-1.5">
-                    <TrendingDown className="h-4 w-4" />
-                    {placeMut.isPending ? '…' : 'Short/Sell'}
+                  <button type="button" onClick={() => setOrderSide('sell')}
+                    className={`relative z-10 px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderSide === 'sell' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}>
+                    Short/Sell
                   </button>
                 </div>
 
-                {/* Market / Limit tabs */}
-                <div className="flex items-center px-3 py-2 gap-2 border-b border-[#2a2d3e]">
-                  {(['market', 'limit'] as const).map(t => (
-                    <button key={t} onClick={() => setOrderType(t)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${orderType === t ? 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/30' : 'text-white/40 hover:text-white/60'}`}>
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
-                    </button>
-                  ))}
-                  {markPrice && <span className="ml-auto text-xs font-mono text-white/35">{fp(markPrice)} MID</span>}
-                </div>
-
-                {/* Form body */}
-                <div className="p-3 flex flex-col gap-3">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white/40">Available to Trade</span>
-                    <span className="font-mono text-white/70">{fUSD(pf(td?.collateralBalance))}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white/40">Position</span>
-                    <span className="text-white/40">—</span>
-                  </div>
-
-                  {orderType === 'limit' && (
-                    <div>
-                      <div className="text-[10px] text-white/40 mb-1">Price USDC</div>
-                      <div className="flex items-center bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2">
-                        <input type="number" value={orderPrice} onChange={e => setOrderPrice(e.target.value)}
-                          placeholder={markPrice ? markPrice.toFixed(4) : '0.00'}
-                          className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0" />
+                {/* Market/Limit + Price input */}
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Market/Limit toggle */}
+                  <div className="relative grid rounded-lg bg-[#1e2130] select-none" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+                    <div className="pointer-events-none absolute inset-0">
+                      <div className="absolute inset-y-0 left-0 transition-transform duration-200" style={{ width: '50%', transform: orderType === 'market' ? 'translateX(0)' : 'translateX(100%)' }}>
+                        <div className={`absolute inset-0.5 rounded-md border ${orderSide === 'buy' ? 'border-[#22c55e] bg-[#22c55e]/10' : 'border-[#ef4444] bg-[#ef4444]/10'}`} />
                       </div>
                     </div>
-                  )}
-
-                  <div>
-                    <div className="text-[10px] text-white/40 mb-1">Order Size</div>
-                    <div className="flex items-center bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2 gap-2">
-                      <input type="number" value={orderSize} onChange={e => setOrderSize(e.target.value)} placeholder="0"
-                        className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0" />
-                      <button className="shrink-0 bg-[#131722] border border-[#2a2d3e] rounded px-2 py-0.5 text-xs text-white/60 flex items-center gap-1">
-                        {marketBase} <span className="opacity-40">⇄</span>
-                      </button>
-                    </div>
-                    {orderType === 'market' && markPrice && orderSize && (
-                      <div className="text-[10px] text-white/30 mt-1 text-right">{fUSD(pf(orderSize) * markPrice)}</div>
-                    )}
+                    <button type="button" onClick={() => setOrderType('market')}
+                      className={`relative z-10 px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderType === 'market' ? (orderSide === 'buy' ? 'text-[#22c55e]' : 'text-[#ef4444]') : 'text-white/40 hover:text-white/70'}`}>
+                      Market
+                    </button>
+                    <button type="button" onClick={() => setOrderType('limit')}
+                      className={`relative z-10 px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ${orderType === 'limit' ? (orderSide === 'buy' ? 'text-[#22c55e]' : 'text-[#ef4444]') : 'text-white/40 hover:text-white/70'}`}>
+                      Limit
+                    </button>
                   </div>
-
-                  {!riseReady && <p className="text-[10px] text-white/20 text-center">Initializing engine…</p>}
-                  {placeMut.isError && <p className="text-red-400 text-[10px] break-all">{(placeMut.error as any)?.message ?? 'Order failed'}</p>}
-                  {txSig && (
-                    <a href={`https://solscan.io/tx/${txSig}`} target="_blank" rel="noopener noreferrer" className="text-green-400 text-[10px] truncate hover:underline">
-                      ✓ {txSig.slice(0, 22)}… ↗
-                    </a>
-                  )}
-
-                  <div className="border-t border-[#2a2d3e] pt-3 flex flex-col gap-1.5">
-                    <div className="flex justify-between text-xs"><span className="text-white/40">Expected Price</span><span className="font-mono text-white/70">{markPrice ? fp(markPrice) : '—'}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-white/40">Est. Liquidation Price</span><span className="text-white/40">—</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-white/40">Order Value</span><span className="font-mono text-white/70">{markPrice && orderSize ? fUSD(pf(orderSize) * markPrice) : '$0.00'}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-white/40">Margin Required</span><span className="text-white/40">$0.00</span></div>
-                    {takerFee != null && <div className="flex justify-between text-xs"><span className="text-white/40">Fees</span><span className="font-mono text-white/70">{(takerFee * 100).toFixed(3)}%</span></div>}
+                  {/* Price input */}
+                  <div className={`flex items-center bg-[#1e2130] rounded-lg px-3 py-2 gap-1.5 min-h-[43px] ${orderType === 'market' ? 'opacity-50' : ''}`}>
+                    <span className="text-white/40 text-xs shrink-0">$</span>
+                    <input
+                      type="number"
+                      disabled={orderType === 'market'}
+                      value={orderType === 'market' ? (markPrice?.toFixed(2) ?? '') : orderPrice}
+                      onChange={e => setOrderPrice(e.target.value)}
+                      placeholder="0"
+                      className="flex-1 bg-transparent text-sm font-mono tabular-nums text-white outline-none min-w-0"
+                    />
+                    <button className="shrink-0 bg-[#131722] rounded px-1.5 py-1 text-[11px] text-white/50 font-medium">MID</button>
                   </div>
                 </div>
-              </>
+
+                {/* Available / Position */}
+                <div className="flex flex-col gap-3">
+                  <div className="px-0 flex justify-between items-center">
+                    <span className="text-white/40 text-xs leading-none">Available to Trade</span>
+                    <span className="text-white text-xs font-semibold leading-none">{fUSD(pf(td?.collateralBalance))}</span>
+                  </div>
+                  <div className="px-0 flex justify-between items-center">
+                    <span className="text-white/40 text-xs leading-none">Position</span>
+                    <span className="text-white/40 text-xs font-semibold leading-none">-</span>
+                  </div>
+                </div>
+
+                {/* Order Size input */}
+                <div className="bg-[#1e2130] rounded-lg p-3 grid grid-cols-[auto_1fr] items-start gap-2">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs text-white/40 leading-none">Order Size</label>
+                    <button className="bg-[#131722] rounded px-2 py-1.5 text-xs text-white/60 font-medium flex items-center gap-1">
+                      {marketBase}
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>
+                    </button>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <input
+                      type="number"
+                      value={orderSize}
+                      onChange={e => setOrderSize(e.target.value)}
+                      placeholder="0"
+                      className="bg-transparent text-2xl font-semibold tabular-nums text-white text-right outline-none w-full leading-none"
+                    />
+                    <div className="text-xs text-white/40 leading-none">
+                      {markPrice && orderSize ? fUSD(pf(orderSize) * markPrice) : '$0.00'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Leverage */}
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-[#2a2d3e]">
+                  <div className="flex items-center gap-1.5 text-xs text-white/40">Order Leverage</div>
+                  <span className="text-base text-right font-semibold text-white/40 leading-none">-</span>
+                </div>
+
+                {/* Checkboxes */}
+                <div className="grid grid-cols-2 gap-4 px-3">
+                  <label className="flex items-center gap-2 text-xs text-white/40 cursor-not-allowed opacity-50 select-none">
+                    <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-[#1e2130] inline-block" />
+                    Reduce Only
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-white/40 cursor-not-allowed opacity-50 select-none">
+                    <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-[#1e2130] inline-block" />
+                    Post Only
+                  </label>
+                  <div className="col-span-2">
+                    <label className="flex items-center gap-2 text-xs text-white/40 cursor-pointer select-none">
+                      <span className="w-4 h-4 shrink-0 rounded-sm border border-white/30 bg-[#1e2130] inline-block" />
+                      Take Profit / Stop Loss
+                    </label>
+                  </div>
+                </div>
+
+                {/* Place order / Deposit */}
+                {placeMut.isError && <p className="text-red-400 text-[10px] break-all px-1">{(placeMut.error as any)?.message ?? 'Order failed'}</p>}
+                {txSig && (
+                  <a href={`https://solscan.io/tx/${txSig}`} target="_blank" rel="noopener noreferrer" className="text-green-400 text-[10px] truncate hover:underline px-1">
+                    ✓ {txSig.slice(0, 22)}… ↗
+                  </a>
+                )}
+                <button
+                  onClick={() => placeMut.mutate({ side: orderSide })}
+                  disabled={placeMut.isPending || !riseReady}
+                  className={`w-full py-2.5 rounded-lg text-base font-semibold transition disabled:opacity-40 ${
+                    orderSide === 'buy'
+                      ? 'bg-[#22c55e] hover:bg-[#16a34a] text-black'
+                      : 'bg-[#ef4444] hover:bg-[#dc2626] text-white'
+                  }`}
+                >
+                  {placeMut.isPending ? '…' : !riseReady ? 'Initializing…' : orderSide === 'buy' ? 'Long/Buy' : 'Short/Sell'}
+                </button>
+
+                {/* Summary */}
+                <div className="bg-[#1a1d2e] rounded-[10px] p-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/40 leading-none">Expected Price</span>
+                    <span className="text-white font-medium leading-none">{markPrice ? fp(markPrice) : '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/40 leading-none">Est. Liquidation Price</span>
+                    <span className="text-white/40 font-medium leading-none">—</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/40 leading-none">Order Value</span>
+                    <span className="text-white font-medium leading-none">{markPrice && orderSize ? fUSD(pf(orderSize) * markPrice) : '$0.00'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/40 leading-none">Margin Required</span>
+                    <span className="text-white font-medium leading-none">$0.00</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/40 leading-none">Slippage</span>
+                    <span className="text-white font-medium leading-none">Est: - / Max: 1%</span>
+                  </div>
+                  {takerFee != null && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-white/40 leading-none">Fees</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-white/40 line-through">{(takerFee * 100).toFixed(3)}%</span>
+                        <span className="text-white font-medium">{(takerFee * 100 * 0.9).toFixed(4)}%</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+              </div>
             )}
           </div>
         </div>
