@@ -773,69 +773,8 @@ function PerpsInner() {
         </div>
       </nav>
 
-      {/* ── Market stats bar — full width, under nav ────────────────────── */}
-      <div className="flex items-center gap-4 px-4 py-1.5 border-b border-[#2a2d3e] bg-[#131722] shrink-0 overflow-x-auto scrollbar-none flex-nowrap">
-        <button
-          onClick={() => { setMktPanel(v => !v); setMktSearch(''); }}
-          className="flex items-center gap-2 shrink-0 pr-4 border-r border-[#2a2d3e]"
-        >
-          <TokenAvatar symbol={marketBase} size={26} />
-          <span className="text-base font-bold text-white leading-none">{marketBase}</span>
-          {maxLev && (
-            <span className="inline-flex items-center text-xs bg-[#1e2130] border border-[#3a3d4e] text-white/55 rounded px-1.5 py-0.5 font-medium">
-              {maxLev}x
-            </span>
-          )}
-          <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-200 ${mktPanel ? 'rotate-180' : ''}`} />
-        </button>
-
-        <div className="flex items-center gap-5 overflow-x-auto scrollbar-none flex-nowrap">
-          <div className="flex flex-col gap-0.5 shrink-0">
-            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Mark</span>
-            <span className="text-sm font-mono text-white whitespace-nowrap">{markPrice != null ? fp(markPrice) : '—'}</span>
-          </div>
-          <div className="flex flex-col gap-0.5 shrink-0">
-            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Index</span>
-            <span className="text-sm font-mono text-white/70 whitespace-nowrap">{indexPrice != null ? fp(indexPrice) : '—'}</span>
-          </div>
-          <div className="flex flex-col gap-0.5 shrink-0">
-            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Change</span>
-            {markPrice != null && prevDayPx != null && prevDayPx > 0 ? (
-              <span className={`text-sm font-mono flex items-center gap-1 whitespace-nowrap ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-                {isUp ? '+' : ''}{fUSD(markPrice - prevDayPx)} ({isUp ? '+' : ''}{((priceChange ?? 0) * 100).toFixed(2)}%)
-                <svg width="10" height="6" viewBox="0 0 12 7" fill="none">
-                  {isUp
-                    ? <path d="M11.47 5.68741L5.73388 0.422607L0 5.69273L1.26021 7L2.17799 6.14435C4.1578 4.29858 7.24693 4.3634 9.14756 6.29061L9.84717 7L11.47 5.68741Z" fill="currentColor"/>
-                    : <path d="M11.47 1.31259L5.73388 6.57739L0 1.30727L1.26021 0L2.17799 0.855648C4.1578 2.70142 7.24693 2.6366 9.14756 0.709392L9.84717 0L11.47 1.31259Z" fill="currentColor"/>
-                  }
-                </svg>
-              </span>
-            ) : <span className="text-sm font-mono text-white/30">—</span>}
-          </div>
-          <div className="flex flex-col gap-0.5 shrink-0">
-            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">24h Volume</span>
-            <span className="text-sm font-mono text-white/70 whitespace-nowrap">{dayNtlVlm != null && dayNtlVlm > 0 ? fUSD(dayNtlVlm) : '—'}</span>
-          </div>
-          <div className="flex flex-col gap-0.5 shrink-0">
-            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">Open Interest</span>
-            <span className="text-sm font-mono text-white/70 whitespace-nowrap">{openInterest != null && openInterest > 0 ? fUSD(openInterest) : '—'}</span>
-          </div>
-          <div className="flex flex-col gap-0.5 shrink-0">
-            <span className="text-[11px] text-[#F37B28] whitespace-nowrap">1h Funding</span>
-            {fundingRate != null ? (
-              <span className="text-sm font-mono flex gap-2 whitespace-nowrap">
-                <span className={fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}>
-                  {fundingRate >= 0 ? '+' : ''}{(fundingRate * 100).toFixed(4)}%
-                </span>
-                {fundingCountdown && <span className="text-white/45">{fundingCountdown}</span>}
-              </span>
-            ) : <span className="text-sm font-mono text-white/30">—</span>}
-          </div>
-        </div>
-      </div>
-
       {/* ── Middle: chart (left) + order form (right) ───────────────────── */}
-      <div className="flex-1 flex min-h-0 relative overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
 
         {/* ── Market list panel overlay ─────────────────────────────────── */}
         {mktPanel && (
@@ -986,141 +925,181 @@ function PerpsInner() {
           </div>
         )}
 
-        {/* ── Chart column ─────────────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-[#2a2d3e] overflow-hidden">
-
-          {/* Timeframe tabs */}
-          <div className="flex items-center gap-0.5 px-3 py-2 border-b border-[#2a2d3e] shrink-0">
-            {TIMEFRAMES.map(t => (
-              <button key={t.s} onClick={() => setTf(t.s)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
-                  tf === t.s
-                    ? 'text-[#F37B28] bg-[#F37B28]/10'
-                    : 'text-white/35 hover:bg-white/5 hover:text-white/70'
-                }`}>
-                {t.label}
-              </button>
-            ))}
+        {/* ── Row 1: Stats bar (chart-width) | Cross button (300px) — same height ── */}
+        <div className="flex shrink-0 border-b border-[#2a2d3e]">
+          {/* Stats bar — flex-1, only as wide as the chart column */}
+          <div className="flex-1 flex items-center gap-5 px-4 py-2 border-r border-[#2a2d3e] overflow-x-auto scrollbar-none flex-nowrap min-w-0">
+            <button onClick={() => setMktPanel(true)} className="flex items-center gap-2 shrink-0 hover:opacity-80 transition">
+              <TokenAvatar symbol={marketBase} size={20} />
+              <span className="text-sm font-bold text-white">{marketBase}/USD</span>
+              <ChevronDown className="w-3.5 h-3.5 text-white/40" />
+            </button>
+            <div className="w-px h-6 bg-[#2a2d3e] shrink-0" />
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">Mark</span>
+              <span className="text-sm font-mono text-white whitespace-nowrap">{markPrice != null ? fp(markPrice) : '—'}</span>
+            </div>
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">Index</span>
+              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{indexPrice != null ? fp(indexPrice) : '—'}</span>
+            </div>
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">24h Change</span>
+              <span className={`text-sm font-mono whitespace-nowrap ${priceChange == null ? 'text-white/50' : isUp ? 'text-green-400' : 'text-red-400'}`}>
+                {priceChange == null ? '—' : `${isUp ? '+' : ''}${(priceChange * 100).toFixed(2)}%`}
+              </span>
+            </div>
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">24h Volume</span>
+              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{dayNtlVlm != null ? fUSD(dayNtlVlm) : '—'}</span>
+            </div>
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">Open Interest</span>
+              <span className="text-sm font-mono text-white/70 whitespace-nowrap">{openInterest != null ? fUSD(openInterest) : '—'}</span>
+            </div>
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[10px] text-[#F37B28] whitespace-nowrap">1h Funding</span>
+              <span className={`text-sm font-mono whitespace-nowrap ${fundingRate == null ? 'text-white/50' : fundingRate >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {fundingRate == null ? '—' : `${fundingRate >= 0 ? '+' : ''}${(fundingRate * 100).toFixed(4)}%`}
+              </span>
+            </div>
           </div>
-
-          {/* TradingView candlestick chart */}
-          <div className="flex-1 min-h-0">
-            <TVChart symbol={marketBase} interval={TIMEFRAMES.find(t => t.s === tf)?.tv ?? '60'} />
-          </div>
-        </div>
-
-        {/* ── Order form (right, 300px) ──────────────────────────────── */}
-        <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto bg-[#131722] border-l border-[#2a2d3e] justify-start">
-
-          {/* Cross — full-width header button like Phoenix */}
-          <div className="px-3 pt-3 pb-2 shrink-0">
+          {/* Cross button — w-[300px], same width as order form below */}
+          <div className="w-[300px] shrink-0 px-3 py-2 flex items-center">
             <button className="w-full flex items-center justify-between bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#252840] transition">
               Cross <ChevronDown className="w-4 h-4 text-white/40" />
             </button>
           </div>
+        </div>
 
-          {!publicKey ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
-              <User className="h-8 w-8 text-white/10" />
-              <p className="text-sm text-white/30">Connect wallet to trade</p>
-            </div>
-          ) : !isRegistered ? (
-            <div className="p-4 flex flex-col gap-3">
-              <div className="flex items-center gap-1.5">
-                <Key className="h-3.5 w-3.5 text-[#F37B28]/70" />
-                <span className="text-xs font-semibold text-white/60">Activate Phoenix Account</span>
-              </div>
-              <p className="text-[10px] text-white/25 leading-relaxed">Enter your Phoenix invite code to trade perps on-chain.</p>
-              <input value={inviteCode} onChange={e => setInviteCode(e.target.value)} placeholder="Invite code…"
-                className="bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-[#F37B28]/40 transition" />
-              <button onClick={() => registerMut.mutate()} disabled={!inviteCode.trim() || registerMut.isPending}
-                className="w-full py-2.5 bg-[#F37B28] hover:bg-[#e06b1a] rounded-lg text-sm font-semibold text-black transition disabled:opacity-40">
-                {registerMut.isPending ? 'Activating…' : 'Activate Account'}
-              </button>
-              {registerMut.isError && <p className="text-red-400 text-[10px]">Failed — check your code.</p>}
-              {registerMut.isSuccess && <p className="text-green-400 text-[10px]">Activated! Refreshing…</p>}
-            </div>
-          ) : (
-            <>
-              {/* Long/Buy — Short/Sell */}
-              <div className="grid grid-cols-2 p-3 gap-1.5 border-b border-[#2a2d3e]">
-                <button onClick={() => placeMut.mutate({ side: 'buy' })} disabled={placeMut.isPending || !riseReady}
-                  className="py-3 rounded-lg text-sm font-bold bg-[#22c55e] hover:bg-[#16a34a] text-black transition disabled:opacity-40 flex items-center justify-center gap-1.5">
-                  <TrendingUp className="h-4 w-4" />
-                  {placeMut.isPending ? '…' : 'Long/Buy'}
+        {/* ── Row 2: Chart + Order form body ───────────────────────────────── */}
+        <div className="flex-1 flex min-h-0">
+          {/* Chart column */}
+          <div className="flex-1 flex flex-col min-w-0 border-r border-[#2a2d3e] overflow-hidden">
+            {/* Timeframe tabs */}
+            <div className="flex items-center gap-0.5 px-3 py-2 border-b border-[#2a2d3e] shrink-0">
+              {TIMEFRAMES.map(t => (
+                <button key={t.s} onClick={() => setTf(t.s)}
+                  className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
+                    tf === t.s
+                      ? 'text-[#F37B28] bg-[#F37B28]/10'
+                      : 'text-white/35 hover:bg-white/5 hover:text-white/70'
+                  }`}>
+                  {t.label}
                 </button>
-                <button onClick={() => placeMut.mutate({ side: 'sell' })} disabled={placeMut.isPending || !riseReady}
-                  className="py-3 rounded-lg text-sm font-semibold bg-[#1e2130] hover:bg-[#ef4444]/80 text-white/60 hover:text-white transition disabled:opacity-40 flex items-center justify-center gap-1.5">
-                  <TrendingDown className="h-4 w-4" />
-                  {placeMut.isPending ? '…' : 'Short/Sell'}
-                </button>
-              </div>
+              ))}
+            </div>
+            {/* TradingView candlestick chart */}
+            <div className="flex-1 min-h-0">
+              <TVChart symbol={marketBase} interval={TIMEFRAMES.find(t => t.s === tf)?.tv ?? '60'} />
+            </div>
+          </div>
 
-              {/* Market / Limit tabs */}
-              <div className="flex items-center px-3 py-2 gap-2 border-b border-[#2a2d3e]">
-                {(['market', 'limit'] as const).map(t => (
-                  <button key={t} onClick={() => setOrderType(t)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${orderType === t ? 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/30' : 'text-white/40 hover:text-white/60'}`}>
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
+          {/* Order form body — 300px */}
+          <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto bg-[#131722]">
+            {!publicKey ? (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
+                <User className="h-8 w-8 text-white/10" />
+                <p className="text-sm text-white/30">Connect wallet to trade</p>
+              </div>
+            ) : !isRegistered ? (
+              <div className="p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-1.5">
+                  <Key className="h-3.5 w-3.5 text-[#F37B28]/70" />
+                  <span className="text-xs font-semibold text-white/60">Activate Phoenix Account</span>
+                </div>
+                <p className="text-[10px] text-white/25 leading-relaxed">Enter your Phoenix invite code to trade perps on-chain.</p>
+                <input value={inviteCode} onChange={e => setInviteCode(e.target.value)} placeholder="Invite code…"
+                  className="bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-[#F37B28]/40 transition" />
+                <button onClick={() => registerMut.mutate()} disabled={!inviteCode.trim() || registerMut.isPending}
+                  className="w-full py-2.5 bg-[#F37B28] hover:bg-[#e06b1a] rounded-lg text-sm font-semibold text-black transition disabled:opacity-40">
+                  {registerMut.isPending ? 'Activating…' : 'Activate Account'}
+                </button>
+                {registerMut.isError && <p className="text-red-400 text-[10px]">Failed — check your code.</p>}
+                {registerMut.isSuccess && <p className="text-green-400 text-[10px]">Activated! Refreshing…</p>}
+              </div>
+            ) : (
+              <>
+                {/* Long/Buy — Short/Sell */}
+                <div className="grid grid-cols-2 p-3 gap-1.5 border-b border-[#2a2d3e]">
+                  <button onClick={() => placeMut.mutate({ side: 'buy' })} disabled={placeMut.isPending || !riseReady}
+                    className="py-3 rounded-lg text-sm font-bold bg-[#22c55e] hover:bg-[#16a34a] text-black transition disabled:opacity-40 flex items-center justify-center gap-1.5">
+                    <TrendingUp className="h-4 w-4" />
+                    {placeMut.isPending ? '…' : 'Long/Buy'}
                   </button>
-                ))}
-                {markPrice && <span className="ml-auto text-xs font-mono text-white/35">{fp(markPrice)} MID</span>}
-              </div>
-
-              {/* Form body */}
-              <div className="p-3 flex flex-col gap-3">
-                <div className="flex justify-between text-xs">
-                  <span className="text-white/40">Available to Trade</span>
-                  <span className="font-mono text-white/70">{fUSD(pf(td?.collateralBalance))}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-white/40">Position</span>
-                  <span className="text-white/40">—</span>
+                  <button onClick={() => placeMut.mutate({ side: 'sell' })} disabled={placeMut.isPending || !riseReady}
+                    className="py-3 rounded-lg text-sm font-semibold bg-[#1e2130] hover:bg-[#ef4444]/80 text-white/60 hover:text-white transition disabled:opacity-40 flex items-center justify-center gap-1.5">
+                    <TrendingDown className="h-4 w-4" />
+                    {placeMut.isPending ? '…' : 'Short/Sell'}
+                  </button>
                 </div>
 
-                {orderType === 'limit' && (
-                  <div>
-                    <div className="text-[10px] text-white/40 mb-1">Price USDC</div>
-                    <div className="flex items-center bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2">
-                      <input type="number" value={orderPrice} onChange={e => setOrderPrice(e.target.value)}
-                        placeholder={markPrice ? markPrice.toFixed(4) : '0.00'}
-                        className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0" />
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <div className="text-[10px] text-white/40 mb-1">Order Size</div>
-                  <div className="flex items-center bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2 gap-2">
-                    <input type="number" value={orderSize} onChange={e => setOrderSize(e.target.value)} placeholder="0"
-                      className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0" />
-                    <button className="shrink-0 bg-[#131722] border border-[#2a2d3e] rounded px-2 py-0.5 text-xs text-white/60 flex items-center gap-1">
-                      {marketBase} <span className="opacity-40">⇄</span>
+                {/* Market / Limit tabs */}
+                <div className="flex items-center px-3 py-2 gap-2 border-b border-[#2a2d3e]">
+                  {(['market', 'limit'] as const).map(t => (
+                    <button key={t} onClick={() => setOrderType(t)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${orderType === t ? 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/30' : 'text-white/40 hover:text-white/60'}`}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
                     </button>
+                  ))}
+                  {markPrice && <span className="ml-auto text-xs font-mono text-white/35">{fp(markPrice)} MID</span>}
+                </div>
+
+                {/* Form body */}
+                <div className="p-3 flex flex-col gap-3">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/40">Available to Trade</span>
+                    <span className="font-mono text-white/70">{fUSD(pf(td?.collateralBalance))}</span>
                   </div>
-                  {orderType === 'market' && markPrice && orderSize && (
-                    <div className="text-[10px] text-white/30 mt-1 text-right">{fUSD(pf(orderSize) * markPrice)}</div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/40">Position</span>
+                    <span className="text-white/40">—</span>
+                  </div>
+
+                  {orderType === 'limit' && (
+                    <div>
+                      <div className="text-[10px] text-white/40 mb-1">Price USDC</div>
+                      <div className="flex items-center bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2">
+                        <input type="number" value={orderPrice} onChange={e => setOrderPrice(e.target.value)}
+                          placeholder={markPrice ? markPrice.toFixed(4) : '0.00'}
+                          className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0" />
+                      </div>
+                    </div>
                   )}
-                </div>
 
-                {!riseReady && <p className="text-[10px] text-white/20 text-center">Initializing engine…</p>}
-                {placeMut.isError && <p className="text-red-400 text-[10px] break-all">{(placeMut.error as any)?.message ?? 'Order failed'}</p>}
-                {txSig && (
-                  <a href={`https://solscan.io/tx/${txSig}`} target="_blank" rel="noopener noreferrer" className="text-green-400 text-[10px] truncate hover:underline">
-                    ✓ {txSig.slice(0, 22)}… ↗
-                  </a>
-                )}
+                  <div>
+                    <div className="text-[10px] text-white/40 mb-1">Order Size</div>
+                    <div className="flex items-center bg-[#1e2130] border border-[#2a2d3e] rounded-lg px-3 py-2 gap-2">
+                      <input type="number" value={orderSize} onChange={e => setOrderSize(e.target.value)} placeholder="0"
+                        className="flex-1 bg-transparent text-sm font-mono text-white outline-none min-w-0" />
+                      <button className="shrink-0 bg-[#131722] border border-[#2a2d3e] rounded px-2 py-0.5 text-xs text-white/60 flex items-center gap-1">
+                        {marketBase} <span className="opacity-40">⇄</span>
+                      </button>
+                    </div>
+                    {orderType === 'market' && markPrice && orderSize && (
+                      <div className="text-[10px] text-white/30 mt-1 text-right">{fUSD(pf(orderSize) * markPrice)}</div>
+                    )}
+                  </div>
 
-                <div className="border-t border-[#2a2d3e] pt-3 flex flex-col gap-1.5">
-                  <div className="flex justify-between text-xs"><span className="text-white/40">Expected Price</span><span className="font-mono text-white/70">{markPrice ? fp(markPrice) : '—'}</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-white/40">Est. Liquidation Price</span><span className="text-white/40">—</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-white/40">Order Value</span><span className="font-mono text-white/70">{markPrice && orderSize ? fUSD(pf(orderSize) * markPrice) : '$0.00'}</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-white/40">Margin Required</span><span className="text-white/40">$0.00</span></div>
-                  {takerFee != null && <div className="flex justify-between text-xs"><span className="text-white/40">Fees</span><span className="font-mono text-white/70">{(takerFee * 100).toFixed(3)}%</span></div>}
+                  {!riseReady && <p className="text-[10px] text-white/20 text-center">Initializing engine…</p>}
+                  {placeMut.isError && <p className="text-red-400 text-[10px] break-all">{(placeMut.error as any)?.message ?? 'Order failed'}</p>}
+                  {txSig && (
+                    <a href={`https://solscan.io/tx/${txSig}`} target="_blank" rel="noopener noreferrer" className="text-green-400 text-[10px] truncate hover:underline">
+                      ✓ {txSig.slice(0, 22)}… ↗
+                    </a>
+                  )}
+
+                  <div className="border-t border-[#2a2d3e] pt-3 flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs"><span className="text-white/40">Expected Price</span><span className="font-mono text-white/70">{markPrice ? fp(markPrice) : '—'}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-white/40">Est. Liquidation Price</span><span className="text-white/40">—</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-white/40">Order Value</span><span className="font-mono text-white/70">{markPrice && orderSize ? fUSD(pf(orderSize) * markPrice) : '$0.00'}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-white/40">Margin Required</span><span className="text-white/40">$0.00</span></div>
+                    {takerFee != null && <div className="flex justify-between text-xs"><span className="text-white/40">Fees</span><span className="font-mono text-white/70">{(takerFee * 100).toFixed(3)}%</span></div>}
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
