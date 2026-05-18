@@ -831,7 +831,7 @@ function PerpsInner() {
                      ? `${statsBarRef.current.getBoundingClientRect().bottom + 12}px`
                      : '140px',
                    left: '12px',
-                   width: 'calc(100vw - 396px)',
+                   width: 'min(680px, calc(100vw - 396px))',
                    height: 'min(560px, 80vh)'
                  }}>
               {/* Header + Search */}
