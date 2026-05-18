@@ -118,6 +118,42 @@ export function CoinFlipGame() {
     refetchInterval: 5000,
   });
 
+  const rakebackQuery = useQuery<{ pendingGsol: number; totalEarned: number; totalClaimed: number }>({
+    queryKey: ['/api/rakeback', publicKey?.toString()],
+    queryFn: async () => {
+      if (!publicKey) return { pendingGsol: 0, totalEarned: 0, totalClaimed: 0 };
+      const res = await fetch(`/api/rakeback/${publicKey.toString()}`);
+      return res.json();
+    },
+    enabled: !!publicKey,
+    refetchInterval: 15000,
+  });
+
+  const [isClaiming, setIsClaiming] = useState(false);
+
+  const handleClaimRakeback = async () => {
+    if (!publicKey || isClaiming) return;
+    setIsClaiming(true);
+    try {
+      const res = await fetch('/api/rakeback/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: publicKey.toString() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: `✅ Claimed ${data.claimedGsol.toFixed(6)} GSOL rakeback!` });
+        queryClient.invalidateQueries({ queryKey: ['/api/rakeback', publicKey.toString()] });
+      } else {
+        toast({ title: 'Claim failed', description: data.error, variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Network error', variant: 'destructive' });
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
   const vaultAddress = (vaultQuery.data as any)?.address || '';
   const vaultBalance = (vaultQuery.data as any)?.balance || 0;
   const vaultGsolBalance = (vaultQuery.data as any)?.gsolBalance || 0;
@@ -528,6 +564,39 @@ export function CoinFlipGame() {
         </div>
         <p className="text-center text-xs text-white mt-2">Win = 2x your bet · 3.5% fee charged upfront</p>
       </div>
+
+      {/* Rakeback */}
+      {publicKey && (
+        <div className="rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/40 to-purple-800/20 px-4 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-white font-bold text-sm uppercase tracking-widest">Rakeback</p>
+              <p className="text-purple-300 text-xs mt-0.5">10% of fees back · paid in GSOL</p>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center gap-1.5 justify-end">
+                <img src={TOKEN_ICONS['gsol']} className="w-4 h-4 rounded-full" alt="GSOL" />
+                <span className="text-green-400 font-black text-lg">
+                  {(rakebackQuery.data?.pendingGsol ?? 0).toFixed(6)}
+                </span>
+              </div>
+              <p className="text-gray-500 text-xs">GSOL pending</p>
+            </div>
+          </div>
+          <button
+            onClick={handleClaimRakeback}
+            disabled={isClaiming || !rakebackQuery.data?.pendingGsol || rakebackQuery.data.pendingGsol < 0.001}
+            className="w-full py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider transition-all border-2 border-green-500/40 bg-green-900/30 text-green-300 hover:bg-green-800/40 hover:border-green-400/60 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isClaiming ? 'Claiming…' : `Claim ${(rakebackQuery.data?.pendingGsol ?? 0).toFixed(6)} GSOL`}
+          </button>
+          {(rakebackQuery.data?.totalEarned ?? 0) > 0 && (
+            <p className="text-center text-xs text-gray-500 mt-2">
+              Total earned: {rakebackQuery.data!.totalEarned.toFixed(6)} GSOL · Claimed: {rakebackQuery.data!.totalClaimed.toFixed(6)} GSOL
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Plays Ledger with Tabs */}
       <div className="mt-6 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm rounded-xl p-6">

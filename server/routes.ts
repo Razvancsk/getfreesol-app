@@ -11277,6 +11277,77 @@ Claimer: ${walletAddress}`;
     res.json({ success: true, playerWinPct: pct, houseWinPct: 100 - pct });
   });
 
+  // GET /api/rakeback/:wallet — get pending rakeback balance
+  app.get("/api/rakeback/:wallet", async (req, res) => {
+    try {
+      const { wallet } = req.params;
+      const r = await pool.query(
+        `SELECT pending_gsol, total_earned_gsol, total_claimed_gsol FROM rakeback_earnings WHERE wallet_address = $1`,
+        [wallet]
+      );
+      if (r.rows.length === 0) return res.json({ pendingGsol: 0, totalEarned: 0, totalClaimed: 0 });
+      const row = r.rows[0];
+      res.json({
+        pendingGsol: parseFloat(row.pending_gsol),
+        totalEarned: parseFloat(row.total_earned_gsol),
+        totalClaimed: parseFloat(row.total_claimed_gsol),
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/rakeback/claim — claim pending GSOL rakeback
+  app.post("/api/rakeback/claim", async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+      if (!walletAddress) return res.status(400).json({ error: 'walletAddress required' });
+
+      const r = await pool.query(
+        `SELECT pending_gsol FROM rakeback_earnings WHERE wallet_address = $1`,
+        [walletAddress]
+      );
+      if (r.rows.length === 0 || parseFloat(r.rows[0].pending_gsol) <= 0) {
+        return res.status(400).json({ error: 'No rakeback to claim' });
+      }
+      const amount = parseFloat(r.rows[0].pending_gsol);
+      const MIN_CLAIM = 0.001;
+      if (amount < MIN_CLAIM) return res.status(400).json({ error: `Minimum claim is ${MIN_CLAIM} GSOL` });
+
+      // Pay out GSOL from vault
+      const vaultPrivKey = process.env.COINFLIP_VAULT_KEY || process.env.RELAYER_PRIVATE_KEY || '';
+      const vaultKeypair = Keypair.fromSecretKey(bs58.decode(vaultPrivKey));
+      const gsolMintPubkey = new PublicKey('GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3');
+      const recipientPubkey = new PublicKey(walletAddress);
+      const vaultGsolATA = getAssociatedTokenAddressSync(gsolMintPubkey, vaultKeypair.publicKey);
+      const userGsolATA = getAssociatedTokenAddressSync(gsolMintPubkey, recipientPubkey);
+      const payoutTokens = BigInt(Math.floor(amount * 10 ** 9));
+
+      const payoutConn = getHeliusConnection('confirmed');
+      const payTx = new Transaction().add(
+        createAssociatedTokenAccountIdempotentInstruction(vaultKeypair.publicKey, userGsolATA, recipientPubkey, gsolMintPubkey),
+        createTransferInstruction(vaultGsolATA, userGsolATA, vaultKeypair.publicKey, payoutTokens, [], TOKEN_PROGRAM_ID)
+      );
+      const { blockhash } = await payoutConn.getLatestBlockhash('confirmed');
+      payTx.recentBlockhash = blockhash;
+      payTx.feePayer = vaultKeypair.publicKey;
+      payTx.sign(vaultKeypair);
+      const sig = await payoutConn.sendRawTransaction(payTx.serialize(), { skipPreflight: true, maxRetries: 5 });
+      await payoutConn.confirmTransaction(sig, 'confirmed');
+
+      // Clear pending, add to claimed
+      await pool.query(
+        `UPDATE rakeback_earnings SET pending_gsol = 0, total_claimed_gsol = total_claimed_gsol + $1, updated_at = NOW() WHERE wallet_address = $2`,
+        [amount, walletAddress]
+      );
+
+      res.json({ success: true, claimedGsol: amount, txSignature: sig });
+    } catch (e: any) {
+      console.error('Rakeback claim failed:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.post("/api/coinflip/play", async (req, res) => {
     try {
       const { walletAddress, betAmount, choice, betTxSignature, betToken = 'sol' } = req.body;
@@ -11498,6 +11569,20 @@ Claimer: ${walletAddress}`;
 
       if (betToken === 'sol' && platformFee > 0) {
         distributeFlipFee(platformFee).catch(e => console.error('❌ Auto-pay distribution failed:', e.message));
+      }
+
+      // ── Rakeback: 10% of fee credited as GSOL ──────────────────────────────
+      const rakebackGsol = parseFloat((platformFee * 0.10).toFixed(9));
+      if (rakebackGsol > 0) {
+        pool.query(
+          `INSERT INTO rakeback_earnings (wallet_address, pending_gsol, total_earned_gsol, updated_at)
+           VALUES ($1, $2, $2, NOW())
+           ON CONFLICT (wallet_address) DO UPDATE SET
+             pending_gsol = rakeback_earnings.pending_gsol + $2,
+             total_earned_gsol = rakeback_earnings.total_earned_gsol + $2,
+             updated_at = NOW()`,
+          [walletAddress, rakebackGsol]
+        ).catch(e => console.error('Rakeback update failed:', e.message));
       }
     } catch (error: any) {
       console.error('Error in coin flip:', error);
