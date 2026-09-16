@@ -144,8 +144,8 @@ function Home() {
         )}
       </div>
 
-      <footer className="border-t border-purple-500/20 py-5 px-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-sm text-purple-100/60">
-        <span>© {new Date().getFullYear()} Get Free Sol</span>
+      <footer className="border-t border-purple-500/20 py-4 px-4 flex flex-row items-center justify-between sm:justify-center gap-6 text-sm text-purple-100/60">
+        <span className="whitespace-nowrap">© {new Date().getFullYear()} Get Free Sol</span>
         <div className="flex items-center gap-3">
           <a
             href="https://x.com/getfreesol_xyz"
