@@ -204,8 +204,9 @@ export function Summary({
       </div>
       {feeBps != null && (
         <div className="flex justify-between text-sm text-purple-300/80 mt-1">
-          <span>Service fee ({(feeBps / 100).toFixed(1)}%)</span>
-          <span>-{fmtSol(fee, 5)} SOL</span>
+          <span>Service fee</span>
+          {/* Always show the platform rate, even for the fee wallet that isn't charged */}
+          <span>{(feeConfigCache?.feeBps ?? feeBps) / 100}%</span>
         </div>
       )}
       {networkFee > 0 && (
