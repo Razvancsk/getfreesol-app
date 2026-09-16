@@ -17,18 +17,12 @@ export function BurnTokensTab() {
 
   const selectedItems = scan.items.filter((a) => scan.selected.has(a.address));
   const gross = selectedItems.reduce((s, a) => s + a.lamports, 0);
-  const selectedUsd = selectedItems.reduce((s, a) => s + (a.usdValue ?? 0), 0);
 
-  const burn = () => {
-    const msg =
-      `Burn ${selectedItems.length} token${selectedItems.length > 1 ? "s" : ""}? This destroys them permanently and cannot be undone.` +
-      (selectedUsd >= 1 ? `\n\nWarning: the selected tokens are worth about $${selectedUsd.toFixed(2)}.` : "");
-    if (!window.confirm(msg)) return;
+  const burn = () =>
     run(
       () => api<{ transactions: BuiltTx[] }>("/api/build/burn-tokens", { owner: scan.owner, accounts: Array.from(scan.selected) }),
       "Burned",
     );
-  };
 
   return (
     <Card>

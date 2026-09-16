@@ -18,10 +18,8 @@ export function BurnNftsTab() {
   const selectedItems = scan.items.filter((n) => scan.selected.has(n.id));
   const gross = selectedItems.reduce((s, n) => s + EST_LAMPORTS[n.kind], 0);
 
-  const burn = () => {
-    if (!window.confirm(`Burn ${selectedItems.length} NFT${selectedItems.length > 1 ? "s" : ""}? This cannot be undone.`)) return;
+  const burn = () =>
     run(() => api<{ transactions: BuiltTx[] }>("/api/build/burn-nfts", { owner: scan.owner, ids: Array.from(scan.selected) }), "Burned");
-  };
 
   return (
     <Card>
