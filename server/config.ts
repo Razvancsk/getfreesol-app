@@ -18,7 +18,7 @@ export const FEES_WALLET = new PublicKey(
 );
 export const REOWN_PROJECT_ID = process.env.REOWN_PROJECT_ID || process.env.VITE_REOWN_PROJECT_ID || "30247a4ea78906563498c2736129d21f";
 if (!REOWN_PROJECT_ID) console.warn("[config] REOWN_PROJECT_ID is not set - wallet connection disabled");
-export const FEE_BPS = Number(process.env.FEE_BPS ?? 730);
+export const FEE_BPS = Number(process.env.FEE_BPS ?? 1000);
 export const PRIORITY_MICROLAMPORTS = Number(process.env.PRIORITY_MICROLAMPORTS ?? 20000);
 
 export async function heliusRpc<T = any>(method: string, params: unknown): Promise<T> {
