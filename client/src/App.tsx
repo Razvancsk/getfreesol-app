@@ -1,10 +1,6 @@
-import { useMemo, useState } from "react";
-import { ConnectionProvider, WalletProvider, useWallet } from "@solana/wallet-adapter-react";
-import { WalletModalProvider, useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
-import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
+import { useState } from "react";
 import { Flame, Image as ImageIcon, LogOut } from "lucide-react";
-import "@solana/wallet-adapter-react-ui/styles.css";
+import { useWallet } from "./lib/wallet";
 import { ClaimRentTab } from "./components/ClaimRentTab";
 import { BurnTokensTab } from "./components/BurnTokensTab";
 import { BurnNftsTab } from "./components/BurnNftsTab";
@@ -19,14 +15,13 @@ const TABS: { id: Tab; label: string; headline: string; icon: JSX.Element }[] = 
 ];
 
 function WalletButton({ compact = false }: { compact?: boolean }) {
-  const { publicKey, disconnect } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { publicKey, disconnect, open: openModal } = useWallet();
   const [open, setOpen] = useState(false);
 
   if (!publicKey) {
     return (
       <button
-        onClick={() => setVisible(true)}
+        onClick={openModal}
         className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
       >
         {compact ? "Connect" : "Connect Wallet"}
@@ -63,8 +58,7 @@ function WalletButton({ compact = false }: { compact?: boolean }) {
 }
 
 function Home() {
-  const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { publicKey, open: openModal } = useWallet();
   const [tab, setTab] = useState<Tab>("claim");
   const active = TABS.find((t) => t.id === tab)!;
 
@@ -88,7 +82,7 @@ function Home() {
               NFTs you don't want, and claim that SOL back in one click.
             </p>
             <button
-              onClick={() => setVisible(true)}
+              onClick={openModal}
               className="mt-8 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white text-xl font-semibold rounded-full px-10 py-4 shadow-lg shadow-purple-900/50"
             >
               Connect Wallet
@@ -158,17 +152,5 @@ function Home() {
 }
 
 export default function App() {
-  // The browser only needs an endpoint for wallet adapter internals; all RPC work goes through our server.
-  const endpoint = "https://api.mainnet-beta.solana.com";
-  const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
-
-  return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          <Home />
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
-  );
+  return <Home />;
 }

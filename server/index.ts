@@ -1,7 +1,7 @@
 import express, { type Request, type Response } from "express";
 import fs from "fs";
 import path from "path";
-import { connection, FEE_BPS, parseOwner } from "./config";
+import { connection, FEE_BPS, parseOwner, REOWN_PROJECT_ID } from "./config";
 import { buildBurnTransactions, buildClaimTransactions, scanTokens } from "./tokens";
 import { buildNftBurnTransactions, scanNfts } from "./nfts";
 
@@ -29,7 +29,7 @@ function handler(fn: (req: Request) => Promise<unknown>) {
 }
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
-app.get("/api/config", (_req, res) => res.json({ feeBps: FEE_BPS }));
+app.get("/api/config", (_req, res) => res.json({ feeBps: FEE_BPS, reownProjectId: REOWN_PROJECT_ID }));
 
 app.get("/api/scan/tokens/:owner", handler((req) => scanTokens(parseOwner(req.params.owner))));
 app.get("/api/scan/nfts/:owner", handler(async (req) => ({ nfts: await scanNfts(parseOwner(req.params.owner)) })));

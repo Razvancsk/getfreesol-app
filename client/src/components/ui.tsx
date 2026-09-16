@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet } from "@/lib/wallet";
 import { CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { api, fmtSol, signSendConfirm, type BuiltTx } from "@/lib/api";
 

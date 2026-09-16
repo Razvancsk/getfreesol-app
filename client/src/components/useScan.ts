@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet } from "@/lib/wallet";
 import { api } from "@/lib/api";
 
 /** Loads data for the connected wallet and keeps a selection set of item ids. */
