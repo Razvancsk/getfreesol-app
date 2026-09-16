@@ -21,6 +21,30 @@ if (!REOWN_PROJECT_ID) console.warn("[config] REOWN_PROJECT_ID is not set - wall
 export const FEE_BPS = Number(process.env.FEE_BPS ?? 1000);
 export const PRIORITY_MICROLAMPORTS = Number(process.env.PRIORITY_MICROLAMPORTS ?? 20000);
 
+const jupiterKey = process.env.JUPITER_API_KEY || process.env.Jupiter_key || process.env.JUP_API_KEY || "";
+const JUPITER_PRICE_URL = jupiterKey ? "https://api.jup.ag/price/v3" : "https://lite-api.jup.ag/price/v3";
+
+/** USD price per token from Jupiter, keyed by mint. Mints Jupiter doesn't price are absent. */
+export async function jupiterPrices(mints: string[]): Promise<Map<string, number>> {
+  const prices = new Map<string, number>();
+  const unique = Array.from(new Set(mints));
+  for (let i = 0; i < unique.length; i += 50) {
+    try {
+      const res = await fetch(`${JUPITER_PRICE_URL}?ids=${unique.slice(i, i + 50).join(",")}`, {
+        headers: jupiterKey ? { "x-api-key": jupiterKey } : undefined,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: Record<string, { usdPrice?: number } | null> = await res.json();
+      for (const [mint, info] of Object.entries(data)) {
+        if (info?.usdPrice != null) prices.set(mint, info.usdPrice);
+      }
+    } catch (e) {
+      console.warn("[prices] Jupiter lookup failed:", (e as Error).message);
+    }
+  }
+  return prices;
+}
+
 export async function heliusRpc<T = any>(method: string, params: unknown): Promise<T> {
   const res = await fetch(RPC_URL, {
     method: "POST",

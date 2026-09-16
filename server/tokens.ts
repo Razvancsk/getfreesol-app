@@ -1,6 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createBurnCheckedInstruction } from "@solana/spl-token";
-import { connection, GFS_PROGRAM_ID, heliusRpc } from "./config";
+import { connection, GFS_PROGRAM_ID, heliusRpc, jupiterPrices } from "./config";
 import { packTransactions, type IxGroup } from "./pack";
 
 // Anchor discriminators of the GetFreeSol program instructions
@@ -125,7 +125,8 @@ async function fetchTokenMetadata(mints: string[]) {
 
 export async function scanTokens(owner: PublicKey) {
   const accounts = (await fetchOwnerAccounts(owner)).filter((a) => blockReason(a, owner) === null);
-  const meta = await fetchTokenMetadata(accounts.map((a) => a.info.mint));
+  const heldMints = accounts.filter((a) => a.info.tokenAmount.amount !== "0").map((a) => a.info.mint);
+  const [meta, prices] = await Promise.all([fetchTokenMetadata(accounts.map((a) => a.info.mint)), jupiterPrices(heldMints)]);
 
   const toInfo = (a: ParsedAccount): TokenAccountInfo => {
     const m = meta.get(a.info.mint);
@@ -142,7 +143,10 @@ export async function scanTokens(owner: PublicKey) {
       name: m?.name || "Unknown token",
       symbol: m?.symbol || a.info.mint.slice(0, 4),
       image: m?.image || null,
-      usdValue: m?.price != null ? m.price * uiAmount : null,
+      usdValue: (() => {
+        const price = prices.get(a.info.mint) ?? m?.price; // Jupiter first, Helius as fallback
+        return price != null ? price * uiAmount : null;
+      })(),
     };
   };
 
