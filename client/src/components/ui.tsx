@@ -33,18 +33,28 @@ export function TokenAvatar({ src, label }: { src: string | null; label: string 
   return <img src={src} alt="" onError={() => setBroken(true)} className="h-10 w-10 shrink-0 rounded-full object-cover bg-purple-800" />;
 }
 
-let feeBpsCache: number | null = null;
+type FeeConfig = { feeBps: number; feesWallet: string };
+let feeConfigCache: FeeConfig | null = null;
+
+/** Service fee in basis points for the connected wallet (0 for the fee wallet itself). */
 export function useFeeBps() {
-  const [bps, setBps] = useState<number | null>(feeBpsCache);
+  const { publicKey } = useWallet();
+  const [config, setConfig] = useState<FeeConfig | null>(feeConfigCache);
   useEffect(() => {
-    if (feeBpsCache != null) return;
-    api<{ feeBps: number }>("/api/config").then((c) => {
-      feeBpsCache = c.feeBps;
-      setBps(c.feeBps);
-    }).catch(() => {});
+    if (feeConfigCache != null) return;
+    api<FeeConfig>("/api/config")
+      .then((c) => {
+        feeConfigCache = c;
+        setConfig(c);
+      })
+      .catch(() => {});
   }, []);
-  return bps;
+  if (!config) return null;
+  return publicKey?.toBase58() === config.feesWallet ? 0 : config.feeBps;
 }
+
+// Base signature fee plus a small priority fee, per transaction
+export const NETWORK_FEE_LAMPORTS = 6_000;
 
 type Status = { kind: "idle" } | { kind: "busy"; msg: string } | { kind: "ok"; msg: string } | { kind: "error"; msg: string };
 
@@ -170,6 +180,7 @@ export function Summary({
   onAction,
   busy,
   danger = false,
+  txCount = 1,
 }: {
   label: string;
   grossLamports: number;
@@ -179,8 +190,12 @@ export function Summary({
   onAction: () => void;
   busy: boolean;
   danger?: boolean;
+  /** Expected number of transactions, used to estimate network fees */
+  txCount?: number;
 }) {
   const fee = feeBps != null ? Math.floor((grossLamports * feeBps) / 10_000) : 0;
+  const networkFee = grossLamports > 0 ? txCount * NETWORK_FEE_LAMPORTS : 0;
+  const receive = Math.max(0, grossLamports - fee - networkFee);
   return (
     <div className="mt-4 rounded-xl bg-slate-900/50 border border-purple-500/20 p-4">
       <div className="flex justify-between text-sm text-purple-200">
@@ -193,9 +208,15 @@ export function Summary({
           <span>-{fmtSol(fee, 5)} SOL</span>
         </div>
       )}
+      {networkFee > 0 && (
+        <div className="flex justify-between text-sm text-purple-300/80 mt-1">
+          <span>Network fee</span>
+          <span>-{fmtSol(networkFee, 5)} SOL</span>
+        </div>
+      )}
       <div className="flex justify-between text-white font-semibold text-lg mt-2">
         <span>You receive</span>
-        <span className="text-green-400">≈ {fmtSol(grossLamports - fee, 5)} SOL</span>
+        <span className="text-green-400">≈ {fmtSol(receive, 5)} SOL</span>
       </div>
       <button
         onClick={onAction}

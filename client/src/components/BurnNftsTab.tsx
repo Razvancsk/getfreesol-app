@@ -69,6 +69,7 @@ export function BurnNftsTab() {
         feeBps={feeBps}
         selectedCount={scan.selected.size}
         actionLabel="Burn"
+        txCount={scan.selected.size}
         busy={busy}
         onAction={burn}
         danger

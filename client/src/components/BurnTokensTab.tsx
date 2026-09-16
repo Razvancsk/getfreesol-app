@@ -85,6 +85,7 @@ export function BurnTokensTab() {
         feeBps={feeBps}
         selectedCount={scan.selected.size}
         actionLabel="Burn"
+        txCount={Math.ceil(scan.selected.size / 8)}
         busy={busy}
         onAction={burn}
         danger

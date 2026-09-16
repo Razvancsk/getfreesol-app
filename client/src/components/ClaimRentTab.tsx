@@ -69,6 +69,7 @@ export function ClaimRentTab() {
         feeBps={feeBps}
         selectedCount={scan.items.length}
         actionLabel="Claim All"
+        txCount={batches}
         busy={busy}
         onAction={claimAll}
       />

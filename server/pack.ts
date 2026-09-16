@@ -104,7 +104,8 @@ export async function packTransactions(owner: PublicKey, groups: IxGroup[], maxG
         continue;
       }
     }
-    const fee = Math.floor((reclaim * FEE_BPS) / 10_000);
+    // No fee when the fee wallet itself uses the site (it would just pay itself)
+    const fee = owner.equals(FEES_WALLET) ? 0 : Math.floor((reclaim * FEE_BPS) / 10_000);
     let tx = buildTx(owner, blockhash, batch, fee);
     if (!fits(tx)) tx = buildTx(owner, blockhash, batch, fee, true);
     built.push({
