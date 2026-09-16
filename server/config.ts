@@ -16,7 +16,7 @@ export const GFS_PROGRAM_ID = new PublicKey("5o8wsyECKtCwT72BNQJRxm1U5xDeVL5bD69
 export const FEES_WALLET = new PublicKey(
   process.env.FEES_WALLET || "C6mQjeAXyjGCycG12A5FrNP3NM22mBbXxTSASMGFrggv",
 );
-export const REOWN_PROJECT_ID = process.env.REOWN_PROJECT_ID || process.env.VITE_REOWN_PROJECT_ID || "";
+export const REOWN_PROJECT_ID = process.env.REOWN_PROJECT_ID || process.env.VITE_REOWN_PROJECT_ID || "30247a4ea78906563498c2736129d21f";
 if (!REOWN_PROJECT_ID) console.warn("[config] REOWN_PROJECT_ID is not set - wallet connection disabled");
 export const FEE_BPS = Number(process.env.FEE_BPS ?? 730);
 export const PRIORITY_MICROLAMPORTS = Number(process.env.PRIORITY_MICROLAMPORTS ?? 20000);
