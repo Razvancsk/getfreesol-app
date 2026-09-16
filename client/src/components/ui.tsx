@@ -33,17 +33,6 @@ export function TokenAvatar({ src, label }: { src: string | null; label: string 
   return <img src={src} alt="" onError={() => setBroken(true)} className="h-10 w-10 shrink-0 rounded-full object-cover bg-purple-800" />;
 }
 
-export function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={onChange}
-      className="h-5 w-5 shrink-0 accent-purple-500 cursor-pointer"
-    />
-  );
-}
-
 let feeBpsCache: number | null = null;
 export function useFeeBps() {
   const [bps, setBps] = useState<number | null>(feeBpsCache);
@@ -139,17 +128,23 @@ export function ListHeader({
 }) {
   return (
     <div className="flex items-center justify-between gap-2 mb-3">
-      <label className="flex items-center gap-2 text-white font-semibold cursor-pointer select-none">
-        <Checkbox checked={allSelected && count > 0} onChange={onToggleAll} />
+      <div className="text-white font-semibold">
         {title} <span className="text-purple-300 font-normal">({count})</span>
-      </label>
-      <button
-        onClick={onRefresh}
-        disabled={loading}
-        className="text-purple-200 hover:text-white disabled:opacity-50 flex items-center gap-1 text-sm"
-      >
-        <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
-      </button>
+      </div>
+      <div className="flex items-center gap-4">
+        {count > 0 && (
+          <button onClick={onToggleAll} className="text-purple-200 hover:text-white text-sm font-medium">
+            {allSelected ? "Deselect all" : "Select all"}
+          </button>
+        )}
+        <button
+          onClick={onRefresh}
+          disabled={loading}
+          className="text-purple-200 hover:text-white disabled:opacity-50 flex items-center gap-1 text-sm"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+        </button>
+      </div>
     </div>
   );
 }

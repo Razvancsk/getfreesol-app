@@ -1,10 +1,18 @@
 import { AlertTriangle } from "lucide-react";
 import { api, fmtSol, type BuiltTx, type TokenAccountInfo } from "@/lib/api";
 import { useScan } from "./useScan";
-import { Card, Checkbox, EmptyState, ListHeader, StatusBar, Summary, TokenAvatar, useFeeBps, useTxRunner } from "./ui";
+import { Card, EmptyState, ListHeader, StatusBar, Summary, TokenAvatar, useFeeBps, useTxRunner } from "./ui";
 
 const fmtAmount = (n: number) =>
-  n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(2)}K` : n.toLocaleString("en-US", { maximumFractionDigits: 4 });
+  n >= 1e9
+    ? `${(n / 1e9).toFixed(2)}B`
+    : n >= 1e6
+      ? `${(n / 1e6).toFixed(2)}M`
+      : n >= 1e3
+        ? `${(n / 1e3).toFixed(2)}K`
+        : n > 0 && n < 0.0001
+          ? n.toPrecision(2) // dust amounts, e.g. 0.0000012
+          : n.toLocaleString("en-US", { maximumFractionDigits: 4 });
 
 export function BurnTokensTab() {
   const scan = useScan<TokenAccountInfo>(
@@ -41,11 +49,18 @@ export function BurnTokensTab() {
       {scan.items.length === 0 ? (
         <EmptyState loading={scan.loading} error={scan.error} text="No tokens to burn." />
       ) : (
-        <ul className="divide-y divide-purple-500/20 max-h-[420px] overflow-y-auto pr-1">
+        <ul className="space-y-2 max-h-[420px] overflow-y-auto p-1">
           {scan.items.map((a) => (
             <li key={a.address}>
-              <label className="flex items-center gap-3 py-2.5 cursor-pointer">
-                <Checkbox checked={scan.selected.has(a.address)} onChange={() => scan.toggle(a.address)} />
+              <button
+                type="button"
+                onClick={() => scan.toggle(a.address)}
+                className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-colors ${
+                  scan.selected.has(a.address)
+                    ? "border-red-500 bg-red-500/10"
+                    : "border-transparent bg-purple-950/20 hover:bg-purple-800/30"
+                }`}
+              >
                 <TokenAvatar src={a.image} label={a.symbol} />
                 <div className="min-w-0 flex-1">
                   <div className="text-white truncate">
@@ -59,7 +74,7 @@ export function BurnTokensTab() {
                   </div>
                 </div>
                 <div className="text-green-400 text-sm font-medium whitespace-nowrap">+{fmtSol(a.lamports)} SOL</div>
-              </label>
+              </button>
             </li>
           ))}
         </ul>

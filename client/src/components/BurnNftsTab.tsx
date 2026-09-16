@@ -38,7 +38,7 @@ export function BurnNftsTab() {
       {scan.items.length === 0 ? (
         <EmptyState loading={scan.loading} error={scan.error} text="No burnable NFTs found." />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[520px] overflow-y-auto pr-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[520px] overflow-y-auto p-1">
           {scan.items.map((n) => {
             const on = scan.selected.has(n.id);
             return (
@@ -46,7 +46,7 @@ export function BurnNftsTab() {
                 key={n.id}
                 onClick={() => scan.toggle(n.id)}
                 className={`text-left rounded-xl overflow-hidden border transition-all ${
-                  on ? "border-purple-400 ring-2 ring-purple-500" : "border-purple-500/30 hover:border-purple-400/60"
+                  on ? "border-red-500 ring-2 ring-red-500" : "border-purple-500/30 hover:border-purple-400/60"
                 } bg-slate-900/50`}
               >
                 <div className="aspect-square bg-purple-900/60">
