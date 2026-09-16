@@ -68,7 +68,7 @@ export function BurnNftsTab() {
         grossLamports={gross}
         feeBps={feeBps}
         selectedCount={scan.selected.size}
-        actionLabel="Burn NFTs"
+        actionLabel="Burn"
         busy={busy}
         onAction={burn}
         danger

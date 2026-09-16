@@ -202,11 +202,11 @@ export function Summary({
         disabled={busy || selectedCount === 0}
         className={`mt-4 w-full rounded-full py-3 text-lg font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
           danger
-            ? "bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500"
+            ? "bg-red-600 hover:bg-red-500"
             : "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400"
         }`}
       >
-        {busy ? "Working…" : `${actionLabel} (${selectedCount})`}
+        {busy ? "Working…" : danger ? actionLabel : `${actionLabel} (${selectedCount})`}
       </button>
     </div>
   );

@@ -84,7 +84,7 @@ export function BurnTokensTab() {
         grossLamports={gross}
         feeBps={feeBps}
         selectedCount={scan.selected.size}
-        actionLabel="Burn & Claim"
+        actionLabel="Burn"
         busy={busy}
         onAction={burn}
         danger
