@@ -24,12 +24,15 @@ export interface BuiltTx {
 
 const MAX_TX_BYTES = 1232;
 
-function buildTx(owner: PublicKey, blockhash: string, groups: IxGroup[], feeLamports: number) {
+/** compact = skip compute-budget instructions to make room for more accounts (e.g. 20 closes). */
+function buildTx(owner: PublicKey, blockhash: string, groups: IxGroup[], feeLamports: number, compact = false) {
   const units = Math.min(1_400_000, 20_000 + groups.reduce((s, g) => s + g.computeUnits, 0));
   const tx = new Transaction({ feePayer: owner, recentBlockhash: blockhash });
-  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units }));
-  if (PRIORITY_MICROLAMPORTS > 0) {
-    tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: PRIORITY_MICROLAMPORTS }));
+  if (!compact) {
+    tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units }));
+    if (PRIORITY_MICROLAMPORTS > 0) {
+      tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: PRIORITY_MICROLAMPORTS }));
+    }
   }
   for (const g of groups) tx.add(...g.instructions);
   if (feeLamports > 0) {
@@ -69,15 +72,16 @@ export async function packTransactions(owner: PublicKey, groups: IxGroup[], maxG
   const { blockhash } = await connection.getLatestBlockhash("confirmed");
   const batches: IxGroup[][] = [];
   let current: IxGroup[] = [];
+  // Measure with a placeholder fee so the real fee transfer always fits.
+  const fitsAny = (gs: IxGroup[]) => fits(buildTx(owner, blockhash, gs, 1)) || fits(buildTx(owner, blockhash, gs, 1, true));
 
   for (const g of groups) {
     const candidate = [...current, g];
-    // Measure with a placeholder fee so the real fee transfer always fits.
-    if (candidate.length <= maxGroupsPerTx && fits(buildTx(owner, blockhash, candidate, 1))) {
+    if (candidate.length <= maxGroupsPerTx && fitsAny(candidate)) {
       current = candidate;
     } else {
       if (current.length) batches.push(current);
-      if (!fits(buildTx(owner, blockhash, [g], 1))) {
+      if (!fitsAny([g])) {
         console.warn(`[pack] ${g.id} does not fit in a single transaction, skipped`);
         current = [];
         continue;
@@ -101,7 +105,8 @@ export async function packTransactions(owner: PublicKey, groups: IxGroup[], maxG
       }
     }
     const fee = Math.floor((reclaim * FEE_BPS) / 10_000);
-    const tx = buildTx(owner, blockhash, batch, fee);
+    let tx = buildTx(owner, blockhash, batch, fee);
+    if (!fits(tx)) tx = buildTx(owner, blockhash, batch, fee, true);
     built.push({
       transaction: tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64"),
       ids: batch.map((g) => g.id),

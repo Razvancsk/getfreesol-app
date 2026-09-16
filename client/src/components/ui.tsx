@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useWallet } from "@/lib/wallet";
 import { CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
-import { api, fmtSol, signSendConfirm, type BuiltTx } from "@/lib/api";
+import { api, fmtSol, runInBatches, signSendConfirm, type BuiltTx, type RunResult } from "@/lib/api";
 
 export function SolanaIcon({ className = "" }: { className?: string }) {
   return (
@@ -61,26 +61,41 @@ type Status = { kind: "idle" } | { kind: "busy"; msg: string } | { kind: "ok"; m
 
 /** Shared flow: build transactions on the server, sign in wallet, send, confirm. */
 export function useTxRunner(onDone: (confirmedIds: string[]) => void) {
-  const { signAllTransactions } = useWallet();
+  const { signAllTransactions, signTransaction } = useWallet();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const progress = (msg: string) => setStatus({ kind: "busy", msg });
 
-  async function run(build: () => Promise<{ transactions: BuiltTx[] }>, verb: string) {
-    if (!signAllTransactions) {
-      setStatus({ kind: "error", msg: "This wallet can't sign multiple transactions" });
-      return;
-    }
-    try {
-      setStatus({ kind: "busy", msg: "Preparing transactions…" });
+  /** Build everything at once and sign all transactions in one wallet prompt. */
+  function run(build: () => Promise<{ transactions: BuiltTx[] }>, verb: string) {
+    return execute(async () => {
+      if (!signAllTransactions) throw new Error("No wallet connected");
+      progress("Preparing transactions…");
       const { transactions } = await build();
       if (!transactions.length) throw new Error("Nothing left to process - try refreshing");
-      const result = await signSendConfirm(transactions, signAllTransactions, (msg) => setStatus({ kind: "busy", msg }));
+      return signSendConfirm(transactions, signAllTransactions, progress);
+    }, verb);
+  }
+
+  /** Build, sign and confirm one batch at a time (one wallet prompt per batch). */
+  function runBatched(ids: string[], batchSize: number, build: (chunk: string[]) => Promise<{ transactions: BuiltTx[] }>, verb: string) {
+    return execute(async () => {
+      if (!signTransaction) throw new Error("No wallet connected");
+      return runInBatches(ids, batchSize, build, signTransaction, progress);
+    }, verb);
+  }
+
+  async function execute(work: () => Promise<RunResult>, verb: string) {
+    try {
+      const result = await work();
       onDone(result.confirmedIds);
       if (result.confirmedIds.length === 0) throw new Error("Transactions were not confirmed - please try again");
       setStatus({
         kind: "ok",
         msg: `${verb} ${result.confirmedIds.length} item${result.confirmedIds.length > 1 ? "s" : ""} and received ${fmtSol(
           result.reclaimedLamports,
-        )} SOL${result.failed ? ` (${result.failed} transaction${result.failed > 1 ? "s" : ""} failed)` : ""}`,
+        )} SOL${result.failed ? ` (${result.failed} transaction${result.failed > 1 ? "s" : ""} failed)` : ""}${
+          result.stoppedReason ? " - stopped early, click again to finish the rest" : ""
+        }`,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -88,7 +103,7 @@ export function useTxRunner(onDone: (confirmedIds: string[]) => void) {
     }
   }
 
-  return { status, run, busy: status.kind === "busy" };
+  return { status, run, runBatched, busy: status.kind === "busy" };
 }
 
 export function StatusBar({ status }: { status: Status }) {

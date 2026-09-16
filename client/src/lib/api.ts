@@ -50,6 +50,68 @@ export interface RunResult {
   confirmedIds: string[];
   reclaimedLamports: number;
   failed: number;
+  /** Set when a batched run stopped early (e.g. user cancelled) after some batches succeeded */
+  stoppedReason?: string;
+}
+
+async function waitForConfirmation(signature: string, timeoutMs = 90_000): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const { statuses } = await api<{ statuses: { confirmed: boolean; failed: boolean }[] }>("/api/status", {
+      signatures: [signature],
+    });
+    if (statuses[0]?.confirmed) return true;
+    if (statuses[0]?.failed) return false;
+  }
+  return false;
+}
+
+/**
+ * Processes ids in chunks: for each chunk build a fresh transaction on the server,
+ * ask the wallet to sign it, send it and wait for confirmation before the next one.
+ */
+export async function runInBatches(
+  ids: string[],
+  batchSize: number,
+  build: (chunk: string[]) => Promise<{ transactions: BuiltTx[] }>,
+  signTransaction: (tx: Transaction) => Promise<Transaction>,
+  onProgress: (msg: string) => void,
+): Promise<RunResult> {
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += batchSize) chunks.push(ids.slice(i, i + batchSize));
+
+  const result: RunResult = { confirmedIds: [], reclaimedLamports: 0, failed: 0 };
+  let step = 0;
+  try {
+    for (const chunk of chunks) {
+      step++;
+      const label = chunks.length > 1 ? `Batch ${step}/${chunks.length}: ` : "";
+      onProgress(`${label}Preparing…`);
+      const { transactions } = await build(chunk);
+      for (const built of transactions) {
+        onProgress(`${label}Approve in your wallet (${built.ids.length} accounts)…`);
+        const signed = await signTransaction(Transaction.from(Buffer.from(built.transaction, "base64")));
+        onProgress(`${label}Sending…`);
+        const { signatures, errors } = await api<{ signatures: (string | null)[]; errors: string[] }>("/api/send", {
+          transactions: [signed.serialize().toString("base64")],
+        });
+        const sig = signatures[0];
+        if (!sig) throw new Error(errors[0] || "Transaction was rejected by the network");
+        onProgress(`${label}Confirming…`);
+        if (await waitForConfirmation(sig)) {
+          result.confirmedIds.push(...built.ids);
+          result.reclaimedLamports += built.reclaimLamports - built.feeLamports;
+        } else {
+          result.failed++;
+        }
+      }
+    }
+  } catch (e) {
+    if (result.confirmedIds.length === 0) throw e;
+    result.stoppedReason = e instanceof Error ? e.message : String(e);
+  }
+  return result;
 }
 
 /** Sign every built transaction with the wallet, send them, and wait for confirmations. */

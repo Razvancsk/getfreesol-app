@@ -40,6 +40,14 @@ export function useWallet() {
     }
   }, [address, isConnected]);
 
+  const signTransaction = useCallback(
+    async (tx: Transaction) => {
+      if (!walletProvider) throw new Error("No wallet connected");
+      return (await walletProvider.signTransaction(tx)) as Transaction;
+    },
+    [walletProvider],
+  );
+
   const signAllTransactions = useCallback(
     async (txs: Transaction[]) => {
       if (!walletProvider) throw new Error("No wallet connected");
@@ -53,5 +61,6 @@ export function useWallet() {
     open: () => open({ view: "Connect", namespace: "solana" }),
     disconnect: () => disconnect({ namespace: "solana" }),
     signAllTransactions: walletProvider ? signAllTransactions : undefined,
+    signTransaction: walletProvider ? signTransaction : undefined,
   };
 }
