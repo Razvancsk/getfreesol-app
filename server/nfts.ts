@@ -25,9 +25,12 @@ export interface NftInfo {
   image: string | null;
   collection: string | null;
   kind: "nft" | "pnft" | "core";
+  /** Why this NFT is risky to burn, or null when nothing looks off */
+  warning: string | null;
 }
 
-const SKIP_NAME = /position|liquidity|receipt|staked|vault|do\s*not\s*burn/i;
+// Names that usually belong to something holding real funds rather than a collectible
+const RISKY_NAME = /position|liquidity|receipt|staked|vault|do\s*not\s*burn/i;
 
 export async function scanNfts(owner: PublicKey): Promise<NftInfo[]> {
   const nfts: NftInfo[] = [];
@@ -42,15 +45,16 @@ export async function scanNfts(owner: PublicKey): Promise<NftInfo[]> {
     for (const a of items) {
       if (a.burnt || a.compression?.compressed) continue;
       const name: string = a.content?.metadata?.name || "Unnamed NFT";
-      if (SKIP_NAME.test(name)) continue;
       let kind: NftInfo["kind"];
       if (a.interface === "MplCoreAsset") kind = "core";
       else if (a.interface === "ProgrammableNFT") kind = "pnft";
       else if (a.interface === "V1_NFT" || a.interface === "Legacy") kind = "nft";
       else continue;
-      // Delegated/frozen standard NFTs are usually staked or listed
-      if (kind === "nft" && (a.ownership?.frozen || a.ownership?.delegated)) continue;
-      if (kind === "pnft" && a.ownership?.delegated) continue;
+      // Nothing is hidden, but anything that looks staked, listed or fund-holding is flagged
+      let warning: string | null = null;
+      if (RISKY_NAME.test(name)) warning = "May hold funds - looks like an LP or staking position";
+      else if (a.ownership?.frozen) warning = "Frozen - usually staked or listed for sale";
+      else if (a.ownership?.delegated) warning = "Control given to another program - may be staked or listed";
       const group = a.grouping?.find((g: any) => g.group_key === "collection");
       nfts.push({
         id: a.id,
@@ -58,6 +62,7 @@ export async function scanNfts(owner: PublicKey): Promise<NftInfo[]> {
         image: a.content?.links?.image || a.content?.files?.[0]?.cdn_uri || a.content?.files?.[0]?.uri || null,
         collection: group?.collection_metadata?.name || null,
         kind,
+        warning,
       });
     }
     if (items.length < 1000) break;

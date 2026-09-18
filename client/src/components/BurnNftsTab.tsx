@@ -34,7 +34,7 @@ export function BurnNftsTab() {
       <Card>
         <div className="flex items-start gap-2 rounded-xl bg-orange-900/30 border border-orange-500/30 px-3 py-2 mb-4 text-orange-200 text-sm">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-          Burning is permanent. Staked, listed and LP-position NFTs are hidden for safety.
+          Burning is permanent. Nothing is hidden, so check anything marked with a warning before you burn it.
         </div>
         <ListHeader
           title="NFTs"
@@ -58,13 +58,21 @@ export function BurnNftsTab() {
                     on ? "border-red-500 ring-2 ring-red-500" : "border-purple-500/30 hover:border-purple-400/60"
                   } bg-slate-900/50`}
                 >
-                  <div className="aspect-square bg-purple-900/60">
+                  <div className="aspect-square bg-purple-900/60 relative">
                     {n.image && <img src={n.image} alt="" loading="lazy" className="h-full w-full object-cover" />}
+                    {n.warning && (
+                      <span
+                        title={n.warning}
+                        className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-semibold text-slate-900"
+                      >
+                        <AlertTriangle className="h-3 w-3" /> Careful
+                      </span>
+                    )}
                   </div>
                   <div className="p-2">
                     <div className="text-white text-sm truncate">{n.name}</div>
-                    <div className="text-purple-300/70 text-xs truncate">
-                      {n.collection || (n.kind === "core" ? "Core asset" : n.kind === "pnft" ? "pNFT" : "NFT")}
+                    <div className={`text-xs truncate ${n.warning ? "text-orange-300" : "text-purple-300/70"}`}>
+                      {n.warning || n.collection || (n.kind === "core" ? "Core asset" : n.kind === "pnft" ? "pNFT" : "NFT")}
                     </div>
                   </div>
                 </button>
@@ -92,9 +100,9 @@ export function BurnNftsTab() {
           which returns roughly 0.003 to 0.009 SOL depending on the type. The exact amount is measured before you sign.
         </InfoBox>
         <InfoBox icon={<ShieldCheck className="h-4 w-4 text-green-400" />} title="What is kept safe?">
-          NFTs that are staked, listed for sale, frozen or handed to another program are hidden, and so are liquidity
-          position NFTs, which hold real funds. Burning is one NFT per transaction, so one bad NFT cannot take the rest
-          down with it.
+          Every NFT in your wallet is listed, including staked, listed and LP-position ones. Those carry a Careful
+          badge because burning them can destroy real value. Burning runs one NFT per transaction, so anything the
+          network rejects is skipped without stopping the rest.
         </InfoBox>
       </InfoBoxes>
     </>

@@ -21,6 +21,7 @@ export interface NftInfo {
   image: string | null;
   collection: string | null;
   kind: "nft" | "pnft" | "core";
+  warning: string | null;
 }
 
 export interface RewardInfo {
