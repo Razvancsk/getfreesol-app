@@ -172,6 +172,27 @@ export function ListHeader({
   );
 }
 
+/** Floating confirmation that shows on success and disappears on its own. */
+export function SuccessToast({ status }: { status: Status }) {
+  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => {
+    if (status.kind !== "ok") return;
+    setMsg(status.msg);
+    const hide = setTimeout(() => setMsg(null), 2500);
+    return () => clearTimeout(hide);
+  }, [status]);
+
+  if (!msg) return null;
+  return (
+    <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 pointer-events-none">
+      <div className="toast flex items-center gap-2 rounded-xl bg-green-600 shadow-lg shadow-green-900/40 px-4 py-3 text-white text-sm font-medium">
+        <CheckCircle2 className="h-4 w-4 shrink-0" />
+        {msg}
+      </div>
+    </div>
+  );
+}
+
 /** Short explainer shown under a card, usually two side by side. */
 export function InfoBox({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (

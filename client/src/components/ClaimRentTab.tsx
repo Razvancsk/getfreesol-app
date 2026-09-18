@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Coins, Gift, RefreshCw } from "lucide-react";
 import { api, fmtSol, type BuiltTx, type RewardInfo, type TokenAccountInfo } from "@/lib/api";
 import { useScan } from "./useScan";
-import { Card, EmptyState, InfoBox, InfoBoxes, Summary, TokenAvatar, useFeeBps, useTxRunner } from "./ui";
+import { Card, EmptyState, InfoBox, InfoBoxes, SuccessToast, Summary, TokenAvatar, useFeeBps, useTxRunner } from "./ui";
 
 // Max items per transaction (Solana 1232-byte limit); one wallet approval per batch
 const BATCH_SIZE = 20;
@@ -32,7 +32,7 @@ export function ClaimRentTab() {
     (a) => a.address,
   );
   const feeBps = useFeeBps();
-  const { runBatchedAll, busy } = useTxRunner((ids) => {
+  const { status, runBatchedAll, busy } = useTxRunner((ids) => {
     rewards.removeIds(ids);
     accounts.removeIds(ids);
   });
@@ -156,6 +156,7 @@ export function ClaimRentTab() {
           collect in vaults that only you can claim from - they stay there until someone claims them for you.
         </InfoBox>
       </InfoBoxes>
+      <SuccessToast status={status} />
     </>
   );
 }
