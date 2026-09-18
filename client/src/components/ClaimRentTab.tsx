@@ -1,8 +1,8 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect } from "react";
 import { Coins, Gift, RefreshCw } from "lucide-react";
 import { api, fmtSol, type BuiltTx, type RewardInfo, type TokenAccountInfo } from "@/lib/api";
 import { useScan } from "./useScan";
-import { Card, EmptyState, StatusBar, Summary, TokenAvatar, useFeeBps, useTxRunner } from "./ui";
+import { Card, EmptyState, InfoBox, InfoBoxes, StatusBar, Summary, TokenAvatar, useFeeBps, useTxRunner } from "./ui";
 
 // Max items per transaction (Solana 1232-byte limit); one wallet approval per batch
 const BATCH_SIZE = 20;
@@ -147,7 +147,7 @@ export function ClaimRentTab() {
         <StatusBar status={status} />
       </Card>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <InfoBoxes>
         <InfoBox icon={<Coins className="h-4 w-4 text-purple-300" />} title="Where does the rent come from?">
           Solana charges a deposit of about 0.002 SOL for every token account your wallet opens. Once a token is sold or
           transferred away the account sits empty, and closing it returns that deposit to you.
@@ -156,19 +156,7 @@ export function ClaimRentTab() {
           Pump.fun pays cashback on trades of cashback coins, and pays creator fees to whoever created a coin. Both
           collect in vaults that only you can claim from - they stay there until someone claims them for you.
         </InfoBox>
-      </div>
+      </InfoBoxes>
     </>
-  );
-}
-
-function InfoBox({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
-  return (
-    <div className="rounded-xl bg-purple-900/30 border border-purple-500/20 p-4">
-      <div className="flex items-center gap-2 text-white text-sm font-semibold">
-        {icon}
-        {title}
-      </div>
-      <p className="text-white text-xs leading-relaxed mt-1.5">{children}</p>
-    </div>
   );
 }

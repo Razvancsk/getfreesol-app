@@ -172,6 +172,23 @@ export function ListHeader({
   );
 }
 
+/** Short explainer shown under a card, usually two side by side. */
+export function InfoBox({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-xl bg-purple-900/30 border border-purple-500/20 p-4">
+      <div className="flex items-center gap-2 text-white text-sm font-semibold">
+        {icon}
+        {title}
+      </div>
+      <p className="text-white text-xs leading-relaxed mt-1.5">{children}</p>
+    </div>
+  );
+}
+
+export function InfoBoxes({ children }: { children: ReactNode }) {
+  return <div className="mt-4 grid gap-3 sm:grid-cols-2">{children}</div>;
+}
+
 export function EmptyState({ loading, error, text }: { loading: boolean; error: string | null; text: string }) {
   if (loading) {
     return (
