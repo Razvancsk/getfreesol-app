@@ -143,11 +143,6 @@ export function ClaimRentTab() {
         busy={busy}
         onAction={claimAll}
       />
-      {txCount > 1 && !busy && (
-        <p className="text-center text-purple-300/80 text-xs mt-2">
-          {selectedCount} items → {txCount} transactions. Approve each one in your wallet.
-        </p>
-      )}
       <StatusBar status={status} />
     </Card>
   );
