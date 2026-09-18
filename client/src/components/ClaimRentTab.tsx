@@ -100,8 +100,8 @@ export function ClaimRentTab() {
       {count === 0 ? (
         <EmptyState loading={loading} error={accounts.error || rewards.error} text="Nothing to claim. Your wallet is clean! 🎉" />
       ) : (
-        // Two rows tall (a row is 60px), so anything beyond the second scrolls inside the card
-        <ul className="divide-y divide-purple-500/20 max-h-[140px] overflow-y-auto pr-1">
+        // Exactly two rows: 60px each (py-2.5 around a 40px avatar) plus the 1px divider between them
+        <ul className="divide-y divide-purple-500/20 max-h-[121px] overflow-y-auto pr-1">
           {rewards.items.map((r) => (
             <li key={r.id}>
               <button onClick={() => rewards.toggle(r.id)} className="w-full flex items-center gap-3 py-2.5 text-left">
