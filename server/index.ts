@@ -100,8 +100,20 @@ async function start() {
   } else {
     const publicDir = path.resolve(import.meta.dirname, "public");
     if (!fs.existsSync(publicDir)) throw new Error(`Missing ${publicDir} - run npm run build first`);
-    app.use(express.static(publicDir));
-    app.get("*", (_req, res) => res.sendFile(path.join(publicDir, "index.html")));
+    // Hashed assets never change, but index.html must be re-fetched so a new
+    // deploy reaches open browsers instead of them running the previous build.
+    app.use(
+      express.static(publicDir, {
+        setHeaders: (res, filePath) => {
+          const cache = filePath.endsWith(".html") ? "no-cache" : "public, max-age=31536000, immutable";
+          res.setHeader("Cache-Control", cache);
+        },
+      }),
+    );
+    app.get("*", (_req, res) => {
+      res.setHeader("Cache-Control", "no-cache");
+      res.sendFile(path.join(publicDir, "index.html"));
+    });
   }
   app.listen(port, "0.0.0.0", () => console.log(`GetFreeSol running on port ${port}`));
 }
