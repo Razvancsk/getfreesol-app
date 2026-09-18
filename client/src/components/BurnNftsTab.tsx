@@ -34,7 +34,7 @@ export function BurnNftsTab() {
       <Card>
         <div className="flex items-start gap-2 rounded-xl bg-orange-900/30 border border-orange-500/30 px-3 py-2 mb-4 text-orange-200 text-sm">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-          Burning is permanent. Nothing is hidden, so check anything marked with a warning before you burn it.
+          Burning is permanent.
         </div>
         <ListHeader
           title="NFTs"
