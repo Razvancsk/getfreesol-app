@@ -23,6 +23,13 @@ export interface NftInfo {
   kind: "nft" | "pnft" | "core";
 }
 
+export interface RewardInfo {
+  id: string;
+  label: string;
+  description: string;
+  lamports: number;
+}
+
 export interface BuiltTx {
   transaction: string;
   ids: string[];
@@ -106,6 +113,42 @@ export async function runInBatches(
           result.failed++;
         }
       }
+    }
+  } catch (e) {
+    if (result.confirmedIds.length === 0) throw e;
+    result.stoppedReason = e instanceof Error ? e.message : String(e);
+  }
+  return result;
+}
+
+/**
+ * Processes ids in chunks: for each chunk build fresh transactions on the server and sign
+ * the whole chunk in one wallet prompt. Small chunks keep wallets from choking on a long
+ * list of transactions, and every chunk gets a fresh blockhash.
+ */
+export async function runInBatchesSignAll(
+  ids: string[],
+  batchSize: number,
+  build: (chunk: string[]) => Promise<{ transactions: BuiltTx[] }>,
+  signAllTransactions: SignAll,
+  onProgress: (msg: string) => void,
+): Promise<RunResult> {
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += batchSize) chunks.push(ids.slice(i, i + batchSize));
+
+  const result: RunResult = { confirmedIds: [], reclaimedLamports: 0, failed: 0 };
+  let step = 0;
+  try {
+    for (const chunk of chunks) {
+      step++;
+      const label = chunks.length > 1 ? `Batch ${step}/${chunks.length}: ` : "";
+      onProgress(`${label}Preparing…`);
+      const { transactions } = await build(chunk);
+      if (!transactions.length) continue;
+      const batch = await signSendConfirm(transactions, signAllTransactions, (msg) => onProgress(label + msg));
+      result.confirmedIds.push(...batch.confirmedIds);
+      result.reclaimedLamports += batch.reclaimedLamports;
+      result.failed += batch.failed;
     }
   } catch (e) {
     if (result.confirmedIds.length === 0) throw e;

@@ -9,6 +9,8 @@ import { connection, FEE_BPS, FEES_WALLET, PRIORITY_MICROLAMPORTS } from "./conf
 
 export interface IxGroup {
   id: string;
+  /** Item ids this group settles, when it covers more than its own id (defaults to [id]) */
+  ids?: string[];
   instructions: TransactionInstruction[];
   /** Lamports returned to the owner by this group; null = measure by simulation */
   reclaimLamports: number | null;
@@ -110,7 +112,7 @@ export async function packTransactions(owner: PublicKey, groups: IxGroup[], maxG
     if (!fits(tx)) tx = buildTx(owner, blockhash, batch, fee, true);
     built.push({
       transaction: tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64"),
-      ids: batch.map((g) => g.id),
+      ids: batch.flatMap((g) => g.ids ?? [g.id]),
       reclaimLamports: reclaim,
       feeLamports: fee,
     });

@@ -6,6 +6,9 @@ import { Card, EmptyState, ListHeader, StatusBar, Summary, useFeeBps, useTxRunne
 // Typical rent held by one NFT (token account + metadata + edition); the exact amount is measured when building.
 const EST_LAMPORTS: Record<NftInfo["kind"], number> = { nft: 7_300_000, pnft: 8_800_000, core: 2_900_000 };
 
+// NFTs burned per wallet prompt. Wallets often fail on long lists of transactions at once.
+const NFTS_PER_BATCH = 5;
+
 export function BurnNftsTab() {
   const scan = useScan<NftInfo>(
     (o) => `/api/scan/nfts/${o}`,
@@ -13,13 +16,18 @@ export function BurnNftsTab() {
     (n) => n.id,
   );
   const feeBps = useFeeBps();
-  const { status, run, busy } = useTxRunner(scan.removeIds);
+  const { status, runBatchedAll, busy } = useTxRunner(scan.removeIds);
 
   const selectedItems = scan.items.filter((n) => scan.selected.has(n.id));
   const gross = selectedItems.reduce((s, n) => s + EST_LAMPORTS[n.kind], 0);
 
   const burn = () =>
-    run(() => api<{ transactions: BuiltTx[] }>("/api/build/burn-nfts", { owner: scan.owner, ids: Array.from(scan.selected) }), "Burned");
+    runBatchedAll(
+      Array.from(scan.selected),
+      NFTS_PER_BATCH,
+      (chunk) => api<{ transactions: BuiltTx[] }>("/api/build/burn-nfts", { owner: scan.owner, ids: chunk }),
+      "Burned",
+    );
 
   return (
     <Card>

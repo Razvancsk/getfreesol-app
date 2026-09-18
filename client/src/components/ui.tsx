@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useWallet } from "@/lib/wallet";
 import { CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
-import { api, fmtSol, runInBatches, signSendConfirm, type BuiltTx, type RunResult } from "@/lib/api";
+import { api, fmtSol, runInBatches, runInBatchesSignAll, signSendConfirm, type BuiltTx, type RunResult } from "@/lib/api";
 
 export function SolanaIcon({ className = "" }: { className?: string }) {
   return (
@@ -83,6 +83,19 @@ export function useTxRunner(onDone: (confirmedIds: string[]) => void) {
     }, verb);
   }
 
+  /** Build and sign a few items at a time, each batch in a single wallet prompt. */
+  function runBatchedAll(
+    ids: string[],
+    batchSize: number,
+    build: (chunk: string[]) => Promise<{ transactions: BuiltTx[] }>,
+    verb: string,
+  ) {
+    return execute(async () => {
+      if (!signAllTransactions) throw new Error("No wallet connected");
+      return runInBatchesSignAll(ids, batchSize, build, signAllTransactions, progress);
+    }, verb);
+  }
+
   async function execute(work: () => Promise<RunResult>, verb: string) {
     try {
       const result = await work();
@@ -102,7 +115,7 @@ export function useTxRunner(onDone: (confirmedIds: string[]) => void) {
     }
   }
 
-  return { status, run, runBatched, busy: status.kind === "busy" };
+  return { status, run, runBatched, runBatchedAll, busy: status.kind === "busy" };
 }
 
 export function StatusBar({ status }: { status: Status }) {
@@ -207,12 +220,6 @@ export function Summary({
           <span>Service fee</span>
           {/* Always show the platform rate, even for the fee wallet that isn't charged */}
           <span>{(feeConfigCache?.feeBps ?? feeBps) / 100}%</span>
-        </div>
-      )}
-      {networkFee > 0 && (
-        <div className="flex justify-between text-sm text-purple-300/80 mt-1">
-          <span>Network fee</span>
-          <span>-{fmtSol(networkFee, 5)} SOL</span>
         </div>
       )}
       <div className="flex justify-between text-white font-semibold text-lg mt-2">
