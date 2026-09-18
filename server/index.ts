@@ -4,7 +4,8 @@ import path from "path";
 import { connection, FEE_BPS, FEES_WALLET, parseOwner, REOWN_PROJECT_ID } from "./config";
 import { buildBurnTransactions, buildClaimTransactions, scanTokens } from "./tokens";
 import { buildNftBurnTransactions, scanNfts } from "./nfts";
-import { buildRewardTransactions, scanRewards } from "./rewards";
+import { buildRewardTransactions, isRewardId, scanRewards } from "./rewards";
+import type { PublicKey } from "@solana/web3.js";
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
@@ -36,17 +37,32 @@ app.get("/api/scan/tokens/:owner", handler((req) => scanTokens(parseOwner(req.pa
 app.get("/api/scan/nfts/:owner", handler(async (req) => ({ nfts: await scanNfts(parseOwner(req.params.owner)) })));
 app.get("/api/scan/rewards/:owner", handler(async (req) => ({ rewards: await scanRewards(parseOwner(req.params.owner)) })));
 
+/** The claim list mixes pump.fun reward ids with token account addresses. */
+async function buildClaim(owner: PublicKey, ids: string[]) {
+  const rewardIds = ids.filter(isRewardId);
+  const accounts = ids.filter((id) => !isRewardId(id));
+  const transactions: Awaited<ReturnType<typeof buildClaimTransactions>> = [];
+  if (rewardIds.length) {
+    try {
+      // Rewards go in their own transaction so a failing vault can't block the account closes
+      transactions.push(...(await buildRewardTransactions(owner, rewardIds)));
+    } catch (e) {
+      if (!accounts.length) throw e;
+      console.warn("[api] reward claim skipped:", (e as Error).message);
+    }
+  }
+  if (accounts.length) transactions.push(...(await buildClaimTransactions(owner, accounts)));
+  return transactions;
+}
+
 app.post("/api/build/claim", handler(async (req) => ({
-  transactions: await buildClaimTransactions(parseOwner(req.body.owner), selection(req.body.accounts)),
+  transactions: await buildClaim(parseOwner(req.body.owner), selection(req.body.accounts)),
 })));
 app.post("/api/build/burn-tokens", handler(async (req) => ({
   transactions: await buildBurnTransactions(parseOwner(req.body.owner), selection(req.body.accounts)),
 })));
 app.post("/api/build/burn-nfts", handler(async (req) => ({
   transactions: await buildNftBurnTransactions(parseOwner(req.body.owner), selection(req.body.ids)),
-})));
-app.post("/api/build/claim-rewards", handler(async (req) => ({
-  transactions: await buildRewardTransactions(parseOwner(req.body.owner), selection(req.body.ids)),
 })));
 
 app.post("/api/send", handler(async (req) => {

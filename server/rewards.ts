@@ -25,6 +25,11 @@ const MIN_CLAIM_LAMPORTS = 10_000;
 
 export type RewardId = "pump-cashback" | "pump-creator" | "pumpswap-cashback" | "pumpswap-creator";
 
+const REWARD_IDS: RewardId[] = ["pump-cashback", "pump-creator", "pumpswap-cashback", "pumpswap-creator"];
+
+/** True for a reward id, false for anything else (a token account address). */
+export const isRewardId = (id: string): id is RewardId => (REWARD_IDS as string[]).includes(id);
+
 export interface RewardInfo {
   id: RewardId;
   label: string;

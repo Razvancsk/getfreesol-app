@@ -40,7 +40,8 @@ export function useScan<T>(path: (owner: string) => string, pick: (data: any) =>
     });
 
   const allSelected = items.length > 0 && selected.size === items.length;
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(items.map(idOf)));
+  const setAll = (on: boolean) => setSelected(on ? new Set(items.map(idOf)) : new Set());
+  const toggleAll = () => setAll(!allSelected);
 
   const removeIds = (ids: string[]) => {
     const gone = new Set(ids);
@@ -48,5 +49,5 @@ export function useScan<T>(path: (owner: string) => string, pick: (data: any) =>
     setSelected((s) => new Set(Array.from(s).filter((id) => !gone.has(id))));
   };
 
-  return { owner, items, selected, loading, error, load, toggle, toggleAll, allSelected, removeIds };
+  return { owner, items, selected, loading, error, load, toggle, toggleAll, setAll, allSelected, removeIds };
 }
