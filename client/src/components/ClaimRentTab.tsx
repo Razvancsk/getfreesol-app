@@ -168,7 +168,7 @@ function InfoBox({ icon, title, children }: { icon: ReactNode; title: string; ch
         {icon}
         {title}
       </div>
-      <p className="text-purple-200/80 text-xs leading-relaxed mt-1.5">{children}</p>
+      <p className="text-white text-xs leading-relaxed mt-1.5">{children}</p>
     </div>
   );
 }
